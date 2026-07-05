@@ -1,0 +1,73 @@
+{
+  "atomic_numbers": [
+    1,
+    8
+  ],
+  "cell": [
+    [
+      12.417201463332093,
+      0.0,
+      0.0
+    ],
+    [
+      -5.29177210903e-07,
+      12.417201463332093,
+      0.0
+    ],
+    [
+      -5.29177210903e-07,
+      -5.29177210903e-07,
+      12.417201463332093
+    ]
+  ],
+  "max_radius": 4.5,
+  "n_total_frames": 1593,
+  "natoms": 192,
+  "pbc": [
+    true,
+    true,
+    true
+  ],
+  "seed": 20260616,
+  "source": "BingqingCheng/ab-initio-thermodynamics-of-water training-set/dataset_1593.xyz",
+  "source_url": "https://github.com/BingqingCheng/ab-initio-thermodynamics-of-water/tree/master/training-set",
+  "splits": {
+    "test": 293,
+    "train": 1000,
+    "val": 300
+  },
+  "test_h5": {
+    "max_atoms": 192,
+    "max_edges": 9174
+  },
+  "test_path_extxyz": "/tmp/mace_ictd_public_water/cheng_water/test.extxyz",
+  "test_path_h5": "/tmp/mace_ictd_public_water/cheng_water/processed_test.h5",
+  "train_h5": {
+    "max_atoms": 192,
+    "max_edges": 9058
+  },
+  "train_path_extxyz": "/tmp/mace_ictd_public_water/cheng_water/train.extxyz",
+  "train_path_h5": "/tmp/mace_ictd_public_water/cheng_water/processed_train.h5",
+  "unit_scales": {
+    "energy": 27.211386245988,
+    "forces": 51.422067476325886,
+    "length": 0.529177210903
+  },
+  "unit_system": "atomic",
+  "units_assumed_input": {
+    "energy": "Hartree",
+    "forces": "Hartree/Bohr",
+    "length": "Bohr"
+  },
+  "units_written": {
+    "energy": "eV",
+    "forces": "eV/Angstrom",
+    "length": "Angstrom"
+  },
+  "val_h5": {
+    "max_atoms": 192,
+    "max_edges": 9098
+  },
+  "val_path_extxyz": "/tmp/mace_ictd_public_water/cheng_water/val.extxyz",
+  "val_path_h5": "/tmp/mace_ictd_public_water/cheng_water/processed_val.h5"
+}

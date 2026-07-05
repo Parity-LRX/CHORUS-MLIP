@@ -1,0 +1,13 @@
+task,mode,atoms,hidden_lmax,max_ell,status,time_ms,compile_s,baseline_ms,speedup_vs_mace_e3nn,loss,cache_entries,artifact,note,error_type,error
+train,mace_torch_e3nn,256,1,1,ok,153.397,,153.397,1,1156.3,,,,,
+inference,mace_torch_e3nn,256,1,1,ok,11.8562,,11.8562,1,,,,,,
+train,mace_torch_cueq,256,1,1,ok,36.209,,153.397,4.23643,1156.4,,,,,
+inference,mace_torch_cueq,256,1,1,ok,16.3641,,11.8562,0.724525,,,,,,
+train,mace_ictd_bridge_u_eager,256,1,1,ok,27.716,,153.397,5.5346,6.90551e-07,0,,,,
+train,mace_ictd_bridge_u_makefx_train,256,1,1,ok,9.70897,31.8136,153.397,15.7995,6.50488e-07,1,,,,
+inference,mace_ictd_bridge_u_eager,256,1,1,ok,10.6046,,11.8562,1.11802,,,,,,
+inference,mace_ictd_bridge_u_aoti,256,1,1,ok,1.25363,21.9815,11.8562,9.4575,,,/tmp/mace_ictd_cartnn_bench_20260614_220608/sanity_full_model/aoti_packages/bridge_u_l1_e1_n256.pt2,,,
+train,mace_ictd_cueq_product_eager,256,1,1,ok,34.5298,,153.397,4.44245,6.30334e-07,0,,,,
+train,mace_ictd_cueq_product_makefx_train,256,1,1,ok,13.0493,29.2287,153.397,11.7552,4.24e-06,1,,,,
+inference,mace_ictd_cueq_product_eager,256,1,1,ok,12.8711,,11.8562,0.921149,,,,,,
+inference,mace_ictd_cueq_product_aoti,256,1,1,ok,2.33421,17.556,11.8562,5.07932,,,/tmp/mace_ictd_cartnn_bench_20260614_220608/sanity_full_model/aoti_packages/cueq_product_l1_e1_n256.pt2,,,

@@ -1,0 +1,36 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+build/
+dist/
+.pytest_cache/
+.ipynb_checkpoints/
+
+# Compiled extensions / native build outputs
+*.so
+*.o
+*.a
+*.dylib
+
+# Precomputed ICTD Clebsch-Gordan / U-tensor cache (~47M of .pt blobs).
+# Regenerated on demand by mace_ictc.models.ictd_disk_cache.load_or_compute, so it is
+# a build artifact, not source.
+mace_ictc/models/_ictd_cache/
+
+# Model / run artifacts
+benchmark_results/
+benchmarks/paper/results/**/checkpoints/
+benchmarks/paper/**/*.pdf
+benchmarks/paper/**/*.png
+benchmarks/paper/**/*.npz
+*.pt2
+*.pt
+*.pth
+checkpoint/
+*.log
+!benchmarks/paper/**/*.log
+
+# OS
+.DS_Store

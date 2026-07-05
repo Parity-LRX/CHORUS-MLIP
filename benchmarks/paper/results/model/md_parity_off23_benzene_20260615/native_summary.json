@@ -1,0 +1,34 @@
+[
+  {
+    "atoms": 12,
+    "case": "benzene_1",
+    "dt_fs": 0.25,
+    "elapsed_s": 3.029977723956108,
+    "energy0_eV": -6324.11474609375,
+    "energy_final_eV": -6324.01123046875,
+    "engine": "native_mace",
+    "force_rms0_eV_A": 0.1135066491533191,
+    "molecules": 1,
+    "ms_per_step_including_eval": 30.29977723956108,
+    "output": "/tmp/mace_ictd_md_parity_20260615/native_benzene_1.npz",
+    "steps": 100,
+    "temp_mean_K": 52.83422821122848,
+    "temperature_K": 100.0
+  },
+  {
+    "atoms": 384,
+    "case": "benzene_32_grid",
+    "dt_fs": 0.25,
+    "elapsed_s": 1.857199177145958,
+    "energy0_eV": -202344.53125,
+    "energy_final_eV": -202350.625,
+    "engine": "native_mace",
+    "force_rms0_eV_A": 0.6587002618194351,
+    "molecules": 32,
+    "ms_per_step_including_eval": 74.28796708583832,
+    "output": "/tmp/mace_ictd_md_parity_20260615/native_benzene_32_grid.npz",
+    "steps": 25,
+    "temp_mean_K": 156.51368019539711,
+    "temperature_K": 100.0
+  }
+]

@@ -1,0 +1,28 @@
+[
+  {
+    "atoms": 9,
+    "case": "acetamide",
+    "elapsed_s": 181.19953205436468,
+    "energy0_eV": -5697.00548752829,
+    "energy_final_eV": -5696.971747842053,
+    "engine": "native_mace_float64",
+    "force_rms0_eV_A": 0.30185785927508896,
+    "ms_per_step_including_eval": 18.119953205436467,
+    "output": "/tmp/mace_ictd_md_parity_long_10000_20260615/native_float64_acetamide.npz",
+    "steps": 10000,
+    "temp_mean_K": 59.67041118023915
+  },
+  {
+    "atoms": 12,
+    "case": "benzene",
+    "elapsed_s": 180.1532785370946,
+    "energy0_eV": -6324.115674255438,
+    "energy_final_eV": -6324.0408273358125,
+    "engine": "native_mace_float64",
+    "force_rms0_eV_A": 0.11350681651782703,
+    "ms_per_step_including_eval": 18.015327853709458,
+    "output": "/tmp/mace_ictd_md_parity_long_10000_20260615/native_float64_benzene.npz",
+    "steps": 10000,
+    "temp_mean_K": 54.22352717851875
+  }
+]

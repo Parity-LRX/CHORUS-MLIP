@@ -1,0 +1,15 @@
+hidden_lmax,max_ell,channels,edges,dtype,mode,backend,backend_label,forward_ms,backward_ms,total_ms,peak_mem_gb,source_file
+1,1,64,100000,float32,forward_backward,e3nn,MACE e3nn TensorProduct,1.38011,6.29493,7.67504,1.0991,operator_compile_fwbw_flat.csv
+1,1,64,100000,float32,forward_backward,cartnn,cartnn Cartesian-3j TensorProduct,1.37933,6.29299,7.67232,1.0991,operator_compile_fwbw_flat.csv
+1,1,64,100000,float32,forward_backward,ictd_compile_fwbw,ICTD torch.compile fused product,2.81842,8.05744,10.87586,1.485,operator_compile_fwbw_flat.csv
+1,2,64,100000,float32,forward_backward,e3nn,MACE e3nn TensorProduct,3.84819,9.84954,13.69773,1.4342,operator_compile_fwbw_flat.csv
+1,2,64,100000,float32,forward_backward,cartnn,cartnn Cartesian-3j TensorProduct,3.85032,9.8519,13.70222,1.4358,operator_compile_fwbw_flat.csv
+1,2,64,100000,float32,forward_backward,ictd_compile_fwbw,ICTD torch.compile fused product,3.8051,10.7945,14.5996,2.2853,operator_compile_fwbw_flat.csv
+2,2,64,100000,float32,forward_backward,e3nn,MACE e3nn TensorProduct,13.51682,37.25614,50.77296,4.2485,operator_compile_fwbw_flat.csv
+2,2,64,100000,float32,forward_backward,cartnn,cartnn Cartesian-3j TensorProduct,16.42434,46.0581,62.48243,6.1053,operator_compile_fwbw_flat.csv
+2,2,64,100000,float32,forward_backward,ictd_compile_fwbw,ICTD torch.compile fused product,11.4356,34.07754,45.51314,5.5874,operator_compile_fwbw_flat.csv
+2,3,64,100000,float32,forward_backward,e3nn,MACE e3nn TensorProduct,18.74893,48.62054,67.36947,5.1352,operator_compile_fwbw_flat.csv
+2,3,64,100000,float32,forward_backward,cartnn,cartnn Cartesian-3j TensorProduct,22.51576,59.07819,81.59395,7.4931,operator_compile_fwbw_flat.csv
+2,3,64,100000,float32,forward_backward,ictd_compile_fwbw,ICTD torch.compile fused product,14.67451,44.11955,58.79406,7.3712,operator_compile_fwbw_flat.csv
+3,3,64,100000,float32,forward_backward,e3nn,MACE e3nn TensorProduct,34.80261,139.91822,174.72083,12.3954,operator_compile_fwbw_flat.csv
+3,3,64,100000,float32,forward_backward,ictd_compile_fwbw,ICTD torch.compile fused product,35.13245,93.3653,128.49775,14.4631,operator_compile_fwbw_flat.csv

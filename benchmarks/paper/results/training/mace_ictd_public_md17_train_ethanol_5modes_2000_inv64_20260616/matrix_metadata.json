@@ -1,0 +1,23 @@
+{
+  "data_root": "/tmp/mace_ictd_public_md17",
+  "datasets": "revised_ethanol",
+  "modes": "ictd_bridge_u_eager,ictd_bridge_u_makefx,ictd_cueq_makefx,mace_e3nn,mace_cueq",
+  "seed": 20260616,
+  "max_steps": 2000,
+  "epochs": 1000,
+  "mace_epoch_rule": "ceil(max_steps / ceil(n_train / batch_size)); override with MACE_MAX_NUM_EPOCHS",
+  "mace_max_num_epochs_effective": {
+    "revised_ethanol": 32
+  },
+  "batch_size": 16,
+  "channels": 64,
+  "hidden_lmax": 1,
+  "max_ell": 2,
+  "num_interactions": 2,
+  "correlation": 2,
+  "r_max": 4.5,
+  "lr": 0.001,
+  "energy_weight": 1.0,
+  "force_weight": 100.0,
+  "dtype": "float32"
+}

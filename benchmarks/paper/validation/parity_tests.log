@@ -1,0 +1,14 @@
+### test_angular_basis
+
+no tests ran in 1.92s
+### test_mace_converter
+.                                                                        [100%]
+1 passed in 58.77s
+### test_cueq_product_backend
+s....                                                                    [100%]
+4 passed, 1 skipped in 15.83s
+### test_angular_basis (run as SCRIPT, not pytest) ###
+[float64] PASS  output dE=0.0e+00 dF=4.2e-21  |  feature |e3nn - ictd@Q|=8.3e-17 (Q rotates l>=1 by 5.4e-02)
+[float32] PASS  output dE=0.0e+00 dF=7.3e-12  |  feature |e3nn - ictd@Q|=4.7e-09 (Q rotates l>=1 by 5.0e-02)
+angular_basis switch: e3nn == ictd in output, == ictd@Q in features
+(angular_basis script rc=0)

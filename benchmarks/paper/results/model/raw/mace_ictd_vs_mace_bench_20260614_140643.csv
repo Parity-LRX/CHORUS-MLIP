@@ -1,0 +1,25 @@
+task,mode,atoms,hidden_lmax,max_ell,status,time_ms,compile_s,baseline_ms,speedup_vs_mace_e3nn,loss,cache_entries,artifact,note,error_type,error
+train,mace_torch_e3nn,8192,1,2,ok,392.231,,392.231,1,1147.16,,,,,
+inference,mace_torch_e3nn,8192,1,2,ok,58.3022,,58.3022,1,,,,,,
+train,mace_torch_cueq,8192,1,2,ok,44.8986,,392.231,8.73593,1147.03,,,,,
+inference,mace_torch_cueq,8192,1,2,ok,18.3356,,58.3022,3.17973,,,,,,
+train,mace_ictd_bridge_u_eager,8192,1,2,ok,233.351,,392.231,1.68086,4.65062e-07,0,,,,
+train,mace_ictd_bridge_u_makefx_train,8192,1,2,ok,105.486,48.6875,392.231,3.71832,4.43755e-07,1,,,,
+inference,mace_ictd_bridge_u_eager,8192,1,2,ok,82.2642,,58.3022,0.708719,,,,,,
+inference,mace_ictd_bridge_u_aoti,8192,1,2,ok,34.4349,30.1986,58.3022,1.69311,,,/tmp/mace_ictd_bench_channels64_8192/aoti_packages/bridge_u_l1_e2_n8192.pt2,,,
+train,mace_ictd_cueq_product_eager,8192,1,2,ok,220.929,,392.231,1.77537,4.2665e-07,0,,,,
+train,mace_ictd_cueq_product_makefx_train,8192,1,2,ok,93.0181,45.9439,392.231,4.21672,3.717e-07,1,,,,
+inference,mace_ictd_cueq_product_eager,8192,1,2,ok,77.7884,,58.3022,0.749497,,,,,,
+inference,mace_ictd_cueq_product_aoti,8192,1,2,ok,30.4028,24.0591,58.3022,1.91766,,,/tmp/mace_ictd_bench_channels64_8192/aoti_packages/cueq_product_l1_e2_n8192.pt2,,,
+train,mace_torch_e3nn,8192,2,3,ok,870.931,,870.931,1,1131.58,,,,,
+inference,mace_torch_e3nn,8192,2,3,ok,217.995,,217.995,1,,,,,,
+train,mace_torch_cueq,8192,2,3,ok,90.8333,,870.931,9.58823,1131.9,,,,,
+inference,mace_torch_cueq,8192,2,3,ok,30.3711,,217.995,7.17771,,,,,,
+train,mace_ictd_bridge_u_eager,8192,2,3,error,,,870.931,,,,,,OutOfMemoryError,"OutOfMemoryError: CUDA out of memory. Tried to allocate 480.00 MiB. GPU 0 has a total capacity of 23.64 GiB of which 242.69 MiB is free. Including non-PyTorch memory, this process has 23.26 GiB memory in use. Of the allocated memory 22.19 GiB is allocated by PyTorch, and 656.69 MiB is reserved by PyTorch but unallocated. If reserved but unallocated memory is large try setting PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True to avoid fragmentation.  See documentation for Memory Management  (https"
+train,mace_ictd_bridge_u_makefx_train,8192,2,3,error,,,870.931,,,,,,OutOfMemoryError,"OutOfMemoryError: CUDA out of memory. Tried to allocate 320.00 MiB. GPU 0 has a total capacity of 23.64 GiB of which 308.69 MiB is free. Including non-PyTorch memory, this process has 23.20 GiB memory in use. Of the allocated memory 22.12 GiB is allocated by PyTorch, and 651.16 MiB is reserved by PyTorch but unallocated. If reserved but unallocated memory is large try setting PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True to avoid fragmentation.  See documentation for Memory Management  (https"
+inference,mace_ictd_bridge_u_eager,8192,2,3,ok,273.624,,217.995,0.796695,,,,,,
+inference,mace_ictd_bridge_u_aoti,8192,2,3,ok,93.9568,41.9357,217.995,2.32016,,,/tmp/mace_ictd_bench_channels64_8192/aoti_packages/bridge_u_l2_e3_n8192.pt2,,,
+train,mace_ictd_cueq_product_eager,8192,2,3,error,,,870.931,,,,,,OutOfMemoryError,"OutOfMemoryError: CUDA out of memory. Tried to allocate 480.00 MiB. GPU 0 has a total capacity of 23.64 GiB of which 294.69 MiB is free. Including non-PyTorch memory, this process has 23.21 GiB memory in use. Of the allocated memory 21.36 GiB is allocated by PyTorch, and 1.41 GiB is reserved by PyTorch but unallocated. If reserved but unallocated memory is large try setting PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True to avoid fragmentation.  See documentation for Memory Management  (https:/"
+train,mace_ictd_cueq_product_makefx_train,8192,2,3,error,,,870.931,,,,,,OutOfMemoryError,"OutOfMemoryError: CUDA out of memory. Tried to allocate 544.00 MiB. GPU 0 has a total capacity of 23.64 GiB of which 394.69 MiB is free. Including non-PyTorch memory, this process has 23.12 GiB memory in use. Of the allocated memory 21.17 GiB is allocated by PyTorch, and 1.50 GiB is reserved by PyTorch but unallocated. If reserved but unallocated memory is large try setting PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True to avoid fragmentation.  See documentation for Memory Management  (https:/"
+inference,mace_ictd_cueq_product_eager,8192,2,3,ok,261.674,,217.995,0.833079,,,,,,
+inference,mace_ictd_cueq_product_aoti,8192,2,3,ok,85.9662,37.4905,217.995,2.53582,,,/tmp/mace_ictd_bench_channels64_8192/aoti_packages/cueq_product_l2_e3_n8192.pt2,,,

@@ -1,0 +1,1 @@
+Derived convergence directory. curves.csv combines epochs 0-99 from md17_convergence_ethanol_first100_20260617 and epochs 100-299 from md17_convergence_ethanol_from100_20260617. runs.csv and aggregate_by_mode.csv are copied from the 300-epoch continuation analysis so final/best metrics refer to the completed 300-epoch run.

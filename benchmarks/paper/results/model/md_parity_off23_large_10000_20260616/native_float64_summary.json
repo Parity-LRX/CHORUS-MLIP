@@ -1,0 +1,17 @@
+[
+  {
+    "atoms": 768,
+    "case": "benzene_64_grid",
+    "elapsed_s": 1097.4988241940737,
+    "energy0_eV": -404688.81004727347,
+    "energy_final_eV": -404729.527719514,
+    "engine": "native_mace_float64",
+    "force_rms0_eV_A": 0.6587010513542151,
+    "ms_per_step_including_eval": 109.74988241940737,
+    "output": "/tmp/mace_ictd_md_parity_large_10000_20260616/native_float64_benzene_64_grid.npz",
+    "record_stride": 20,
+    "recorded_frames": 501,
+    "steps": 10000,
+    "temp_mean_K": 508.0622220450297
+  }
+]
