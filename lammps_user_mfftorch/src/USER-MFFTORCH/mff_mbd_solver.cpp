@@ -11,8 +11,36 @@
 
 #include <algorithm>
 #include <cmath>
+#include <dlfcn.h>
 
 namespace mfftorch {
+
+struct OptionalGilRelease {
+  using Py_IsInitialized_Fn = int (*)();
+  using PyGILState_Check_Fn = int (*)();
+  using PyEval_SaveThread_Fn = void* (*)();
+  using PyEval_RestoreThread_Fn = void (*)(void*);
+
+  void* thread_state = nullptr;
+  PyEval_RestoreThread_Fn restore = nullptr;
+
+  OptionalGilRelease() {
+    auto py_is_initialized = reinterpret_cast<Py_IsInitialized_Fn>(dlsym(RTLD_DEFAULT, "Py_IsInitialized"));
+    auto py_gil_check = reinterpret_cast<PyGILState_Check_Fn>(dlsym(RTLD_DEFAULT, "PyGILState_Check"));
+    auto py_eval_save = reinterpret_cast<PyEval_SaveThread_Fn>(dlsym(RTLD_DEFAULT, "PyEval_SaveThread"));
+    auto py_eval_restore =
+        reinterpret_cast<PyEval_RestoreThread_Fn>(dlsym(RTLD_DEFAULT, "PyEval_RestoreThread"));
+    if (!py_is_initialized || !py_gil_check || !py_eval_save || !py_eval_restore) return;
+    if (!py_is_initialized()) return;
+    if (!py_gil_check()) return;
+    thread_state = py_eval_save();
+    restore = py_eval_restore;
+  }
+
+  ~OptionalGilRelease() {
+    if (thread_state && restore) restore(thread_state);
+  }
+};
 
 // integer FFT frequencies [-floor(M/2)..ceil(M/2)-1] in the torch.fft order (0..M/2-1, -M/2..-1).
 static torch::Tensor fft_freqs(int M, torch::TensorOptions opt) {
@@ -429,6 +457,7 @@ MBDOutputs MFFMBDSolver::run_autograd(const torch::Tensor& pos, const torch::Ten
   auto src_ = source.to(device);
   double bl = 0.0, bu = 0.0;
   auto E = mbd_energy(p, src_, cellf, src, dst, shift, device, alpha_ewald, &bl, &bu);
+  OptionalGilRelease no_gil;
   auto grads = torch::autograd::grad({E}, {p}, /*grad_outputs=*/{}, /*retain_graph=*/false,
                                      /*create_graph=*/false, /*allow_unused=*/true);
   MBDOutputs out;

@@ -1391,6 +1391,51 @@
    "atoms_s": 79508.35264749615,
    "sane": null,
    "note": "rc=0 loop=2.576s steps=100"
+  },
+  {
+   "mode": "aoti-md",
+   "cond": "both",
+   "N": 128,
+   "ms": 17.415,
+   "atoms_s": 7349.985644559288,
+   "sane": null,
+   "note": "rc=0 loop=1.7415s steps=100"
+  },
+  {
+   "mode": "aoti-md",
+   "cond": "both",
+   "N": 256,
+   "ms": 20.4617,
+   "atoms_s": 12511.179423019594,
+   "sane": null,
+   "note": "rc=0 loop=2.04617s steps=100"
+  },
+  {
+   "mode": "aoti-md",
+   "cond": "both",
+   "N": 512,
+   "ms": 25.1841,
+   "atoms_s": 20330.28776092852,
+   "sane": null,
+   "note": "rc=0 loop=2.51841s steps=100"
+  },
+  {
+   "mode": "aoti-md",
+   "cond": "both",
+   "N": 1024,
+   "ms": 41.8558,
+   "atoms_s": 24464.948704838993,
+   "sane": null,
+   "note": "rc=0 loop=4.18558s steps=100"
+  },
+  {
+   "mode": "aoti-md",
+   "cond": "both",
+   "N": 2048,
+   "ms": 88.6204,
+   "atoms_s": 23109.80316044613,
+   "sane": null,
+   "note": "rc=0 loop=8.86204s steps=100"
   }
  ]
 }
