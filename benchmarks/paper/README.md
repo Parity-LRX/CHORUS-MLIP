@@ -5,6 +5,9 @@ logs, and SVG figures used by the MACE-ICTC technical report. It is intended to
 make the reported numbers auditable without making the source repository carry
 large binary artifacts.
 
+For figure/table-to-script mapping and fresh-run commands, see
+[`REPRODUCE.md`](REPRODUCE.md).
+
 The full artifact bundle, including PNG/PDF figures, MD trajectory `.npz` files,
 and checkpoint snapshots retained for provenance, should be attached to a GitHub
 Release instead of committed to the repository. The local release bundle prepared
@@ -38,8 +41,9 @@ The ignored top-level `benchmark_results/` directory remains scratch space;
 - `results/training/`: matched revised-MD17 and Cheng-water training curves,
   best/final RMSE summaries, empirical NTK spectra, and MD trajectory-property
   summaries used by the paper tables and figures.
-- `scripts/operator/`, `scripts/model/`, `scripts/training/`: benchmark and
-  plotting scripts used to produce the archived CSV/JSON/figure outputs.
+- `scripts/operator/`, `scripts/model/`, `scripts/training/`,
+  `scripts/long_range/`: benchmark and plotting scripts used to produce the
+  archived CSV/JSON/figure outputs.
 - `validation/`: representation-equivariance notes, environment records,
   parity logs, and warmup checks.
 
@@ -53,6 +57,7 @@ The ignored top-level `benchmark_results/` directory remains scratch space;
 | Matched training convergence | `figures/matched_training_convergence.svg` | `results/training/matched_training_curves_combined.csv` |
 | Matched training best/final RMSE | `figures/matched_training_best_rmse.svg` | `results/training/matched_training_aggregate_combined.csv` |
 | Empirical NTK spectra | `figures/ntk_spectrum_diagnostics.svg` | `results/training/ntk_by_system_mode.csv`, `results/training/ntk_runs_combined.csv` |
+| Long-range throughput | `figures/lr_throughput_channels64.svg` | `results/long_range/lr_throughput_channels64.json` |
 | Long-MD checkpoint correspondence | `figures/off23_md_parity_long.svg` | `results/model/md_parity_off23_long_10000_20260615/*.json`, `results/training/md_parity_off23_long_10000_summary.json` |
 | MD trajectory properties | `figures/off23_md_trajectory_properties.svg` | `results/training/md_trajectory_properties.csv`, `results/training/md_trajectory_summary.csv` |
 
@@ -67,6 +72,9 @@ The plotting scripts expect to be run from the repository root:
 ```bash
 python benchmarks/paper/scripts/plot_benchmark_figures.py
 python benchmarks/paper/scripts/training/plot_paper_training_figures.py
+python benchmarks/paper/scripts/plot_lr_throughput.py \
+  benchmarks/paper/results/long_range/lr_throughput_channels64.json \
+  benchmarks/paper/figures/lr_throughput_channels64
 ```
 
 The two commands above read from `benchmarks/paper/results/` by default and write
