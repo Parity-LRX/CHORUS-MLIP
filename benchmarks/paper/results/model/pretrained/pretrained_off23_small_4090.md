@@ -13,7 +13,7 @@ Software path:
 Model:
 
 - Source: `/home/ylzhang/.cache/mace/MACE-OFF23_small.model`
-- Converted checkpoint: `/tmp/mace_ictc_pretrained/off23_small_ictd_bridge_u_float32.pth`
+- Converted checkpoint: `/tmp/mace_ictc_pretrained/off23_small_ictc_bridge_u_float32.pth`
 - Species: `H,C,N,O,F,P,S,Cl,Br,I`
 - MACE config extracted from checkpoint:
   - `num_interactions=2`
@@ -58,8 +58,8 @@ Common export settings:
 
 | exported core | output | AOTI strict | numerical match | equivariance | vary E | vary N | eager ms | AOTI ms | speedup | peak CUDA memory |
 |---|---|---:|---|---|---|---|---:|---:|---:|---:|
-| bridge-U AOTI | `/tmp/mace_ictc_pretrained/off23_small_ictd_bridge_u_n512_d50.pt2` | true | pass, `dE_rel=4.31e-06`, `dF_rel=3.29e-06` | pass | pass | pass | 11.228 | 4.343 | 2.59x | 0.71 GB |
-| cuEq-product AOTI, `angular_basis=e3nn` | `/tmp/mace_ictc_pretrained/off23_small_ictd_cueq_e3nn_n512_d50.pt2` | false | pass, `dE_rel=3.47e-06`, `dF_rel=3.07e-06` | pass | pass | pass | 13.757 | 4.703 | 2.93x | 0.64 GB |
+| bridge-U AOTI | `/tmp/mace_ictc_pretrained/off23_small_ictc_bridge_u_n512_d50.pt2` | true | pass, `dE_rel=4.31e-06`, `dF_rel=3.29e-06` | pass | pass | pass | 11.228 | 4.343 | 2.59x | 0.71 GB |
+| cuEq-product AOTI, `angular_basis=e3nn` | `/tmp/mace_ictc_pretrained/off23_small_ictc_cueq_e3nn_n512_d50.pt2` | false | pass, `dE_rel=3.47e-06`, `dF_rel=3.07e-06` | pass | pass | pass | 13.757 | 4.703 | 2.93x | 0.64 GB |
 
 Important caveat: for this OFF23 small model, `hidden_lmax=0`. On this case, bridge-U AOTI was slightly faster than cuEq-product AOTI at the tested size. Do not generalize the synthetic high-`lmax` cuEq conclusion to this scalar-hidden pretrained model.
 

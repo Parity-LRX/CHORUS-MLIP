@@ -3,8 +3,8 @@
 (the deployed form; the model ships an AOTI/compiled product path), so the operator
 comparison against the codegen-fused e3nn/cartnn TensorProducts is fair.
 
-Writes operator_ictd_compiled.csv with the SAME columns as operator_bench.py and an
-extra backend label "ictd_compiled". Channels fixed (default 64) to bound runtime.
+Writes operator_ictc_compiled.csv with the SAME columns as operator_bench.py and an
+extra backend label "ictc_compiled". Channels fixed (default 64) to bound runtime.
 """
 from __future__ import annotations
 
@@ -17,7 +17,7 @@ import time
 import torch
 
 from operator_bench import (
-    CSV_COLUMNS, ICTC_URL, ICTC_COMMIT, build_ictd, ictd_make_inputs, ictd_loss,
+    CSV_COLUMNS, ICTC_URL, ICTC_COMMIT, build_ictc, ictc_make_inputs, ictc_loss,
     cuda_sync, free,
 )
 
@@ -75,13 +75,13 @@ def main():
     dtypes = [{"float32": torch.float32, "float64": torch.float64}[d] for d in args.dtypes.split(",")]
     C = args.channels
 
-    csv_path = os.path.join(args.out, "operator_ictd_compiled.csv")
+    csv_path = os.path.join(args.out, "operator_ictc_compiled.csv")
     f = open(csv_path, "w", newline=""); w = csv.DictWriter(f, fieldnames=CSV_COLUMNS)
     w.writeheader(); f.flush()
 
     def emit(**kw):
         row = {c: kw.get(c, "") for c in CSV_COLUMNS}; w.writerow(row); f.flush()
-        print(f"[{row['status']:5s}] ictd_compiled l{row['hidden_lmax']}/{row['max_ell']} "
+        print(f"[{row['status']:5s}] ictc_compiled l{row['hidden_lmax']}/{row['max_ell']} "
               f"C{row['channels']} E{row['edges']} {row['dtype']} {row['mode']:16s} "
               f"fwd={row['forward_ms']} bwd={row['backward_ms']} eps={row['edges_per_s']} "
               f"mem={row['peak_mem_gb']} {row['error']}", flush=True)
@@ -92,11 +92,11 @@ def main():
             dname = "float32" if dtype == torch.float32 else "float64"
             torch.set_default_dtype(dtype)
             try:
-                tp, paths = build_ictd(hidden_lmax, max_ell, target_lmax, C, dtype, device)
+                tp, paths = build_ictc(hidden_lmax, max_ell, target_lmax, C, dtype, device)
                 npaths = len(paths)
             except Exception as exc:  # noqa
-                emit(backend="ictd_compiled", package_url=ICTC_URL, package_commit=ICTC_COMMIT,
-                     op_name="ictd_edge_weighted_path_tp_compiled", semantic_equivalence=SEMEQ,
+                emit(backend="ictc_compiled", package_url=ICTC_URL, package_commit=ICTC_COMMIT,
+                     op_name="ictc_edge_weighted_path_tp_compiled", semantic_equivalence=SEMEQ,
                      hidden_lmax=hidden_lmax, max_ell=max_ell, correlation=2, channels=C, edges="",
                      dtype=dname, mode="build", status="error", error=f"build:{exc}"[:300])
                 continue
@@ -115,17 +115,17 @@ def main():
                     try:
                         if device.type == "cuda":
                             torch.cuda.reset_peak_memory_stats(device)
-                        inp, leaves = ictd_make_inputs(tp, hidden_lmax, max_ell, C, E, dtype, device, rg)
+                        inp, leaves = ictc_make_inputs(tp, hidden_lmax, max_ell, C, E, dtype, device, rg)
                         callable_fwd = fwd_c if fwd_c is not None else fwd_eager
                         note = base_note if fwd_c is not None else base_note + "; COMPILE-FAILED fallback eager"
                         # extra warmups for compile graph capture
-                        fwd_ms, bwd_ms = time_compiled(callable_fwd, ictd_loss, inp, leaves, mode,
+                        fwd_ms, bwd_ms = time_compiled(callable_fwd, ictc_loss, inp, leaves, mode,
                                                        args.warmup + 5, args.measured, device)
                         total = fwd_ms + (bwd_ms if rg else 0.0)
                         eps = E / (total / 1e3) if total > 0 else 0.0
                         peak = torch.cuda.max_memory_allocated(device) / 1e9 if device.type == "cuda" else 0.0
-                        emit(backend="ictd_compiled", package_url=ICTC_URL, package_commit=ICTC_COMMIT,
-                             op_name="ictd_edge_weighted_path_tp_compiled", semantic_equivalence=SEMEQ,
+                        emit(backend="ictc_compiled", package_url=ICTC_URL, package_commit=ICTC_COMMIT,
+                             op_name="ictc_edge_weighted_path_tp_compiled", semantic_equivalence=SEMEQ,
                              hidden_lmax=hidden_lmax, max_ell=max_ell, correlation=2, channels=C, edges=E,
                              dtype=dname, mode=mode, warmup=args.warmup + 5, measured=args.measured,
                              forward_ms=round(fwd_ms, 5), backward_ms=round(bwd_ms, 5),
@@ -134,14 +134,14 @@ def main():
                         del inp, leaves; free()
                     except RuntimeError as exc:
                         msg = str(exc); status = "oom" if "out of memory" in msg.lower() else "error"
-                        emit(backend="ictd_compiled", package_url=ICTC_URL, package_commit=ICTC_COMMIT,
-                             op_name="ictd_edge_weighted_path_tp_compiled", semantic_equivalence=SEMEQ,
+                        emit(backend="ictc_compiled", package_url=ICTC_URL, package_commit=ICTC_COMMIT,
+                             op_name="ictc_edge_weighted_path_tp_compiled", semantic_equivalence=SEMEQ,
                              hidden_lmax=hidden_lmax, max_ell=max_ell, correlation=2, channels=C, edges=E,
                              dtype=dname, mode=mode, status=status, error=f"{type(exc).__name__}:{msg}"[:300],
                              notes=base_note); free()
                     except Exception as exc:  # noqa
-                        emit(backend="ictd_compiled", package_url=ICTC_URL, package_commit=ICTC_COMMIT,
-                             op_name="ictd_edge_weighted_path_tp_compiled", semantic_equivalence=SEMEQ,
+                        emit(backend="ictc_compiled", package_url=ICTC_URL, package_commit=ICTC_COMMIT,
+                             op_name="ictc_edge_weighted_path_tp_compiled", semantic_equivalence=SEMEQ,
                              hidden_lmax=hidden_lmax, max_ell=max_ell, correlation=2, channels=C, edges=E,
                              dtype=dname, mode=mode, status="error", error=f"{type(exc).__name__}:{exc}"[:300],
                              notes=base_note); free()

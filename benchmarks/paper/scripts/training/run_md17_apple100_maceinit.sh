@@ -27,7 +27,7 @@ LOSS="${LOSS:-mse}"
 EPOCHS="${EPOCHS:-100}"
 BATCH_SIZE="${BATCH_SIZE:-16}"
 SEEDS_CSV="${SEEDS:-20260616,20260617,20260618}"
-MODES_CSV="${MODES:-ictd_bridge_u_eager,ictd_bridge_u_makefx,ictd_cueq_makefx,mace_e3nn,mace_cueq}"
+MODES_CSV="${MODES:-ictc_bridge_u_eager,ictc_bridge_u_makefx,ictc_cueq_makefx,mace_e3nn,mace_cueq}"
 
 CHANNELS="${CHANNELS:-64}"
 HIDDEN_LMAX="${HIDDEN_LMAX:-1}"
@@ -104,7 +104,7 @@ run_logged() {
   fi
 }
 
-ictd_common_flags() {
+ictc_common_flags() {
   local backend="$1"
   shift
   printf '%s\n' \
@@ -134,16 +134,16 @@ for raw_seed in "${SEEDS_ARR[@]}"; do
     mode="$(echo "${raw_mode}" | xargs)"
     job="revised_ethanol_${mode}_seed${seed}_epochs${EPOCHS}"
     case "${mode}" in
-      ictd_bridge_u_eager)
-        mapfile -t flags < <(ictd_common_flags ictd-bridge-u --seed "${seed}" --checkpoint "${OUT}/checkpoints/${job}.pth" --log-interval 200)
+      ictc_bridge_u_eager)
+        mapfile -t flags < <(ictc_common_flags ictd-bridge-u --seed "${seed}" --checkpoint "${OUT}/checkpoints/${job}.pth" --log-interval 200)
         run_logged "${job}" env PYTHONPATH="${REPO}:${MACE}:${PYTHONPATH:-}" "${PY}" -m mace_ictc.cli.train "${flags[@]}"
         ;;
-      ictd_bridge_u_makefx)
-        mapfile -t flags < <(ictd_common_flags ictd-bridge-u --seed "${seed}" --train-makefx-compile --makefx-buckets 4 --pad-nodes-to-max --pad-edges-to-max --checkpoint "${OUT}/checkpoints/${job}.pth" --log-interval 200)
+      ictc_bridge_u_makefx)
+        mapfile -t flags < <(ictc_common_flags ictd-bridge-u --seed "${seed}" --train-makefx-compile --makefx-buckets 4 --pad-nodes-to-max --pad-edges-to-max --checkpoint "${OUT}/checkpoints/${job}.pth" --log-interval 200)
         run_logged "${job}" env PYTHONPATH="${REPO}:${MACE}:${PYTHONPATH:-}" "${PY}" -m mace_ictc.cli.train "${flags[@]}"
         ;;
-      ictd_cueq_makefx)
-        mapfile -t flags < <(ictd_common_flags cueq --seed "${seed}" --train-makefx-compile --makefx-buckets 4 --pad-nodes-to-max --pad-edges-to-max --checkpoint "${OUT}/checkpoints/${job}.pth" --log-interval 200)
+      ictc_cueq_makefx)
+        mapfile -t flags < <(ictc_common_flags cueq --seed "${seed}" --train-makefx-compile --makefx-buckets 4 --pad-nodes-to-max --pad-edges-to-max --checkpoint "${OUT}/checkpoints/${job}.pth" --log-interval 200)
         run_logged "${job}" env PYTHONPATH="${REPO}:${MACE}:${PYTHONPATH:-}" "${PY}" -m mace_ictc.cli.train "${flags[@]}"
         ;;
       mace_e3nn)

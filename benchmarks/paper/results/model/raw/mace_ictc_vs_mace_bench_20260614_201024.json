@@ -95,7 +95,7 @@
     },
     {
       "task": "train",
-      "mode": "mace_ictd_bridge_u_eager",
+      "mode": "mace_ictc_bridge_u_eager",
       "atoms": 512,
       "hidden_lmax": 1,
       "max_ell": 1,
@@ -113,7 +113,7 @@
     },
     {
       "task": "train",
-      "mode": "mace_ictd_bridge_u_makefx_train",
+      "mode": "mace_ictc_bridge_u_makefx_train",
       "atoms": 512,
       "hidden_lmax": 1,
       "max_ell": 1,
@@ -131,7 +131,7 @@
     },
     {
       "task": "inference",
-      "mode": "mace_ictd_bridge_u_eager",
+      "mode": "mace_ictc_bridge_u_eager",
       "atoms": 512,
       "hidden_lmax": 1,
       "max_ell": 1,
@@ -149,7 +149,7 @@
     },
     {
       "task": "inference",
-      "mode": "mace_ictd_bridge_u_aoti",
+      "mode": "mace_ictc_bridge_u_aoti",
       "atoms": 512,
       "hidden_lmax": 1,
       "max_ell": 1,
@@ -160,14 +160,14 @@
       "speedup_vs_mace_e3nn": "7.47998",
       "loss": "",
       "cache_entries": "",
-      "artifact": "/tmp/mace_ictd_bench_channels64_fullgrid/aoti_packages/bridge_u_l1_e1_n512.pt2",
+      "artifact": "/tmp/mace_ictc_bench_channels64_fullgrid/aoti_packages/bridge_u_l1_e1_n512.pt2",
       "note": "",
       "error_type": "",
       "error": ""
     },
     {
       "task": "train",
-      "mode": "mace_ictd_cueq_product_eager",
+      "mode": "mace_ictc_cueq_product_eager",
       "atoms": 512,
       "hidden_lmax": 1,
       "max_ell": 1,
@@ -185,7 +185,7 @@
     },
     {
       "task": "train",
-      "mode": "mace_ictd_cueq_product_makefx_train",
+      "mode": "mace_ictc_cueq_product_makefx_train",
       "atoms": 512,
       "hidden_lmax": 1,
       "max_ell": 1,
@@ -203,7 +203,7 @@
     },
     {
       "task": "inference",
-      "mode": "mace_ictd_cueq_product_eager",
+      "mode": "mace_ictc_cueq_product_eager",
       "atoms": 512,
       "hidden_lmax": 1,
       "max_ell": 1,
@@ -221,7 +221,7 @@
     },
     {
       "task": "inference",
-      "mode": "mace_ictd_cueq_product_aoti",
+      "mode": "mace_ictc_cueq_product_aoti",
       "atoms": 512,
       "hidden_lmax": 1,
       "max_ell": 1,
@@ -232,7 +232,7 @@
       "speedup_vs_mace_e3nn": "5.08389",
       "loss": "",
       "cache_entries": "",
-      "artifact": "/tmp/mace_ictd_bench_channels64_fullgrid/aoti_packages/cueq_product_l1_e1_n512.pt2",
+      "artifact": "/tmp/mace_ictc_bench_channels64_fullgrid/aoti_packages/cueq_product_l1_e1_n512.pt2",
       "note": "",
       "error_type": "",
       "error": ""
@@ -311,7 +311,7 @@
     },
     {
       "task": "train",
-      "mode": "mace_ictd_bridge_u_eager",
+      "mode": "mace_ictc_bridge_u_eager",
       "atoms": 512,
       "hidden_lmax": 2,
       "max_ell": 2,
@@ -329,7 +329,7 @@
     },
     {
       "task": "train",
-      "mode": "mace_ictd_bridge_u_makefx_train",
+      "mode": "mace_ictc_bridge_u_makefx_train",
       "atoms": 512,
       "hidden_lmax": 2,
       "max_ell": 2,
@@ -347,7 +347,7 @@
     },
     {
       "task": "inference",
-      "mode": "mace_ictd_bridge_u_eager",
+      "mode": "mace_ictc_bridge_u_eager",
       "atoms": 512,
       "hidden_lmax": 2,
       "max_ell": 2,
@@ -365,7 +365,7 @@
     },
     {
       "task": "inference",
-      "mode": "mace_ictd_bridge_u_aoti",
+      "mode": "mace_ictc_bridge_u_aoti",
       "atoms": 512,
       "hidden_lmax": 2,
       "max_ell": 2,
@@ -376,14 +376,14 @@
       "speedup_vs_mace_e3nn": "9.09551",
       "loss": "",
       "cache_entries": "",
-      "artifact": "/tmp/mace_ictd_bench_channels64_fullgrid/aoti_packages/bridge_u_l2_e2_n512.pt2",
+      "artifact": "/tmp/mace_ictc_bench_channels64_fullgrid/aoti_packages/bridge_u_l2_e2_n512.pt2",
       "note": "",
       "error_type": "",
       "error": ""
     },
     {
       "task": "train",
-      "mode": "mace_ictd_cueq_product_eager",
+      "mode": "mace_ictc_cueq_product_eager",
       "atoms": 512,
       "hidden_lmax": 2,
       "max_ell": 2,
@@ -401,7 +401,7 @@
     },
     {
       "task": "train",
-      "mode": "mace_ictd_cueq_product_makefx_train",
+      "mode": "mace_ictc_cueq_product_makefx_train",
       "atoms": 512,
       "hidden_lmax": 2,
       "max_ell": 2,
@@ -419,7 +419,7 @@
     },
     {
       "task": "inference",
-      "mode": "mace_ictd_cueq_product_eager",
+      "mode": "mace_ictc_cueq_product_eager",
       "atoms": 512,
       "hidden_lmax": 2,
       "max_ell": 2,
@@ -437,7 +437,7 @@
     },
     {
       "task": "inference",
-      "mode": "mace_ictd_cueq_product_aoti",
+      "mode": "mace_ictc_cueq_product_aoti",
       "atoms": 512,
       "hidden_lmax": 2,
       "max_ell": 2,
@@ -448,7 +448,7 @@
       "speedup_vs_mace_e3nn": "8.19538",
       "loss": "",
       "cache_entries": "",
-      "artifact": "/tmp/mace_ictd_bench_channels64_fullgrid/aoti_packages/cueq_product_l2_e2_n512.pt2",
+      "artifact": "/tmp/mace_ictc_bench_channels64_fullgrid/aoti_packages/cueq_product_l2_e2_n512.pt2",
       "note": "",
       "error_type": "",
       "error": ""
@@ -527,7 +527,7 @@
     },
     {
       "task": "train",
-      "mode": "mace_ictd_bridge_u_eager",
+      "mode": "mace_ictc_bridge_u_eager",
       "atoms": 1024,
       "hidden_lmax": 1,
       "max_ell": 1,
@@ -545,7 +545,7 @@
     },
     {
       "task": "train",
-      "mode": "mace_ictd_bridge_u_makefx_train",
+      "mode": "mace_ictc_bridge_u_makefx_train",
       "atoms": 1024,
       "hidden_lmax": 1,
       "max_ell": 1,
@@ -563,7 +563,7 @@
     },
     {
       "task": "inference",
-      "mode": "mace_ictd_bridge_u_eager",
+      "mode": "mace_ictc_bridge_u_eager",
       "atoms": 1024,
       "hidden_lmax": 1,
       "max_ell": 1,
@@ -581,7 +581,7 @@
     },
     {
       "task": "inference",
-      "mode": "mace_ictd_bridge_u_aoti",
+      "mode": "mace_ictc_bridge_u_aoti",
       "atoms": 1024,
       "hidden_lmax": 1,
       "max_ell": 1,
@@ -592,14 +592,14 @@
       "speedup_vs_mace_e3nn": "4.65624",
       "loss": "",
       "cache_entries": "",
-      "artifact": "/tmp/mace_ictd_bench_channels64_fullgrid/aoti_packages/bridge_u_l1_e1_n1024.pt2",
+      "artifact": "/tmp/mace_ictc_bench_channels64_fullgrid/aoti_packages/bridge_u_l1_e1_n1024.pt2",
       "note": "",
       "error_type": "",
       "error": ""
     },
     {
       "task": "train",
-      "mode": "mace_ictd_cueq_product_eager",
+      "mode": "mace_ictc_cueq_product_eager",
       "atoms": 1024,
       "hidden_lmax": 1,
       "max_ell": 1,
@@ -617,7 +617,7 @@
     },
     {
       "task": "train",
-      "mode": "mace_ictd_cueq_product_makefx_train",
+      "mode": "mace_ictc_cueq_product_makefx_train",
       "atoms": 1024,
       "hidden_lmax": 1,
       "max_ell": 1,
@@ -635,7 +635,7 @@
     },
     {
       "task": "inference",
-      "mode": "mace_ictd_cueq_product_eager",
+      "mode": "mace_ictc_cueq_product_eager",
       "atoms": 1024,
       "hidden_lmax": 1,
       "max_ell": 1,
@@ -653,7 +653,7 @@
     },
     {
       "task": "inference",
-      "mode": "mace_ictd_cueq_product_aoti",
+      "mode": "mace_ictc_cueq_product_aoti",
       "atoms": 1024,
       "hidden_lmax": 1,
       "max_ell": 1,
@@ -664,7 +664,7 @@
       "speedup_vs_mace_e3nn": "4.8359",
       "loss": "",
       "cache_entries": "",
-      "artifact": "/tmp/mace_ictd_bench_channels64_fullgrid/aoti_packages/cueq_product_l1_e1_n1024.pt2",
+      "artifact": "/tmp/mace_ictc_bench_channels64_fullgrid/aoti_packages/cueq_product_l1_e1_n1024.pt2",
       "note": "",
       "error_type": "",
       "error": ""
@@ -743,7 +743,7 @@
     },
     {
       "task": "train",
-      "mode": "mace_ictd_bridge_u_eager",
+      "mode": "mace_ictc_bridge_u_eager",
       "atoms": 1024,
       "hidden_lmax": 2,
       "max_ell": 2,
@@ -761,7 +761,7 @@
     },
     {
       "task": "train",
-      "mode": "mace_ictd_bridge_u_makefx_train",
+      "mode": "mace_ictc_bridge_u_makefx_train",
       "atoms": 1024,
       "hidden_lmax": 2,
       "max_ell": 2,
@@ -779,7 +779,7 @@
     },
     {
       "task": "inference",
-      "mode": "mace_ictd_bridge_u_eager",
+      "mode": "mace_ictc_bridge_u_eager",
       "atoms": 1024,
       "hidden_lmax": 2,
       "max_ell": 2,
@@ -797,7 +797,7 @@
     },
     {
       "task": "inference",
-      "mode": "mace_ictd_bridge_u_aoti",
+      "mode": "mace_ictc_bridge_u_aoti",
       "atoms": 1024,
       "hidden_lmax": 2,
       "max_ell": 2,
@@ -808,14 +808,14 @@
       "speedup_vs_mace_e3nn": "4.82413",
       "loss": "",
       "cache_entries": "",
-      "artifact": "/tmp/mace_ictd_bench_channels64_fullgrid/aoti_packages/bridge_u_l2_e2_n1024.pt2",
+      "artifact": "/tmp/mace_ictc_bench_channels64_fullgrid/aoti_packages/bridge_u_l2_e2_n1024.pt2",
       "note": "",
       "error_type": "",
       "error": ""
     },
     {
       "task": "train",
-      "mode": "mace_ictd_cueq_product_eager",
+      "mode": "mace_ictc_cueq_product_eager",
       "atoms": 1024,
       "hidden_lmax": 2,
       "max_ell": 2,
@@ -833,7 +833,7 @@
     },
     {
       "task": "train",
-      "mode": "mace_ictd_cueq_product_makefx_train",
+      "mode": "mace_ictc_cueq_product_makefx_train",
       "atoms": 1024,
       "hidden_lmax": 2,
       "max_ell": 2,
@@ -851,7 +851,7 @@
     },
     {
       "task": "inference",
-      "mode": "mace_ictd_cueq_product_eager",
+      "mode": "mace_ictc_cueq_product_eager",
       "atoms": 1024,
       "hidden_lmax": 2,
       "max_ell": 2,
@@ -869,7 +869,7 @@
     },
     {
       "task": "inference",
-      "mode": "mace_ictd_cueq_product_aoti",
+      "mode": "mace_ictc_cueq_product_aoti",
       "atoms": 1024,
       "hidden_lmax": 2,
       "max_ell": 2,
@@ -880,7 +880,7 @@
       "speedup_vs_mace_e3nn": "4.84958",
       "loss": "",
       "cache_entries": "",
-      "artifact": "/tmp/mace_ictd_bench_channels64_fullgrid/aoti_packages/cueq_product_l2_e2_n1024.pt2",
+      "artifact": "/tmp/mace_ictc_bench_channels64_fullgrid/aoti_packages/cueq_product_l2_e2_n1024.pt2",
       "note": "",
       "error_type": "",
       "error": ""
@@ -959,7 +959,7 @@
     },
     {
       "task": "train",
-      "mode": "mace_ictd_bridge_u_eager",
+      "mode": "mace_ictc_bridge_u_eager",
       "atoms": 2048,
       "hidden_lmax": 1,
       "max_ell": 1,
@@ -977,7 +977,7 @@
     },
     {
       "task": "train",
-      "mode": "mace_ictd_bridge_u_makefx_train",
+      "mode": "mace_ictc_bridge_u_makefx_train",
       "atoms": 2048,
       "hidden_lmax": 1,
       "max_ell": 1,
@@ -995,7 +995,7 @@
     },
     {
       "task": "inference",
-      "mode": "mace_ictd_bridge_u_eager",
+      "mode": "mace_ictc_bridge_u_eager",
       "atoms": 2048,
       "hidden_lmax": 1,
       "max_ell": 1,
@@ -1013,7 +1013,7 @@
     },
     {
       "task": "inference",
-      "mode": "mace_ictd_bridge_u_aoti",
+      "mode": "mace_ictc_bridge_u_aoti",
       "atoms": 2048,
       "hidden_lmax": 1,
       "max_ell": 1,
@@ -1024,14 +1024,14 @@
       "speedup_vs_mace_e3nn": "2.61249",
       "loss": "",
       "cache_entries": "",
-      "artifact": "/tmp/mace_ictd_bench_channels64_fullgrid/aoti_packages/bridge_u_l1_e1_n2048.pt2",
+      "artifact": "/tmp/mace_ictc_bench_channels64_fullgrid/aoti_packages/bridge_u_l1_e1_n2048.pt2",
       "note": "",
       "error_type": "",
       "error": ""
     },
     {
       "task": "train",
-      "mode": "mace_ictd_cueq_product_eager",
+      "mode": "mace_ictc_cueq_product_eager",
       "atoms": 2048,
       "hidden_lmax": 1,
       "max_ell": 1,
@@ -1049,7 +1049,7 @@
     },
     {
       "task": "train",
-      "mode": "mace_ictd_cueq_product_makefx_train",
+      "mode": "mace_ictc_cueq_product_makefx_train",
       "atoms": 2048,
       "hidden_lmax": 1,
       "max_ell": 1,
@@ -1067,7 +1067,7 @@
     },
     {
       "task": "inference",
-      "mode": "mace_ictd_cueq_product_eager",
+      "mode": "mace_ictc_cueq_product_eager",
       "atoms": 2048,
       "hidden_lmax": 1,
       "max_ell": 1,
@@ -1085,7 +1085,7 @@
     },
     {
       "task": "inference",
-      "mode": "mace_ictd_cueq_product_aoti",
+      "mode": "mace_ictc_cueq_product_aoti",
       "atoms": 2048,
       "hidden_lmax": 1,
       "max_ell": 1,
@@ -1096,7 +1096,7 @@
       "speedup_vs_mace_e3nn": "3.11417",
       "loss": "",
       "cache_entries": "",
-      "artifact": "/tmp/mace_ictd_bench_channels64_fullgrid/aoti_packages/cueq_product_l1_e1_n2048.pt2",
+      "artifact": "/tmp/mace_ictc_bench_channels64_fullgrid/aoti_packages/cueq_product_l1_e1_n2048.pt2",
       "note": "",
       "error_type": "",
       "error": ""
@@ -1175,7 +1175,7 @@
     },
     {
       "task": "train",
-      "mode": "mace_ictd_bridge_u_eager",
+      "mode": "mace_ictc_bridge_u_eager",
       "atoms": 2048,
       "hidden_lmax": 2,
       "max_ell": 2,
@@ -1193,7 +1193,7 @@
     },
     {
       "task": "train",
-      "mode": "mace_ictd_bridge_u_makefx_train",
+      "mode": "mace_ictc_bridge_u_makefx_train",
       "atoms": 2048,
       "hidden_lmax": 2,
       "max_ell": 2,
@@ -1211,7 +1211,7 @@
     },
     {
       "task": "inference",
-      "mode": "mace_ictd_bridge_u_eager",
+      "mode": "mace_ictc_bridge_u_eager",
       "atoms": 2048,
       "hidden_lmax": 2,
       "max_ell": 2,
@@ -1229,7 +1229,7 @@
     },
     {
       "task": "inference",
-      "mode": "mace_ictd_bridge_u_aoti",
+      "mode": "mace_ictc_bridge_u_aoti",
       "atoms": 2048,
       "hidden_lmax": 2,
       "max_ell": 2,
@@ -1240,14 +1240,14 @@
       "speedup_vs_mace_e3nn": "3.00617",
       "loss": "",
       "cache_entries": "",
-      "artifact": "/tmp/mace_ictd_bench_channels64_fullgrid/aoti_packages/bridge_u_l2_e2_n2048.pt2",
+      "artifact": "/tmp/mace_ictc_bench_channels64_fullgrid/aoti_packages/bridge_u_l2_e2_n2048.pt2",
       "note": "",
       "error_type": "",
       "error": ""
     },
     {
       "task": "train",
-      "mode": "mace_ictd_cueq_product_eager",
+      "mode": "mace_ictc_cueq_product_eager",
       "atoms": 2048,
       "hidden_lmax": 2,
       "max_ell": 2,
@@ -1265,7 +1265,7 @@
     },
     {
       "task": "train",
-      "mode": "mace_ictd_cueq_product_makefx_train",
+      "mode": "mace_ictc_cueq_product_makefx_train",
       "atoms": 2048,
       "hidden_lmax": 2,
       "max_ell": 2,
@@ -1283,7 +1283,7 @@
     },
     {
       "task": "inference",
-      "mode": "mace_ictd_cueq_product_eager",
+      "mode": "mace_ictc_cueq_product_eager",
       "atoms": 2048,
       "hidden_lmax": 2,
       "max_ell": 2,
@@ -1301,7 +1301,7 @@
     },
     {
       "task": "inference",
-      "mode": "mace_ictd_cueq_product_aoti",
+      "mode": "mace_ictc_cueq_product_aoti",
       "atoms": 2048,
       "hidden_lmax": 2,
       "max_ell": 2,
@@ -1312,7 +1312,7 @@
       "speedup_vs_mace_e3nn": "3.27839",
       "loss": "",
       "cache_entries": "",
-      "artifact": "/tmp/mace_ictd_bench_channels64_fullgrid/aoti_packages/cueq_product_l2_e2_n2048.pt2",
+      "artifact": "/tmp/mace_ictc_bench_channels64_fullgrid/aoti_packages/cueq_product_l2_e2_n2048.pt2",
       "note": "",
       "error_type": "",
       "error": ""
@@ -1391,7 +1391,7 @@
     },
     {
       "task": "train",
-      "mode": "mace_ictd_bridge_u_eager",
+      "mode": "mace_ictc_bridge_u_eager",
       "atoms": 4096,
       "hidden_lmax": 1,
       "max_ell": 1,
@@ -1409,7 +1409,7 @@
     },
     {
       "task": "train",
-      "mode": "mace_ictd_bridge_u_makefx_train",
+      "mode": "mace_ictc_bridge_u_makefx_train",
       "atoms": 4096,
       "hidden_lmax": 1,
       "max_ell": 1,
@@ -1427,7 +1427,7 @@
     },
     {
       "task": "inference",
-      "mode": "mace_ictd_bridge_u_eager",
+      "mode": "mace_ictc_bridge_u_eager",
       "atoms": 4096,
       "hidden_lmax": 1,
       "max_ell": 1,
@@ -1445,7 +1445,7 @@
     },
     {
       "task": "inference",
-      "mode": "mace_ictd_bridge_u_aoti",
+      "mode": "mace_ictc_bridge_u_aoti",
       "atoms": 4096,
       "hidden_lmax": 1,
       "max_ell": 1,
@@ -1456,14 +1456,14 @@
       "speedup_vs_mace_e3nn": "1.32435",
       "loss": "",
       "cache_entries": "",
-      "artifact": "/tmp/mace_ictd_bench_channels64_fullgrid/aoti_packages/bridge_u_l1_e1_n4096.pt2",
+      "artifact": "/tmp/mace_ictc_bench_channels64_fullgrid/aoti_packages/bridge_u_l1_e1_n4096.pt2",
       "note": "",
       "error_type": "",
       "error": ""
     },
     {
       "task": "train",
-      "mode": "mace_ictd_cueq_product_eager",
+      "mode": "mace_ictc_cueq_product_eager",
       "atoms": 4096,
       "hidden_lmax": 1,
       "max_ell": 1,
@@ -1481,7 +1481,7 @@
     },
     {
       "task": "train",
-      "mode": "mace_ictd_cueq_product_makefx_train",
+      "mode": "mace_ictc_cueq_product_makefx_train",
       "atoms": 4096,
       "hidden_lmax": 1,
       "max_ell": 1,
@@ -1499,7 +1499,7 @@
     },
     {
       "task": "inference",
-      "mode": "mace_ictd_cueq_product_eager",
+      "mode": "mace_ictc_cueq_product_eager",
       "atoms": 4096,
       "hidden_lmax": 1,
       "max_ell": 1,
@@ -1517,7 +1517,7 @@
     },
     {
       "task": "inference",
-      "mode": "mace_ictd_cueq_product_aoti",
+      "mode": "mace_ictc_cueq_product_aoti",
       "atoms": 4096,
       "hidden_lmax": 1,
       "max_ell": 1,
@@ -1528,7 +1528,7 @@
       "speedup_vs_mace_e3nn": "1.69454",
       "loss": "",
       "cache_entries": "",
-      "artifact": "/tmp/mace_ictd_bench_channels64_fullgrid/aoti_packages/cueq_product_l1_e1_n4096.pt2",
+      "artifact": "/tmp/mace_ictc_bench_channels64_fullgrid/aoti_packages/cueq_product_l1_e1_n4096.pt2",
       "note": "",
       "error_type": "",
       "error": ""
@@ -1607,7 +1607,7 @@
     },
     {
       "task": "train",
-      "mode": "mace_ictd_bridge_u_eager",
+      "mode": "mace_ictc_bridge_u_eager",
       "atoms": 4096,
       "hidden_lmax": 2,
       "max_ell": 2,
@@ -1625,7 +1625,7 @@
     },
     {
       "task": "train",
-      "mode": "mace_ictd_bridge_u_makefx_train",
+      "mode": "mace_ictc_bridge_u_makefx_train",
       "atoms": 4096,
       "hidden_lmax": 2,
       "max_ell": 2,
@@ -1643,7 +1643,7 @@
     },
     {
       "task": "inference",
-      "mode": "mace_ictd_bridge_u_eager",
+      "mode": "mace_ictc_bridge_u_eager",
       "atoms": 4096,
       "hidden_lmax": 2,
       "max_ell": 2,
@@ -1661,7 +1661,7 @@
     },
     {
       "task": "inference",
-      "mode": "mace_ictd_bridge_u_aoti",
+      "mode": "mace_ictc_bridge_u_aoti",
       "atoms": 4096,
       "hidden_lmax": 2,
       "max_ell": 2,
@@ -1672,14 +1672,14 @@
       "speedup_vs_mace_e3nn": "2.34676",
       "loss": "",
       "cache_entries": "",
-      "artifact": "/tmp/mace_ictd_bench_channels64_fullgrid/aoti_packages/bridge_u_l2_e2_n4096.pt2",
+      "artifact": "/tmp/mace_ictc_bench_channels64_fullgrid/aoti_packages/bridge_u_l2_e2_n4096.pt2",
       "note": "",
       "error_type": "",
       "error": ""
     },
     {
       "task": "train",
-      "mode": "mace_ictd_cueq_product_eager",
+      "mode": "mace_ictc_cueq_product_eager",
       "atoms": 4096,
       "hidden_lmax": 2,
       "max_ell": 2,
@@ -1697,7 +1697,7 @@
     },
     {
       "task": "train",
-      "mode": "mace_ictd_cueq_product_makefx_train",
+      "mode": "mace_ictc_cueq_product_makefx_train",
       "atoms": 4096,
       "hidden_lmax": 2,
       "max_ell": 2,
@@ -1715,7 +1715,7 @@
     },
     {
       "task": "inference",
-      "mode": "mace_ictd_cueq_product_eager",
+      "mode": "mace_ictc_cueq_product_eager",
       "atoms": 4096,
       "hidden_lmax": 2,
       "max_ell": 2,
@@ -1733,7 +1733,7 @@
     },
     {
       "task": "inference",
-      "mode": "mace_ictd_cueq_product_aoti",
+      "mode": "mace_ictc_cueq_product_aoti",
       "atoms": 4096,
       "hidden_lmax": 2,
       "max_ell": 2,
@@ -1744,7 +1744,7 @@
       "speedup_vs_mace_e3nn": "2.67044",
       "loss": "",
       "cache_entries": "",
-      "artifact": "/tmp/mace_ictd_bench_channels64_fullgrid/aoti_packages/cueq_product_l2_e2_n4096.pt2",
+      "artifact": "/tmp/mace_ictc_bench_channels64_fullgrid/aoti_packages/cueq_product_l2_e2_n4096.pt2",
       "note": "",
       "error_type": "",
       "error": ""
@@ -1823,7 +1823,7 @@
     },
     {
       "task": "train",
-      "mode": "mace_ictd_bridge_u_eager",
+      "mode": "mace_ictc_bridge_u_eager",
       "atoms": 8192,
       "hidden_lmax": 1,
       "max_ell": 1,
@@ -1841,7 +1841,7 @@
     },
     {
       "task": "train",
-      "mode": "mace_ictd_bridge_u_makefx_train",
+      "mode": "mace_ictc_bridge_u_makefx_train",
       "atoms": 8192,
       "hidden_lmax": 1,
       "max_ell": 1,
@@ -1859,7 +1859,7 @@
     },
     {
       "task": "inference",
-      "mode": "mace_ictd_bridge_u_eager",
+      "mode": "mace_ictc_bridge_u_eager",
       "atoms": 8192,
       "hidden_lmax": 1,
       "max_ell": 1,
@@ -1877,7 +1877,7 @@
     },
     {
       "task": "inference",
-      "mode": "mace_ictd_bridge_u_aoti",
+      "mode": "mace_ictc_bridge_u_aoti",
       "atoms": 8192,
       "hidden_lmax": 1,
       "max_ell": 1,
@@ -1888,14 +1888,14 @@
       "speedup_vs_mace_e3nn": "1.20487",
       "loss": "",
       "cache_entries": "",
-      "artifact": "/tmp/mace_ictd_bench_channels64_fullgrid/aoti_packages/bridge_u_l1_e1_n8192.pt2",
+      "artifact": "/tmp/mace_ictc_bench_channels64_fullgrid/aoti_packages/bridge_u_l1_e1_n8192.pt2",
       "note": "",
       "error_type": "",
       "error": ""
     },
     {
       "task": "train",
-      "mode": "mace_ictd_cueq_product_eager",
+      "mode": "mace_ictc_cueq_product_eager",
       "atoms": 8192,
       "hidden_lmax": 1,
       "max_ell": 1,
@@ -1913,7 +1913,7 @@
     },
     {
       "task": "train",
-      "mode": "mace_ictd_cueq_product_makefx_train",
+      "mode": "mace_ictc_cueq_product_makefx_train",
       "atoms": 8192,
       "hidden_lmax": 1,
       "max_ell": 1,
@@ -1931,7 +1931,7 @@
     },
     {
       "task": "inference",
-      "mode": "mace_ictd_cueq_product_eager",
+      "mode": "mace_ictc_cueq_product_eager",
       "atoms": 8192,
       "hidden_lmax": 1,
       "max_ell": 1,
@@ -1949,7 +1949,7 @@
     },
     {
       "task": "inference",
-      "mode": "mace_ictd_cueq_product_aoti",
+      "mode": "mace_ictc_cueq_product_aoti",
       "atoms": 8192,
       "hidden_lmax": 1,
       "max_ell": 1,
@@ -1960,7 +1960,7 @@
       "speedup_vs_mace_e3nn": "1.4798",
       "loss": "",
       "cache_entries": "",
-      "artifact": "/tmp/mace_ictd_bench_channels64_fullgrid/aoti_packages/cueq_product_l1_e1_n8192.pt2",
+      "artifact": "/tmp/mace_ictc_bench_channels64_fullgrid/aoti_packages/cueq_product_l1_e1_n8192.pt2",
       "note": "",
       "error_type": "",
       "error": ""
@@ -2039,7 +2039,7 @@
     },
     {
       "task": "train",
-      "mode": "mace_ictd_bridge_u_eager",
+      "mode": "mace_ictc_bridge_u_eager",
       "atoms": 8192,
       "hidden_lmax": 2,
       "max_ell": 2,
@@ -2057,7 +2057,7 @@
     },
     {
       "task": "train",
-      "mode": "mace_ictd_bridge_u_makefx_train",
+      "mode": "mace_ictc_bridge_u_makefx_train",
       "atoms": 8192,
       "hidden_lmax": 2,
       "max_ell": 2,
@@ -2075,7 +2075,7 @@
     },
     {
       "task": "inference",
-      "mode": "mace_ictd_bridge_u_eager",
+      "mode": "mace_ictc_bridge_u_eager",
       "atoms": 8192,
       "hidden_lmax": 2,
       "max_ell": 2,
@@ -2093,7 +2093,7 @@
     },
     {
       "task": "inference",
-      "mode": "mace_ictd_bridge_u_aoti",
+      "mode": "mace_ictc_bridge_u_aoti",
       "atoms": 8192,
       "hidden_lmax": 2,
       "max_ell": 2,
@@ -2104,14 +2104,14 @@
       "speedup_vs_mace_e3nn": "2.06032",
       "loss": "",
       "cache_entries": "",
-      "artifact": "/tmp/mace_ictd_bench_channels64_fullgrid/aoti_packages/bridge_u_l2_e2_n8192.pt2",
+      "artifact": "/tmp/mace_ictc_bench_channels64_fullgrid/aoti_packages/bridge_u_l2_e2_n8192.pt2",
       "note": "",
       "error_type": "",
       "error": ""
     },
     {
       "task": "train",
-      "mode": "mace_ictd_cueq_product_eager",
+      "mode": "mace_ictc_cueq_product_eager",
       "atoms": 8192,
       "hidden_lmax": 2,
       "max_ell": 2,
@@ -2129,7 +2129,7 @@
     },
     {
       "task": "train",
-      "mode": "mace_ictd_cueq_product_makefx_train",
+      "mode": "mace_ictc_cueq_product_makefx_train",
       "atoms": 8192,
       "hidden_lmax": 2,
       "max_ell": 2,
@@ -2147,7 +2147,7 @@
     },
     {
       "task": "inference",
-      "mode": "mace_ictd_cueq_product_eager",
+      "mode": "mace_ictc_cueq_product_eager",
       "atoms": 8192,
       "hidden_lmax": 2,
       "max_ell": 2,
@@ -2165,7 +2165,7 @@
     },
     {
       "task": "inference",
-      "mode": "mace_ictd_cueq_product_aoti",
+      "mode": "mace_ictc_cueq_product_aoti",
       "atoms": 8192,
       "hidden_lmax": 2,
       "max_ell": 2,
@@ -2176,7 +2176,7 @@
       "speedup_vs_mace_e3nn": "2.3142",
       "loss": "",
       "cache_entries": "",
-      "artifact": "/tmp/mace_ictd_bench_channels64_fullgrid/aoti_packages/cueq_product_l2_e2_n8192.pt2",
+      "artifact": "/tmp/mace_ictc_bench_channels64_fullgrid/aoti_packages/cueq_product_l2_e2_n8192.pt2",
       "note": "",
       "error_type": "",
       "error": ""

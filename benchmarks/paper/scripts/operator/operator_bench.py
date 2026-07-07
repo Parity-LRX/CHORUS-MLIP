@@ -8,7 +8,7 @@ feature (degrees 0..hidden_lmax, C channels) with the edge angular embedding
 MACE convolution tensor product, evaluated on identical (l1,l2,l3) natural-parity paths
 on all three backends:
 
-  backend=ictd   : mace_ictc EdgeWeightedPathPreservingTensorProduct  (ICTC 2l+1 basis)
+  backend=ictc   : mace_ictc EdgeWeightedPathPreservingTensorProduct  (ICTC 2l+1 basis)
   backend=cartnn : cartnn.o3.TensorProduct driven by cartesian_3j     (full 3**l Cartesian)
   backend=e3nn   : e3nn.o3.TensorProduct driven by wigner_3j          (spherical 2l+1; reference)
   backend=cart3l : local dense diagnostic over native ordered 3**l Cartesian axes
@@ -76,13 +76,13 @@ SEMEQ_ICTC = ("operator-level comparable workload: ICTC conv tensor product in t
               "irreducible-Cartesian (ICTC) basis; same (l1,l2,l3) natural-parity path set "
               "and per-edge weight count as cartnn/e3nn")
 SEMEQ_CARTNN = ("operator-level comparable workload: cartnn ICTP via cartesian_3j in the FULL "
-                "3**l Cartesian layout; same (l1,l2,l3) path set as ictd/e3nn but more numbers "
+                "3**l Cartesian layout; same (l1,l2,l3) path set as ictc/e3nn but more numbers "
                 "per degree-l (3**l vs 2l+1); NOT exact apples-to-apples; no contraction op")
 SEMEQ_E3NN = ("reference: e3nn spherical o3.TensorProduct (wigner_3j, 2l+1) == MACE conv_tp core; "
               "same (l1,l2,l3) path set")
 SEMEQ_CART3L = ("diagnostic: dense native ordered-Cartesian tensor-power baseline with 3**l component "
                 "axes on each TP leg; same (l1,l2,l3) path set and per-edge weight count as "
-                "ictd/e3nn, but random dense component couplings, so it is NOT an equivariant or "
+                "ictc/e3nn, but random dense component couplings, so it is NOT an equivariant or "
                 "numerically matched physical operator")
 SEMEQ_CACE_SYM = ("structural proxy: CACE-style symmetric Cartesian monomial product with "
                   "(l+1)(l+2)/2 degree-l axes and multinomial prefactors; native output degree is "
@@ -117,7 +117,7 @@ def multinomial_pair_prefactor(a: tuple[int, int, int], b: tuple[int, int, int])
 
 
 # ---------------------------------------------------------------- ICTC operator
-def build_ictd(hidden_lmax, max_ell, target_lmax, C, dtype, device):
+def build_ictc(hidden_lmax, max_ell, target_lmax, C, dtype, device):
     paths = build_paths(hidden_lmax, max_ell, target_lmax)
     L = max(hidden_lmax, max_ell, target_lmax)
     tp = EdgeWeightedPathPreservingTensorProduct(
@@ -126,7 +126,7 @@ def build_ictd(hidden_lmax, max_ell, target_lmax, C, dtype, device):
     return tp, paths
 
 
-def ictd_make_inputs(tp, hidden_lmax, max_ell, C, E, dtype, device, rg):
+def ictc_make_inputs(tp, hidden_lmax, max_ell, C, E, dtype, device, rg):
     x1 = {l: torch.randn(E, C, 2 * l + 1, device=device, dtype=dtype, requires_grad=rg)
           for l in range(hidden_lmax + 1)}
     edge = {l: torch.randn(E, 1, 2 * l + 1, device=device, dtype=dtype)
@@ -136,12 +136,12 @@ def ictd_make_inputs(tp, hidden_lmax, max_ell, C, E, dtype, device, rg):
     return (x1, edge, gates), leaves
 
 
-def ictd_forward(tp, inp):
+def ictc_forward(tp, inp):
     x1, edge, gates = inp
     return tp(x1, edge, gates)
 
 
-def ictd_loss(out):
+def ictc_loss(out):
     return sum(v.pow(2).sum() for v in out.values())
 
 
@@ -379,7 +379,7 @@ def main():
     ap.add_argument("--channels", default="32,64,128")
     ap.add_argument("--edges", default="10000,50000,100000,500000")
     ap.add_argument("--dtypes", default="float32,float64")
-    ap.add_argument("--backends", default="e3nn,cartnn,ictd,cace_sym,cart3l")
+    ap.add_argument("--backends", default="e3nn,cartnn,ictc,cace_sym,cart3l")
     ap.add_argument("--warmup", type=int, default=20)
     ap.add_argument("--measured", type=int, default=100)
     ap.add_argument("--slow-ms", type=float, default=15.0,
@@ -395,10 +395,16 @@ def main():
     channels = [int(x) for x in args.channels.split(",")]
     edges_list = [int(x) for x in args.edges.split(",")]
     dtypes = [{"float32": torch.float32, "float64": torch.float64}[d] for d in args.dtypes.split(",")]
-    backends = args.backends.split(",")
+    backends = []
+    for raw_backend in args.backends.split(","):
+        backend = raw_backend.strip()
+        if not backend:
+            continue
+        if backend not in backends:
+            backends.append(backend)
 
     rows = []
-    csv_path = os.path.join(args.out, "operator_cartnn_vs_ictd.csv")
+    csv_path = os.path.join(args.out, "operator_cartnn_vs_ictc.csv")
     f = open(csv_path, "w", newline="")
     writer = csv.DictWriter(f, fieldnames=CSV_COLUMNS)
     writer.writeheader(); f.flush()
@@ -414,7 +420,7 @@ def main():
               f"mem={row['peak_mem_gb']} {row['error']}", flush=True)
 
     meta = dict(
-        ictd=(ICTC_URL, ICTC_COMMIT, "ictd_edge_weighted_path_tp", SEMEQ_ICTC),
+        ictc=(ICTC_URL, ICTC_COMMIT, "ictc_edge_weighted_path_tp", SEMEQ_ICTC),
         cartnn=(CARTNN_URL, CARTNN_COMMIT, "cartnn_cartesian_tensor_product", SEMEQ_CARTNN),
         e3nn=(E3NN_URL, E3NN_COMMIT, "e3nn_channelwise_tensor_product", SEMEQ_E3NN),
         cart3l=(ICTC_URL, ICTC_COMMIT, "native_cartesian_3l_dense_tp_diagnostic", SEMEQ_CART3L),
@@ -435,9 +441,9 @@ def main():
                 built = {}
                 for be in backends:
                     try:
-                        if be == "ictd":
-                            tp, _ = build_ictd(hidden_lmax, max_ell, target_lmax, C, dtype, device)
-                            built[be] = ("ictd", tp, None, None, "")
+                        if be == "ictc":
+                            tp, _ = build_ictc(hidden_lmax, max_ell, target_lmax, C, dtype, device)
+                            built[be] = ("ictc", tp, None, None, "")
                         elif be == "cart3l":
                             op, _ = build_cart3l(hidden_lmax, max_ell, target_lmax, C, dtype, device)
                             built[be] = (
@@ -487,9 +493,9 @@ def main():
                             try:
                                 if device.type == "cuda":
                                     torch.cuda.reset_peak_memory_stats(device)
-                                if kind == "ictd":
-                                    inp, leaves = ictd_make_inputs(tp, hidden_lmax, max_ell, C, E, dtype, device, rg)
-                                    fwd_fn, loss_fn = (lambda i: ictd_forward(tp, i)), ictd_loss
+                                if kind == "ictc":
+                                    inp, leaves = ictc_make_inputs(tp, hidden_lmax, max_ell, C, E, dtype, device, rg)
+                                    fwd_fn, loss_fn = (lambda i: ictc_forward(tp, i)), ictc_loss
                                 elif kind == "cart3l":
                                     inp, leaves = cart3l_make_inputs(tp, hidden_lmax, max_ell, C, E, dtype, device, rg)
                                     fwd_fn, loss_fn = (lambda i: cart3l_forward(tp, i)), cart3l_loss

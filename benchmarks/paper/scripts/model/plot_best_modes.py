@@ -16,9 +16,10 @@ import matplotlib.pyplot as plt
 from matplotlib.ticker import FuncFormatter
 
 
-ROOT = Path(__file__).resolve().parent
-RAW = ROOT / "raw"
-FIG = ROOT / "figures"
+PAPER = Path(__file__).resolve().parents[2]
+RESULTS = PAPER / "results" / "model"
+RAW = RESULTS / "raw"
+FIG = PAPER / "figures"
 CHANNELS = 64
 
 TRAIN_MODES = {
@@ -196,7 +197,8 @@ def select_fixed_config(rows: list[dict[str, str]], hidden_lmax: str, max_ell: s
 
 
 def write_selected(rows: list[dict[str, str]], filename: str) -> Path:
-    out = ROOT / filename
+    RESULTS.mkdir(parents=True, exist_ok=True)
+    out = RESULTS / filename
     fields = [
         "task",
         "mode",

@@ -9,10 +9,10 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
-ORDER = ["ictd_eager", "ictd_compile", "ictd_aoti", "e3nn", "cartnn"]
-COLOR = {"ictd_eager": "#9ecae1", "ictd_compile": "#1f77b4", "ictd_aoti": "#08306b",
+ORDER = ["ictc_eager", "ictc_compile", "ictc_aoti", "e3nn", "cartnn"]
+COLOR = {"ictc_eager": "#9ecae1", "ictc_compile": "#1f77b4", "ictc_aoti": "#08306b",
          "e3nn": "#888888", "cartnn": "#d62728"}
-LABEL = {"ictd_eager": "ICTC eager", "ictd_compile": "ICTC torch.compile", "ictd_aoti": "ICTC AOTI",
+LABEL = {"ictc_eager": "ICTC eager", "ictc_compile": "ICTC torch.compile", "ictc_aoti": "ICTC AOTI",
          "e3nn": "e3nn (fused ref)", "cartnn": "cartnn (fused)"}
 
 
@@ -56,7 +56,7 @@ def main():
             ax.legend(fontsize=8, ncol=2)
         # speedup vs e3nn (e3nn_time / backend_time; >1 = faster than e3nn)
         ax2 = axes[1][j]
-        for be in ("ictd_eager", "ictd_compile", "ictd_aoti", "cartnn"):
+        for be in ("ictc_eager", "ictc_compile", "ictc_aoti", "cartnn"):
             ys = []
             for c in configs:
                 e = val[(dt, c)].get("e3nn"); v = val[(dt, c)].get(be)

@@ -212,7 +212,7 @@ def mace_data(graph: GraphBatch) -> dict[str, torch.Tensor]:
     }
 
 
-def ictd_batch_tuple(graph: GraphBatch) -> tuple[torch.Tensor, ...]:
+def ictc_batch_tuple(graph: GraphBatch) -> tuple[torch.Tensor, ...]:
     return (
         graph.pos,
         graph.atomic_numbers,
@@ -278,7 +278,7 @@ def build_native_mace(
     return model.to(device=device, dtype=dtype)
 
 
-def build_ictd(
+def build_ictc(
     *,
     product_backend: str,
     cfg: AngularConfig,
@@ -374,7 +374,7 @@ def benchmark_native_training(
     return ms, last_loss
 
 
-def benchmark_ictd_training(
+def benchmark_ictc_training(
     model: torch.nn.Module,
     graph: GraphBatch,
     *,
@@ -386,7 +386,7 @@ def benchmark_ictd_training(
     makefx: bool,
     require_makefx: bool,
 ) -> tuple[float, float, int, float]:
-    batch = ictd_batch_tuple(graph)
+    batch = ictc_batch_tuple(graph)
     trainer = ForceTrainer(
         model,
         [batch],
@@ -432,7 +432,7 @@ def benchmark_ictd_training(
     return ms, last_loss, cache_size if makefx else 0, compile_s
 
 
-def ictd_force_fn(model: torch.nn.Module, graph: GraphBatch, *, training: bool = False):
+def ictc_force_fn(model: torch.nn.Module, graph: GraphBatch, *, training: bool = False):
     def run():
         pos = graph.pos.detach().requires_grad_(True)
         out = model(
@@ -451,7 +451,7 @@ def ictd_force_fn(model: torch.nn.Module, graph: GraphBatch, *, training: bool =
     return run
 
 
-def benchmark_ictd_inference_eager(
+def benchmark_ictc_inference_eager(
     model: torch.nn.Module,
     graph: GraphBatch,
     *,
@@ -460,7 +460,7 @@ def benchmark_ictd_inference_eager(
     iters: int,
 ) -> float:
     model.eval()
-    fn = ictd_force_fn(model, graph, training=False)
+    fn = ictc_force_fn(model, graph, training=False)
     return time_callable(fn, device=device, warmup=warmup, iters=iters)
 
 
@@ -483,7 +483,7 @@ def benchmark_native_inference(
     return time_callable(fn, device=device, warmup=warmup, iters=iters)
 
 
-def benchmark_ictd_inference_aoti(
+def benchmark_ictc_inference_aoti(
     model: torch.nn.Module,
     graph: GraphBatch,
     *,
@@ -788,7 +788,7 @@ def run_config(args: argparse.Namespace, cfg: AngularConfig, rows: list[dict[str
         ("mace_ictc_bridge_u_makefx_train", True),
     ]:
         try:
-            model = build_ictd(
+            model = build_ictc(
                 product_backend="ictd-bridge-u",
                 cfg=cfg,
                 channels=args.channels,
@@ -798,7 +798,7 @@ def run_config(args: argparse.Namespace, cfg: AngularConfig, rows: list[dict[str
                 device=device,
                 use_reduced_cg=True,
             )
-            ms, loss, cache_entries, compile_s = benchmark_ictd_training(
+            ms, loss, cache_entries, compile_s = benchmark_ictc_training(
                 model,
                 graph,
                 device=device,
@@ -826,7 +826,7 @@ def run_config(args: argparse.Namespace, cfg: AngularConfig, rows: list[dict[str
                 traceback.print_exc()
 
     try:
-        model = build_ictd(
+        model = build_ictc(
             product_backend="ictd-bridge-u",
             cfg=cfg,
             channels=args.channels,
@@ -836,7 +836,7 @@ def run_config(args: argparse.Namespace, cfg: AngularConfig, rows: list[dict[str
             device=device,
             use_reduced_cg=True,
         )
-        ms = benchmark_ictd_inference_eager(
+        ms = benchmark_ictc_inference_eager(
             model,
             graph,
             device=device,
@@ -851,7 +851,7 @@ def run_config(args: argparse.Namespace, cfg: AngularConfig, rows: list[dict[str
 
     if not args.no_aoti:
         try:
-            model = build_ictd(
+            model = build_ictc(
                 product_backend="ictd-bridge-u",
                 cfg=cfg,
                 channels=args.channels,
@@ -861,7 +861,7 @@ def run_config(args: argparse.Namespace, cfg: AngularConfig, rows: list[dict[str
                 device=device,
                 use_reduced_cg=True,
             )
-            ms, compile_s, artifact = benchmark_ictd_inference_aoti(
+            ms, compile_s, artifact = benchmark_ictc_inference_aoti(
                 model,
                 graph,
                 device=device,
@@ -887,7 +887,7 @@ def run_config(args: argparse.Namespace, cfg: AngularConfig, rows: list[dict[str
                 traceback.print_exc()
 
     pure_u_supported = cfg.hidden_lmax == cfg.max_ell and cfg.hidden_lmax <= 3
-    pure_u_note = "ictd-pure-u supports only hidden_lmax == max_ell and lmax <= 3 in this build"
+    pure_u_note = "ICTC pure-U diagnostic backend (`ictd-pure-u`) supports only hidden_lmax == max_ell and lmax <= 3 in this build"
 
     if args.include_pure_u and pure_u_supported:
         for task_mode, makefx in [
@@ -895,7 +895,7 @@ def run_config(args: argparse.Namespace, cfg: AngularConfig, rows: list[dict[str
             ("mace_ictc_pure_u_makefx_train", True),
         ]:
             try:
-                model = build_ictd(
+                model = build_ictc(
                     product_backend="ictd-pure-u",
                     cfg=cfg,
                     channels=args.channels,
@@ -905,7 +905,7 @@ def run_config(args: argparse.Namespace, cfg: AngularConfig, rows: list[dict[str
                     device=device,
                     use_reduced_cg=False,
                 )
-                ms, loss, cache_entries, compile_s = benchmark_ictd_training(
+                ms, loss, cache_entries, compile_s = benchmark_ictc_training(
                     model,
                     graph,
                     device=device,
@@ -933,7 +933,7 @@ def run_config(args: argparse.Namespace, cfg: AngularConfig, rows: list[dict[str
                     traceback.print_exc()
 
         try:
-            model = build_ictd(
+            model = build_ictc(
                 product_backend="ictd-pure-u",
                 cfg=cfg,
                 channels=args.channels,
@@ -943,7 +943,7 @@ def run_config(args: argparse.Namespace, cfg: AngularConfig, rows: list[dict[str
                 device=device,
                 use_reduced_cg=False,
             )
-            ms = benchmark_ictd_inference_eager(
+            ms = benchmark_ictc_inference_eager(
                 model,
                 graph,
                 device=device,
@@ -958,7 +958,7 @@ def run_config(args: argparse.Namespace, cfg: AngularConfig, rows: list[dict[str
 
         if not args.no_aoti:
             try:
-                model = build_ictd(
+                model = build_ictc(
                     product_backend="ictd-pure-u",
                     cfg=cfg,
                     channels=args.channels,
@@ -968,7 +968,7 @@ def run_config(args: argparse.Namespace, cfg: AngularConfig, rows: list[dict[str
                     device=device,
                     use_reduced_cg=False,
                 )
-                ms, compile_s, artifact = benchmark_ictd_inference_aoti(
+                ms, compile_s, artifact = benchmark_ictc_inference_aoti(
                     model,
                     graph,
                     device=device,
@@ -1006,7 +1006,7 @@ def run_config(args: argparse.Namespace, cfg: AngularConfig, rows: list[dict[str
         ("mace_ictc_cueq_product_makefx_train", True),
     ]:
         try:
-            model = build_ictd(
+            model = build_ictc(
                 product_backend="cueq",
                 cfg=cfg,
                 channels=args.channels,
@@ -1016,7 +1016,7 @@ def run_config(args: argparse.Namespace, cfg: AngularConfig, rows: list[dict[str
                 device=device,
                 use_reduced_cg=True,
             )
-            ms, loss, cache_entries, compile_s = benchmark_ictd_training(
+            ms, loss, cache_entries, compile_s = benchmark_ictc_training(
                 model,
                 graph,
                 device=device,
@@ -1044,7 +1044,7 @@ def run_config(args: argparse.Namespace, cfg: AngularConfig, rows: list[dict[str
                 traceback.print_exc()
 
     try:
-        model = build_ictd(
+        model = build_ictc(
             product_backend="cueq",
             cfg=cfg,
             channels=args.channels,
@@ -1054,7 +1054,7 @@ def run_config(args: argparse.Namespace, cfg: AngularConfig, rows: list[dict[str
             device=device,
             use_reduced_cg=True,
         )
-        ms = benchmark_ictd_inference_eager(
+        ms = benchmark_ictc_inference_eager(
             model,
             graph,
             device=device,
@@ -1069,7 +1069,7 @@ def run_config(args: argparse.Namespace, cfg: AngularConfig, rows: list[dict[str
 
     if not args.no_aoti:
         try:
-            model = build_ictd(
+            model = build_ictc(
                 product_backend="cueq",
                 cfg=cfg,
                 channels=args.channels,
@@ -1079,7 +1079,7 @@ def run_config(args: argparse.Namespace, cfg: AngularConfig, rows: list[dict[str
                 device=device,
                 use_reduced_cg=True,
             )
-            ms, compile_s, artifact = benchmark_ictd_inference_aoti(
+            ms, compile_s, artifact = benchmark_ictc_inference_aoti(
                 model,
                 graph,
                 device=device,
@@ -1125,7 +1125,11 @@ def build_arg_parser() -> argparse.ArgumentParser:
     p.add_argument("--infer-warmup", type=int, default=2)
     p.add_argument("--infer-iters", type=int, default=10)
     p.add_argument("--no-aoti", action="store_true", help="skip MACE-ICTC AOTI inference rows")
-    p.add_argument("--include-pure-u", action="store_true", help="also benchmark ictd-pure-u diagnostic backend")
+    p.add_argument(
+        "--include-pure-u",
+        action="store_true",
+        help="also benchmark the ICTC pure-U diagnostic backend (legacy key: ictd-pure-u)",
+    )
     p.add_argument("--out-dir", default=str(Path(tempfile.gettempdir()) / "mace_ictc_bench"))
     p.add_argument("--verbose-errors", action="store_true")
     return p

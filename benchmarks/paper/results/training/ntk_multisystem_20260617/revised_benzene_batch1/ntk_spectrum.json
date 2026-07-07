@@ -5,7 +5,7 @@
   ],
   "batch_index": 1,
   "batch_size": 2,
-  "data_dir": "/tmp/mace_ictd_public_md17/revised_benzene",
+  "data_dir": "/tmp/mace_ictc_public_md17/revised_benzene",
   "dtype": "float64",
   "e0_values": [
     -525.5414002254565,
@@ -13,7 +13,7 @@
   ],
   "max_force_components": 24,
   "modes": {
-    "ictd_bridge_u": {
+    "ictc_bridge_u": {
       "eigvals": [
         1.2188995132549654e-11,
         1.3539340776705332e-08,
@@ -56,7 +56,7 @@
       "train_lr_times_lambda_max": 5.9749824179087337e-05,
       "train_lr_times_lambda_min_pos": 1.2188995132549654e-14
     },
-    "ictd_cueq": {
+    "ictc_cueq": {
       "eigvals": [
         1.2188992508093114e-11,
         1.3539340776077595e-08,

@@ -21,7 +21,7 @@ LOSS="${LOSS:-mse}"
 EPOCHS="${EPOCHS:-300}"
 BATCH_SIZE="${BATCH_SIZE:-16}"
 SEEDS_CSV="${SEEDS:-20260616,20260617,20260618}"
-MODES_CSV="${MODES:-ictd_bridge_u_eager,ictd_bridge_u_makefx,ictd_cueq_makefx,mace_e3nn,mace_cueq}"
+MODES_CSV="${MODES:-ictc_bridge_u_eager,ictc_bridge_u_makefx,ictc_cueq_makefx,mace_e3nn,mace_cueq}"
 
 CHANNELS="${CHANNELS:-64}"
 HIDDEN_LMAX="${HIDDEN_LMAX:-1}"
@@ -132,7 +132,7 @@ print(f"copied {src} -> {dst}")
 PY
 }
 
-ictd_common_flags() {
+ictc_common_flags() {
   local backend="$1"
   shift
   printf '%s\n' \
@@ -163,22 +163,22 @@ for raw_seed in "${SEEDS_ARR[@]}"; do
     old_job="revised_ethanol_${mode}_seed${seed}_epochs100"
     job="revised_ethanol_${mode}_seed${seed}_epochs${EPOCHS}_from100"
     case "${mode}" in
-      ictd_bridge_u_eager)
+      ictc_bridge_u_eager)
         old_ckpt="${OLD_OUT}/checkpoints/${old_job}.pth"
         test -f "${old_ckpt}"
-        mapfile -t flags < <(ictd_common_flags ictd-bridge-u --seed "${seed}" --resume-checkpoint "${old_ckpt}" --resume-training-state --checkpoint "${OUT}/checkpoints/${job}.pth" --log-interval 200)
+        mapfile -t flags < <(ictc_common_flags ictd-bridge-u --seed "${seed}" --resume-checkpoint "${old_ckpt}" --resume-training-state --checkpoint "${OUT}/checkpoints/${job}.pth" --log-interval 200)
         run_logged "${job}" env PYTHONPATH="${REPO}:${MACE}:${PYTHONPATH:-}" "${PY}" -m mace_ictc.cli.train "${flags[@]}"
         ;;
-      ictd_bridge_u_makefx)
+      ictc_bridge_u_makefx)
         old_ckpt="${OLD_OUT}/checkpoints/${old_job}.pth"
         test -f "${old_ckpt}"
-        mapfile -t flags < <(ictd_common_flags ictd-bridge-u --seed "${seed}" --resume-checkpoint "${old_ckpt}" --resume-training-state --train-makefx-compile --makefx-buckets 4 --pad-nodes-to-max --pad-edges-to-max --checkpoint "${OUT}/checkpoints/${job}.pth" --log-interval 200)
+        mapfile -t flags < <(ictc_common_flags ictd-bridge-u --seed "${seed}" --resume-checkpoint "${old_ckpt}" --resume-training-state --train-makefx-compile --makefx-buckets 4 --pad-nodes-to-max --pad-edges-to-max --checkpoint "${OUT}/checkpoints/${job}.pth" --log-interval 200)
         run_logged "${job}" env PYTHONPATH="${REPO}:${MACE}:${PYTHONPATH:-}" "${PY}" -m mace_ictc.cli.train "${flags[@]}"
         ;;
-      ictd_cueq_makefx)
+      ictc_cueq_makefx)
         old_ckpt="${OLD_OUT}/checkpoints/${old_job}.pth"
         test -f "${old_ckpt}"
-        mapfile -t flags < <(ictd_common_flags cueq --seed "${seed}" --resume-checkpoint "${old_ckpt}" --resume-training-state --train-makefx-compile --makefx-buckets 4 --pad-nodes-to-max --pad-edges-to-max --checkpoint "${OUT}/checkpoints/${job}.pth" --log-interval 200)
+        mapfile -t flags < <(ictc_common_flags cueq --seed "${seed}" --resume-checkpoint "${old_ckpt}" --resume-training-state --train-makefx-compile --makefx-buckets 4 --pad-nodes-to-max --pad-edges-to-max --checkpoint "${OUT}/checkpoints/${job}.pth" --log-interval 200)
         run_logged "${job}" env PYTHONPATH="${REPO}:${MACE}:${PYTHONPATH:-}" "${PY}" -m mace_ictc.cli.train "${flags[@]}"
         ;;
       mace_e3nn)

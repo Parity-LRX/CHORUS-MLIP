@@ -27,11 +27,11 @@ LARGE_MD_DIR = REPO / "benchmarks/paper/results/model/md_parity_off23_large_1000
 MODE_LABELS = {
     "mace_e3nn": "MACE e3nn",
     "mace_cueq": "MACE cuEq",
-    "ictd_bridge_u_eager": "ICTC eager",
-    "ictd_bridge_u_makefx": "ICTC compiled",
-    "ictd_cueq_makefx": "ICTC+cuEq compiled",
-    "ictd_bridge_u": "ICTC",
-    "ictd_cueq": "ICTC+cuEq",
+    "ictc_bridge_u_eager": "ICTC eager",
+    "ictc_bridge_u_makefx": "ICTC compiled",
+    "ictc_cueq_makefx": "ICTC+cuEq compiled",
+    "ictc_bridge_u": "ICTC",
+    "ictc_cueq": "ICTC+cuEq",
 }
 
 DATASET_LABELS = {
@@ -111,9 +111,9 @@ def make_training_table() -> None:
     mode_order = [
         "mace_e3nn",
         "mace_cueq",
-        "ictd_bridge_u_eager",
-        "ictd_bridge_u_makefx",
-        "ictd_cueq_makefx",
+        "ictc_bridge_u_eager",
+        "ictc_bridge_u_makefx",
+        "ictc_cueq_makefx",
     ]
     by_key = df.set_index(["mode", "dataset"])
     lines = [
@@ -153,7 +153,7 @@ def make_training_table() -> None:
 def make_ntk_table() -> None:
     df = pd.read_csv(PAPER_ARTIFACT_TRAIN / "ntk_by_system_mode.csv")
     system_order = ["revised_benzene", "revised_ethanol", "revised_aspirin", "cheng_water"]
-    mode_order = ["mace_e3nn", "mace_cueq", "ictd_bridge_u", "ictd_cueq"]
+    mode_order = ["mace_e3nn", "mace_cueq", "ictc_bridge_u", "ictc_cueq"]
     df = df[df["dataset"].isin(system_order)].copy()
     by_key = df.set_index(["mode", "dataset"])
     lines = [
@@ -194,11 +194,15 @@ def load_md_case(case: str) -> dict[str, np.ndarray | dict | str]:
         directory = SMALL_MD_DIR
         suffix = case
     native = np.load(directory / f"native_float64_{suffix}.npz")
-    ictd = np.load(directory / f"ictd_float64_{suffix}.npz")
-    on_native = np.load(directory / f"ictd_on_native_float64_{suffix}.npz")
+    ictc = np.load(directory / f"ictc_float64_{suffix}.npz")
+    on_native = np.load(directory / f"ictc_on_native_float64_{suffix}.npz")
     with (directory / f"compare_float64_{suffix}.json").open() as handle:
         summary = json.load(handle)
-    return {"case": case, "native": native, "ictd": ictd, "on_native": on_native, "summary": summary}
+    return {"case": case, "native": native, "ictc": ictc, "on_native": on_native, "summary": summary}
+
+
+def summary_value(summary: dict, key: str):
+    return summary[key]
 
 
 def frame_steps(z: np.lib.npyio.NpzFile, summary: dict) -> np.ndarray:
@@ -213,7 +217,7 @@ def make_md_records() -> tuple[pd.DataFrame, pd.DataFrame]:
     for case in CASE_ORDER:
         data = load_md_case(case)
         native = data["native"]
-        ictd = data["ictd"]
+        ictc = data["ictc"]
         on_native = data["on_native"]
         summary = data["summary"]
         steps = frame_steps(native, summary)
@@ -221,18 +225,18 @@ def make_md_records() -> tuple[pd.DataFrame, pd.DataFrame]:
         dt_fs = float(summary["dt_fs"])
         time_ps = steps * dt_fs / 1000.0
         native_e = native["energies"]
-        ictd_e = ictd["energies"]
+        ictc_e = ictc["energies"]
         on_native_e = on_native["energies"]
         native_f = native["forces"]
         on_native_f = on_native["forces"]
-        pos_rms = np.sqrt(np.mean((native["positions"] - ictd["positions"]) ** 2, axis=(1, 2)))
-        vel_rms = np.sqrt(np.mean((native["velocities"] - ictd["velocities"]) ** 2, axis=(1, 2)))
+        pos_rms = np.sqrt(np.mean((native["positions"] - ictc["positions"]) ** 2, axis=(1, 2)))
+        vel_rms = np.sqrt(np.mean((native["velocities"] - ictc["velocities"]) ** 2, axis=(1, 2)))
         force_rms = np.sqrt(np.mean((native_f - on_native_f) ** 2, axis=(1, 2)))
         energy_err_per_atom_mev = np.abs(native_e - on_native_e) / atoms * 1000.0
         native_drift = (native_e - native_e[0]) / atoms * 1000.0
-        ictd_drift = (ictd_e - ictd_e[0]) / atoms * 1000.0
+        ictc_drift = (ictc_e - ictc_e[0]) / atoms * 1000.0
         temp_native = native["temperatures"]
-        temp_ictd = ictd["temperatures"]
+        temp_ictc = ictc["temperatures"]
         for i in range(len(steps)):
             rows.append(
                 {
@@ -242,9 +246,9 @@ def make_md_records() -> tuple[pd.DataFrame, pd.DataFrame]:
                     "step": int(steps[i]),
                     "time_ps": float(time_ps[i]),
                     "native_energy_drift_meV_atom": float(native_drift[i]),
-                    "ictd_energy_drift_meV_atom": float(ictd_drift[i]),
+                    "ictc_energy_drift_meV_atom": float(ictc_drift[i]),
                     "native_temperature_K": float(temp_native[i]),
-                    "ictd_temperature_K": float(temp_ictd[i]),
+                    "ictc_temperature_K": float(temp_ictc[i]),
                     "same_frame_abs_energy_error_meV_atom": float(energy_err_per_atom_mev[i]),
                     "same_frame_force_rms_eV_A": float(force_rms[i]),
                     "independent_position_rms_A": float(pos_rms[i]),
@@ -260,15 +264,15 @@ def make_md_records() -> tuple[pd.DataFrame, pd.DataFrame]:
                 "steps": int(summary["steps"]),
                 "dt_fs": dt_fs,
                 "native_temp_mean_K": float(np.mean(temp_native)),
-                "ictd_temp_mean_K": float(np.mean(temp_ictd)),
+                "ictc_temp_mean_K": float(np.mean(temp_ictc)),
                 "native_energy_drift_final_meV_atom": float(native_drift[-1]),
-                "ictd_energy_drift_final_meV_atom": float(ictd_drift[-1]),
+                "ictc_energy_drift_final_meV_atom": float(ictc_drift[-1]),
                 "same_frame_energy_abs_max_meV_atom": float(np.nanmax(energy_err_per_atom_mev)),
                 "same_frame_force_rms_max_eV_A": float(np.nanmax(force_rms)),
                 "independent_position_rms_max_A": float(np.nanmax(pos_rms)),
                 "independent_velocity_rms_max_A_fs_units": float(np.nanmax(vel_rms)),
                 "native_ms_per_step": float(summary["native_ms_per_step_including_eval"]),
-                "ictd_ms_per_step": float(summary["ictd_ms_per_step_including_eval"]),
+                "ictc_ms_per_step": float(summary_value(summary, "ictc_ms_per_step_including_eval")),
             }
         )
     return pd.DataFrame(rows), pd.DataFrame(summaries)
@@ -353,9 +357,9 @@ def make_md_tables(summary: pd.DataFrame) -> None:
                     f"{int(row['atoms'])}",
                     f"{int(row['recorded_frames'])}",
                     f"${row['native_temp_mean_K']:.2f}$",
-                    f"${row['ictd_temp_mean_K']:.2f}$",
+                    f"${row['ictc_temp_mean_K']:.2f}$",
                     f"${row['native_energy_drift_final_meV_atom']:.3f}$",
-                    f"${row['ictd_energy_drift_final_meV_atom']:.3f}$",
+                    f"${row['ictc_energy_drift_final_meV_atom']:.3f}$",
                 ]
             )
             + r" \\"
@@ -368,7 +372,7 @@ def make_md_tables(summary: pd.DataFrame) -> None:
                     sci_tex(row["same_frame_force_rms_max_eV_A"]),
                     sci_tex(row["independent_position_rms_max_A"]),
                     f"${row['native_ms_per_step']:.2f}$",
-                    f"${row['ictd_ms_per_step']:.2f}$",
+                    f"${row['ictc_ms_per_step']:.2f}$",
                 ]
             )
             + r" \\"

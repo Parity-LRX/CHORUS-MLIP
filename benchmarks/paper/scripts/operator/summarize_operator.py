@@ -1,8 +1,8 @@
 #!/usr/bin/env python
-"""Summarize the operator benchmark into operator_cartnn_vs_ictd_summary.md.
+"""Summarize the operator benchmark into operator_cartnn_vs_ictc_summary.md.
 
-Reads operator_cartnn_vs_ictd.csv (eager e3nn/cartnn/ictd) and, if present,
-operator_ictd_compiled.csv (torch.compile ICTC). Produces markdown tables + a
+Reads operator_cartnn_vs_ictc.csv (eager e3nn/cartnn/ictc) and, if present,
+operator_ictc_compiled.csv (torch.compile ICTC). Produces markdown tables + a
 carefully-scoped conclusions section (computed ratios, hedged language; no
 model-level or chemical-accuracy claims). Optional diagnostic rows such as
 `cace_sym` and `cart3l` are reported as structural references, not as numerically
@@ -16,8 +16,8 @@ import sys
 from collections import defaultdict
 
 OUT = sys.argv[1] if len(sys.argv) > 1 else "."
-MAIN = os.path.join(OUT, "operator_cartnn_vs_ictd.csv")
-COMP = os.path.join(OUT, "operator_ictd_compiled.csv")
+MAIN = os.path.join(OUT, "operator_cartnn_vs_ictc.csv")
+COMP = os.path.join(OUT, "operator_ictc_compiled.csv")
 
 
 def load(path):
@@ -50,7 +50,7 @@ configs.sort()
 all_channels = sorted(channels_set)
 all_edges = sorted(edges_set)
 backends_present = []
-for b in ("e3nn", "cartnn", "ictd", "ictd_compiled", "cace_sym", "cart3l"):
+for b in ("e3nn", "cartnn", "ictc", "ictc_compiled", "cace_sym", "cart3l"):
     if any(k[4] == b for k in idx):
         backends_present.append(b)
 
@@ -68,7 +68,7 @@ w(f"**{', '.join(env)}. TF32 disabled.**")
 w()
 w("## What is being compared (and what is NOT)")
 w()
-w("The matched operator for `e3nn`, `cartnn`, and `ictd` is the **equivariant tensor product** that couples a hidden node "
+w("The matched operator for `e3nn`, `cartnn`, and `ictc` is the **equivariant tensor product** that couples a hidden node "
   "feature (degrees `0..hidden_lmax`, `C` channels) with the edge angular embedding "
   "(degrees `0..max_ell`), per-edge weighted, over a batch of `E` directed edges — i.e. the "
   "MACE convolution tensor product. All backends run the **identical `(l1,l2,l3)` "
@@ -78,9 +78,9 @@ w("| backend | operator | basis / storage | fusion |")
 w("|---|---|---|---|")
 w("| `e3nn` (reference) | `e3nn.o3.TensorProduct` (wigner_3j) | spherical, `2l+1` | opt_einsum_fx codegen |")
 w("| `cartnn` | `cartnn.o3.TensorProduct` (cartesian_3j) | **full Cartesian, `3**l`** | opt_einsum_fx codegen |")
-w("| `ictd` | `EdgeWeightedPathPreservingTensorProduct` | irreducible-Cartesian (ICTC), `2l+1` | **eager** (Python per-path) |")
-if "ictd_compiled" in backends_present:
-    w("| `ictd_compiled` | same ICTC op under `torch.compile` | ICTC `2l+1` | torch.compile (deployed form) |")
+w("| `ictc` | `EdgeWeightedPathPreservingTensorProduct` | irreducible-Cartesian (ICTC), `2l+1` | **eager** (Python per-path) |")
+if "ictc_compiled" in backends_present:
+    w("| `ictc_compiled` | same ICTC op under `torch.compile` | ICTC `2l+1` | torch.compile (deployed form) |")
 if "cart3l" in backends_present:
     w("| `cart3l` | local dense component TP diagnostic | ordered Cartesian tensor power, `3**l` on each leg | PyTorch einsum loop |")
 if "cace_sym" in backends_present:
@@ -99,10 +99,10 @@ if "cace_sym" in backends_present:
       "not as a speedup denominator for ICTC.")
 w("- cartnn ships **no symmetric-contraction operator** (the authors declined to implement ICTC), "
   "so the MACE symmetric contraction is **out of scope** here; only the binary tensor product is compared.")
-w("- `e3nn`/`cartnn` `TensorProduct` are **codegen-fused**; the bare `ictd` operator is timed in "
+w("- `e3nn`/`cartnn` `TensorProduct` are **codegen-fused**; the bare `ictc` operator is timed in "
   "**eager** mode (Python per-path overhead, dominant at small sizes). The deployed MACE-ICTC model "
-  "removes this via AOTI/`torch.compile` — see `ictd_compiled` below and the existing model-level "
-  "throughput benchmarks. Read `ictd` eager numbers as a lower bound on the deployed ICTC speed.")
+  "removes this via AOTI/`torch.compile` — see `ictc_compiled` below and the existing model-level "
+  "throughput benchmarks. Read `ictc` eager numbers as a lower bound on the deployed ICTC speed.")
 w("- No chemical-accuracy or model-level superiority is claimed or measured here.")
 w()
 
@@ -130,9 +130,9 @@ for dt in ("float32", "float64"):
         w(f"### {dt}, {mode}")
         w()
         hdr = "| config (hid/ell) | " + " | ".join(f"{b} total_ms" for b in backends_present) + \
-              " | ictd/cartnn | " + ("ictd_comp/cartnn |" if "ictd_compiled" in backends_present else "")
+              " | ictc/cartnn | " + ("ictc_comp/cartnn |" if "ictc_compiled" in backends_present else "")
         w(hdr)
-        w("|" + "---|" * (2 + len(backends_present) + (1 if "ictd_compiled" in backends_present else 0)))
+        w("|" + "---|" * (2 + len(backends_present) + (1 if "ictc_compiled" in backends_present else 0)))
         for cfg in configs:
             cells = []
             vals = {}
@@ -142,10 +142,10 @@ for dt in ("float32", "float64"):
                 vals[b] = v
                 cells.append(fmt(v, 3) if v is not None else "—")
             cart = vals.get("cartnn")
-            sp_ictd = ratio(cart, vals.get("ictd"))
-            line = f"| {cfg[0]}/{cfg[1]} | " + " | ".join(cells) + f" | {fmt(sp_ictd)} |"
-            if "ictd_compiled" in backends_present:
-                line += f" {fmt(ratio(cart, vals.get('ictd_compiled')))} |"
+            sp_ictc = ratio(cart, vals.get("ictc"))
+            line = f"| {cfg[0]}/{cfg[1]} | " + " | ".join(cells) + f" | {fmt(sp_ictc)} |"
+            if "ictc_compiled" in backends_present:
+                line += f" {fmt(ratio(cart, vals.get('ictc_compiled')))} |"
             w(line)
         w()
 
@@ -223,16 +223,16 @@ def avg_ratio(dt, mode, num_b, den_b):
 
 for dt in ("float32", "float64"):
     for mode in ("forward_only", "forward_backward"):
-        rs = avg_ratio(dt, mode, "ictd", "cartnn")
+        rs = avg_ratio(dt, mode, "ictc", "cartnn")
         if rs:
             import statistics as st
-            w(f"- **{dt} {mode}**: across all tested (config,channels,edges), eager `ictd` vs `cartnn` "
-              f"total-time ratio (cartnn/ictd) median **{st.median(rs):.2f}×** "
+            w(f"- **{dt} {mode}**: across all tested (config,channels,edges), eager `ictc` vs `cartnn` "
+              f"total-time ratio (cartnn/ictc) median **{st.median(rs):.2f}×** "
               f"(min {min(rs):.2f}×, max {max(rs):.2f}×); >1 ⇒ ICTC faster.")
-        rc = avg_ratio(dt, mode, "ictd_compiled", "cartnn")
+        rc = avg_ratio(dt, mode, "ictc_compiled", "cartnn")
         if rc:
             import statistics as st
-            w(f"  - `ictd_compiled` vs `cartnn`: median **{st.median(rc):.2f}×** "
+            w(f"  - `ictc_compiled` vs `cartnn`: median **{st.median(rc):.2f}×** "
               f"(min {min(rc):.2f}×, max {max(rc):.2f}×).")
 w()
 if "cart3l" in backends_present or "cace_sym" in backends_present:
@@ -242,18 +242,19 @@ if "cart3l" in backends_present or "cace_sym" in backends_present:
     if "cace_sym" in backends_present:
         layout_notes.append("`cace_sym` exposes the smaller symmetric-monomial axis used by CACE-style products")
     w("Interpretation guidance: " + "; ".join(layout_notes) + ". "
-      "Only `e3nn`/`cartnn`/`ictd` share the matched MACE `(l1,l2,l3)` TP path semantics. Where eager "
+      "Only `e3nn`/`cartnn`/`ictc` share the matched MACE `(l1,l2,l3)` TP path semantics. Where eager "
       "ICTC trails, it is the eager per-path launch overhead, not the ICTC algebra — compare the "
-      "`ictd_compiled` row. None of this speaks to accuracy or to full-model performance.")
+      "`ictc_compiled` row. None of this speaks to accuracy or to full-model performance.")
 else:
     w("Interpretation guidance: cartnn's full `3**l` storage makes its per-edge work grow faster with "
       "`max_ell` than the `2l+1` ICTC/e3nn layouts, which is the main structural difference these "
       "numbers probe. Where eager ICTC trails, it is the eager per-path launch overhead, not the ICTC "
-      "algebra — compare the `ictd_compiled` row. e3nn is included only as the spherical MACE-native "
+      "algebra — compare the `ictc_compiled` row. e3nn is included only as the spherical MACE-native "
       "reference. None of this speaks to accuracy or to full-model performance.")
 
-with open(os.path.join(OUT, "operator_cartnn_vs_ictd_summary.md"), "w") as f:
+summary_path = os.path.join(OUT, "operator_cartnn_vs_ictc_summary.md")
+with open(summary_path, "w") as f:
     f.write("\n".join(L) + "\n")
-print("wrote", os.path.join(OUT, "operator_cartnn_vs_ictd_summary.md"))
+print("wrote", summary_path)
 print(f"ok rows={len(ok)} oom/err={len(oom)} backends={backends_present} configs={configs} "
       f"channels={all_channels} edges={all_edges}")

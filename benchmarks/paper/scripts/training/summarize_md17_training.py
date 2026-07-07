@@ -30,9 +30,9 @@ def _job_parts(stem: str) -> tuple[str, str]:
     marker = "_seed"
     before_seed = stem.split(marker, 1)[0]
     known_modes = [
-        "ictd_bridge_u_eager",
-        "ictd_bridge_u_makefx",
-        "ictd_cueq_makefx",
+        "ictc_bridge_u_eager",
+        "ictc_bridge_u_makefx",
+        "ictc_cueq_makefx",
         "mace_e3nn",
         "mace_cueq",
     ]
@@ -52,7 +52,7 @@ def parse_log(path: Path) -> list[dict]:
     dataset, mode = _job_parts(stem)
     text = path.read_text(errors="replace")
     rows: list[dict] = []
-    if mode.startswith("ictd_"):
+    if mode.startswith("ictc_"):
         for m in ICTC_RE.finditer(text):
             rows.append(
                 {

@@ -5,7 +5,7 @@
   ],
   "batch_index": 0,
   "batch_size": 2,
-  "data_dir": "/tmp/mace_ictd_public_water/cheng_water",
+  "data_dir": "/tmp/mace_ictc_public_water/cheng_water",
   "dtype": "float64",
   "e0_values": [
     -187.6046096165751,
@@ -13,7 +13,7 @@
   ],
   "max_force_components": 24,
   "modes": {
-    "ictd_bridge_u": {
+    "ictc_bridge_u": {
       "eigvals": [
         2.755304649957324e-09,
         1.3987384383061093e-05,
@@ -56,7 +56,7 @@
       "train_lr_times_lambda_max": 0.0004589934307669702,
       "train_lr_times_lambda_min_pos": 2.7553046499573243e-12
     },
-    "ictd_cueq": {
+    "ictc_cueq": {
       "eigvals": [
         2.755304653736785e-09,
         1.398738438304094e-05,

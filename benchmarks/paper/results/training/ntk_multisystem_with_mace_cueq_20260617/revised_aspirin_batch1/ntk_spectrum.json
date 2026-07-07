@@ -6,7 +6,7 @@
   ],
   "batch_index": 1,
   "batch_size": 2,
-  "data_dir": "/tmp/mace_ictd_public_md17/revised_aspirin",
+  "data_dir": "/tmp/mace_ictc_public_md17/revised_aspirin",
   "dtype": "float64",
   "e0_values": [
     -875.415358317322,
@@ -15,7 +15,7 @@
   ],
   "max_force_components": 24,
   "modes": {
-    "ictd_bridge_u": {
+    "ictc_bridge_u": {
       "eigvals": [
         7.694739880719732e-09,
         4.7789446411459935e-06,
@@ -58,7 +58,7 @@
       "train_lr_times_lambda_max": 3.054714945646367e-05,
       "train_lr_times_lambda_min_pos": 7.694739880719733e-12
     },
-    "ictd_cueq": {
+    "ictc_cueq": {
       "eigvals": [
         7.694739879433483e-09,
         4.778944641145782e-06,

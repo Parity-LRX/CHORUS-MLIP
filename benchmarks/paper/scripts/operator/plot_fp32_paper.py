@@ -47,8 +47,8 @@ def main():
     fig, (axL, axR) = plt.subplots(1, 2, figsize=(11.5, 4.3))
 
     # ---- left: grouped bars (log ms) ----
-    series = [("ictd_eager", "ICTC (eager)", C_EAGER),
-              ("ictd_compile", "ICTC (torch.compile)", C_COMP),
+    series = [("ictc_eager", "ICTC (eager)", C_EAGER),
+              ("ictc_compile", "ICTC (torch.compile)", C_COMP),
               ("e3nn", "e3nn (spherical, ref)", C_E3NN),
               ("cartnn", "cartnn (Cartesian 3$^\\ell$)", C_CART)]
     n = len(series); w = 0.20
@@ -66,7 +66,7 @@ def main():
     axL.legend(frameon=False, loc="upper left", ncol=1)
 
     # ---- right: speedup vs e3nn ----
-    for be, lab, col, mk in (("ictd_compile", "ICTC (torch.compile)", C_COMP, "o"),
+    for be, lab, col, mk in (("ictc_compile", "ICTC (torch.compile)", C_COMP, "o"),
                              ("cartnn", "cartnn", C_CART, "s")):
         ys = []
         for c in configs:
@@ -76,7 +76,7 @@ def main():
         axR.plot(xp, yp, marker=mk, color=col, label=lab, lw=2.2, ms=8)
         for x, y in zip(xp, yp):
             axR.annotate(f"{y:.2f}", (x, y), textcoords="offset points",
-                         xytext=(0, 8 if be == "ictd_compile" else -14), ha="center", fontsize=9, color=col)
+                         xytext=(0, 8 if be == "ictc_compile" else -14), ha="center", fontsize=9, color=col)
     axR.axhline(1.0, color="k", ls="--", lw=1.0)
     axR.text(len(configs) - 1, 1.02, "e3nn baseline", ha="right", va="bottom", fontsize=9, color="k")
     axR.set_xticks(list(xs)); axR.set_xticklabels(labels)
@@ -85,8 +85,8 @@ def main():
     axR.set_title("(b) Speedup vs e3nn   (>1 = faster than e3nn)")
     axR.grid(True, alpha=0.25)
     axR.legend(frameon=False, loc="upper left")
-    axR.set_ylim(0, max(2.0, max([V[c].get("e3nn", 0) / V[c]["ictd_compile"]
-                 for c in configs if V[c].get("ictd_compile")] + [1.4]) * 1.15))
+    axR.set_ylim(0, max(2.0, max([V[c].get("e3nn", 0) / V[c]["ictc_compile"]
+                 for c in configs if V[c].get("ictc_compile")] + [1.4]) * 1.15))
 
     fig.suptitle("Equivariant tensor-product operator on RTX 4090 (fp32, forward-only, matched fusion)",
                  fontsize=13.5, y=1.00)

@@ -69,8 +69,8 @@ def build_tp(o3mod, paths: list[tuple[int, int, int]], hidden_lmax: int, max_ell
 def read_timings(results_dir: Path, channels: int, edges: int) -> pd.DataFrame:
     sources = [
         results_dir / "operator_compile_fwbw_flat.csv",
-        results_dir / "operator_cartnn_vs_ictd.csv",
-        results_dir / "operator_ictd_compiled.csv",
+        results_dir / "operator_cartnn_vs_ictc.csv",
+        results_dir / "operator_ictc_compiled.csv",
         results_dir / "operator_aoti_fwd.csv",
     ]
     frames = []
@@ -146,7 +146,7 @@ def main() -> None:
         target_lmax = hidden_lmax
         paths = build_paths(hidden_lmax, max_ell, target_lmax)
         e3_tp, e3_in1, e3_in2, e3_out = build_tp(e3o3, paths, hidden_lmax, max_ell, args.channels)
-        ictd_tp = EdgeWeightedPathPreservingTensorProduct(
+        ictc_tp = EdgeWeightedPathPreservingTensorProduct(
             channels=args.channels,
             lmax=max(hidden_lmax, max_ell, target_lmax),
             allowed_paths=paths,
@@ -220,12 +220,12 @@ def main() -> None:
                 "cartnn_weight_numel_formula": len(paths) * args.channels,
                 "cart3l_weight_numel_formula": len(paths) * args.channels,
                 "cace_sym_weight_numel_formula": len(cace_pairs) * args.channels,
-                "ictd_weight_numel": ictd_tp.num_paths * args.channels,
+                "ictc_weight_numel": ictc_tp.num_paths * args.channels,
                 "e3nn_fusion_level": "e3nn TensorProduct opt_einsum/codegen",
                 "cartnn_fusion_level": "cartnn TensorProduct opt_einsum/codegen with cartesian_3j",
                 "cart3l_fusion_level": "local dense PyTorch einsum over native ordered Cartesian axes",
                 "cace_sym_fusion_level": "local scatter-add implementation of CACE-style symmetric monomial product",
-                "ictd_fusion_level": "ICTC eager or torch.compile/AOTI depending on row timing",
+                "ictc_fusion_level": "ICTC eager or torch.compile/AOTI depending on row timing",
             }
         )
 
@@ -257,7 +257,7 @@ def main() -> None:
         for backend, label in [
             ("e3nn", "MACE e3nn TensorProduct"),
             ("cartnn", "cartnn Cartesian-3j TensorProduct"),
-            ("ictd_compile_fwbw", "ICTC torch.compile fused product"),
+            ("ictc_compile_fwbw", "ICTC torch.compile fused product"),
             ("cace_sym", "CACE-style symmetric monomial product proxy"),
             ("cart3l", "Dense native 3^l Cartesian diagnostic"),
         ]:

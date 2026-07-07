@@ -6,7 +6,7 @@
   ],
   "batch_index": 2,
   "batch_size": 2,
-  "data_dir": "/tmp/mace_ictd_public_md17/revised_ethanol",
+  "data_dir": "/tmp/mace_ictc_public_md17/revised_ethanol",
   "dtype": "float64",
   "e0_values": [
     -616.0415034450858,
@@ -15,7 +15,7 @@
   ],
   "max_force_components": 24,
   "modes": {
-    "ictd_bridge_u": {
+    "ictc_bridge_u": {
       "eigvals": [
         4.6400518334734905e-08,
         4.272182822294476e-06,
@@ -58,7 +58,7 @@
       "train_lr_times_lambda_max": 0.0001759688033035181,
       "train_lr_times_lambda_min_pos": 4.6400518334734905e-11
     },
-    "ictd_cueq": {
+    "ictc_cueq": {
       "eigvals": [
         4.640051834285721e-08,
         4.272182822294468e-06,

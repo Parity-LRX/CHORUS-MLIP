@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 """Plot operator-level throughput + speedup: ICTC vs Cartesian references vs e3nn(reference).
 
-Reads operator_cartnn_vs_ictd.csv (written by operator_bench.py) and produces
+Reads operator_cartnn_vs_ictc.csv (written by operator_bench.py) and produces
   figures/operator_throughput.png   (edges/s vs directed edges)
   figures/operator_speedup.png      (ICTC- and e3nn-vs-cartnn speedup)
 
@@ -21,19 +21,19 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
-BACKENDS = ["e3nn", "cartnn", "ictd", "cace_sym", "cart3l"]
+BACKENDS = ["e3nn", "cartnn", "ictc", "cace_sym", "cart3l"]
 COLORS = {
     "e3nn": "#888888",
     "cartnn": "#d62728",
-    "ictd": "#1f77b4",
+    "ictc": "#1f77b4",
     "cace_sym": "#2ca02c",
     "cart3l": "#9467bd",
 }
-MARKERS = {"e3nn": "s", "cartnn": "o", "ictd": "^", "cace_sym": "D", "cart3l": "v"}
+MARKERS = {"e3nn": "s", "cartnn": "o", "ictc": "^", "cace_sym": "D", "cart3l": "v"}
 LABELS = {
     "e3nn": "e3nn (spherical, ref)",
     "cartnn": "cartnn (Cartesian 3^l)",
-    "ictd": "MACE-ICTC",
+    "ictc": "MACE-ICTC",
     "cace_sym": "CACE-style sym. monomial",
     "cart3l": "native dense 3^l diagnostic",
 }
@@ -123,7 +123,7 @@ def main():
             ax = axes[ri][ci]
             cart = idx.get((cfg, dt, mode, "cartnn"), {})
             any_speedup = False
-            for be in ("ictd", "e3nn", "cart3l"):
+            for be in ("ictc", "e3nn", "cart3l"):
                 d = idx.get((cfg, dt, mode, be), {})
                 xs = sorted(set(d) & set(cart))
                 if not xs:

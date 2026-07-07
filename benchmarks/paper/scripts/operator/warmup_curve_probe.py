@@ -1,11 +1,11 @@
 #!/usr/bin/env python
-"""Verify warmup sufficiency: time EACH of the first N forward calls for ictd / cartnn / e3nn,
+"""Verify warmup sufficiency: time EACH of the first N forward calls for ictc / cartnn / e3nn,
 so we can SEE where the (device,dtype) cache populates and where the curve plateaus.
 Confirms whether warmup=20 in operator_bench.py lands on the warm plateau.
 """
 from __future__ import annotations
 import argparse, statistics, torch
-from operator_bench import (build_ictd, ictd_make_inputs, ictd_forward,
+from operator_bench import (build_ictc, ictc_make_inputs, ictc_forward,
                              build_eo3, eo3_make_inputs, eo3_forward, cuda_sync)
 from e3nn import o3 as e3o3
 from cartnn import o3 as co3
@@ -39,10 +39,10 @@ def main():
     print(f"# config l{hidden_lmax}/{max_ell} C{C} E{E} {args.dtype}  (per-call forward ms)")
 
     # ICTC (fresh instance -> cold cache)
-    tp, _ = build_ictd(hidden_lmax, max_ell, target, C, dtype, device)
-    inp, _ = ictd_make_inputs(tp, hidden_lmax, max_ell, C, E, dtype, device, False)
+    tp, _ = build_ictc(hidden_lmax, max_ell, target, C, dtype, device)
+    inp, _ = ictc_make_inputs(tp, hidden_lmax, max_ell, C, E, dtype, device, False)
     cuda_sync(device)
-    ti = curve(lambda i: ictd_forward(tp, i), inp, N, device)
+    ti = curve(lambda i: ictc_forward(tp, i), inp, N, device)
 
     # cartnn
     tpc, _, in1c, in2c, _ = build_eo3(co3, hidden_lmax, max_ell, target, C, dtype, device)
@@ -59,10 +59,10 @@ def main():
     def fmt(ts):
         return " ".join(f"{t:6.2f}" for t in ts)
     print("call#:   ", " ".join(f"{i+1:6d}" for i in range(N)))
-    print("ictd:    ", fmt(ti))
+    print("ictc:    ", fmt(ti))
     print("cartnn:  ", fmt(tc))
     print("e3nn:    ", fmt(te))
-    for name, ts in (("ictd", ti), ("cartnn", tc), ("e3nn", te)):
+    for name, ts in (("ictc", ti), ("cartnn", tc), ("e3nn", te)):
         first = ts[0]
         warm_21_40 = statistics.median(ts[20:]) if len(ts) > 20 else float("nan")
         warm_6_40 = statistics.median(ts[5:]) if len(ts) > 5 else float("nan")

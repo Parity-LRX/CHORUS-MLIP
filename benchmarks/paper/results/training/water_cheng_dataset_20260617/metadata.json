@@ -40,14 +40,14 @@
     "max_atoms": 192,
     "max_edges": 9174
   },
-  "test_path_extxyz": "/tmp/mace_ictd_public_water/cheng_water/test.extxyz",
-  "test_path_h5": "/tmp/mace_ictd_public_water/cheng_water/processed_test.h5",
+  "test_path_extxyz": "/tmp/mace_ictc_public_water/cheng_water/test.extxyz",
+  "test_path_h5": "/tmp/mace_ictc_public_water/cheng_water/processed_test.h5",
   "train_h5": {
     "max_atoms": 192,
     "max_edges": 9058
   },
-  "train_path_extxyz": "/tmp/mace_ictd_public_water/cheng_water/train.extxyz",
-  "train_path_h5": "/tmp/mace_ictd_public_water/cheng_water/processed_train.h5",
+  "train_path_extxyz": "/tmp/mace_ictc_public_water/cheng_water/train.extxyz",
+  "train_path_h5": "/tmp/mace_ictc_public_water/cheng_water/processed_train.h5",
   "unit_scales": {
     "energy": 27.211386245988,
     "forces": 51.422067476325886,
@@ -68,6 +68,6 @@
     "max_atoms": 192,
     "max_edges": 9098
   },
-  "val_path_extxyz": "/tmp/mace_ictd_public_water/cheng_water/val.extxyz",
-  "val_path_h5": "/tmp/mace_ictd_public_water/cheng_water/processed_val.h5"
+  "val_path_extxyz": "/tmp/mace_ictc_public_water/cheng_water/val.extxyz",
+  "val_path_h5": "/tmp/mace_ictc_public_water/cheng_water/processed_val.h5"
 }

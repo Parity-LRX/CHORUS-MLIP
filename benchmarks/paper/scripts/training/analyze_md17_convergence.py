@@ -36,9 +36,9 @@ INITIAL_MACE_RE = re.compile(
 )
 
 KNOWN_MODES = [
-    "ictd_bridge_u_eager",
-    "ictd_bridge_u_makefx",
-    "ictd_cueq_makefx",
+    "ictc_bridge_u_eager",
+    "ictc_bridge_u_makefx",
+    "ictc_cueq_makefx",
     "mace_e3nn",
     "mace_cueq",
 ]
@@ -71,7 +71,7 @@ def parse_log(path: Path) -> list[dict[str, object]]:
     dataset, mode, seed = _split_job_name(stem)
     text = path.read_text(errors="replace")
     rows: list[dict[str, object]] = []
-    if mode.startswith("ictd_"):
+    if mode.startswith("ictc_"):
         for m in ICTC_RE.finditer(text):
             rows.append(
                 {
@@ -373,16 +373,16 @@ def plot_curves(curve_rows: list[dict[str, object]], out_dir: Path) -> None:
     out_dir.mkdir(parents=True, exist_ok=True)
     datasets = sorted({str(r["dataset"]) for r in curve_rows})
     colors = {
-        "ictd_bridge_u_eager": "#4c9a48",
-        "ictd_bridge_u_makefx": "#b279a2",
-        "ictd_cueq_makefx": "#e45756",
+        "ictc_bridge_u_eager": "#4c9a48",
+        "ictc_bridge_u_makefx": "#b279a2",
+        "ictc_cueq_makefx": "#e45756",
         "mace_e3nn": "#4c78a8",
         "mace_cueq": "#f58518",
     }
     labels = {
-        "ictd_bridge_u_eager": "ICTC eager",
-        "ictd_bridge_u_makefx": "ICTC compiled",
-        "ictd_cueq_makefx": "ICTC+cuEq compiled",
+        "ictc_bridge_u_eager": "ICTC eager",
+        "ictc_bridge_u_makefx": "ICTC compiled",
+        "ictc_cueq_makefx": "ICTC+cuEq compiled",
         "mace_e3nn": "MACE e3nn",
         "mace_cueq": "MACE cuEq",
     }

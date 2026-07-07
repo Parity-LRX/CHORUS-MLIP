@@ -163,7 +163,7 @@ def summarize_pair(
     *,
     case: str,
     native: dict[str, np.ndarray],
-    ictd: dict[str, np.ndarray | float],
+    ictc: dict[str, np.ndarray | float],
     same_frame_e: np.ndarray,
     same_frame_f: np.ndarray,
     same_frame_elapsed_s: float,
@@ -171,8 +171,8 @@ def summarize_pair(
 ) -> dict[str, float | int | str]:
     de = same_frame_e - native["energies"]
     df = same_frame_f - native["forces"]
-    dpos = np.asarray(ictd["positions"]) - native["positions"]
-    dvel = np.asarray(ictd["velocities"]) - native["velocities"]
+    dpos = np.asarray(ictc["positions"]) - native["positions"]
+    dvel = np.asarray(ictc["velocities"]) - native["velocities"]
     natoms = int(native["z"].shape[0])
     steps = int(native["sample_steps"][-1])
     nsamples = int(native["positions"].shape[0])
@@ -196,17 +196,17 @@ def summarize_pair(
         "independent_traj_position_abs_max_A": float(np.max(np.abs(dpos))),
         "independent_traj_velocity_rms_max_A_fs_units": float(np.max(np.sqrt(np.mean(dvel**2, axis=(1, 2))))),
         "native_elapsed_s": float(native.get("elapsed_s", np.nan)),
-        "ictd_elapsed_s": float(ictd["elapsed_s"]),
+        "ictc_elapsed_s": float(ictc["elapsed_s"]),
         "same_frame_eval_elapsed_s": float(same_frame_elapsed_s),
         "native_ms_per_step_including_eval": float(1000.0 * native.get("elapsed_s", np.nan) / max(steps, 1)),
-        "ictd_ms_per_step_including_eval": float(1000.0 * float(ictd["elapsed_s"]) / max(steps, 1)),
+        "ictc_ms_per_step_including_eval": float(1000.0 * float(ictc["elapsed_s"]) / max(steps, 1)),
         "same_frame_ms_per_frame": float(1000.0 * same_frame_elapsed_s / max(nsamples, 1)),
         "native_energy0_eV": float(native["energies"][0]),
         "native_energy_final_eV": float(native["energies"][-1]),
-        "ictd_energy0_eV": float(np.asarray(ictd["energies"])[0]),
-        "ictd_energy_final_eV": float(np.asarray(ictd["energies"])[-1]),
+        "ictc_energy0_eV": float(np.asarray(ictc["energies"])[0]),
+        "ictc_energy_final_eV": float(np.asarray(ictc["energies"])[-1]),
         "native_temp_mean_K": float(np.mean(native["temperatures"])),
-        "ictd_temp_mean_K": float(np.mean(np.asarray(ictd["temperatures"]))),
+        "ictc_temp_mean_K": float(np.mean(np.asarray(ictc["temperatures"]))),
     }
 
 
@@ -258,7 +258,7 @@ def run_native(args: argparse.Namespace) -> None:
     (outdir / f"native_{args.dtype}_summary.json").write_text(json.dumps(summaries, indent=2, sort_keys=True))
 
 
-def run_ictd(args: argparse.Namespace) -> None:
+def run_ictc(args: argparse.Namespace) -> None:
     import torch
     from mace_ictc.evaluation.calculator import MyE3NNCalculator
     from mace_ictc.interfaces.lammps_mliap import LAMMPS_MLIAP_MFF
@@ -268,7 +268,7 @@ def run_ictd(args: argparse.Namespace) -> None:
     summaries = []
 
     obj = LAMMPS_MLIAP_MFF.from_checkpoint(
-        args.ictd_checkpoint,
+        args.ictc_checkpoint,
         element_types=[item.strip() for item in args.elements.split(",") if item.strip()],
         device=args.device,
     )
@@ -295,17 +295,17 @@ def run_ictd(args: argparse.Namespace) -> None:
             dt_fs=args.dt_fs,
             record_stride=args.record_stride,
         )
-        save_npz(outdir / f"ictd_{args.dtype}_{case}.npz", atoms, data)
+        save_npz(outdir / f"ictc_{args.dtype}_{case}.npz", atoms, data)
 
         same_e, same_f, same_elapsed = evaluate_on_frames(calc, native_ref)
-        np.savez_compressed(outdir / f"ictd_on_native_{args.dtype}_{case}.npz", energies=same_e, forces=same_f)
+        np.savez_compressed(outdir / f"ictc_on_native_{args.dtype}_{case}.npz", energies=same_e, forces=same_f)
         native_with_elapsed = dict(native_ref)
         native_blob = np.load(native_path)
         native_with_elapsed["elapsed_s"] = float(native_blob["elapsed_s"])
         summary = summarize_pair(
             case=case,
             native=native_with_elapsed,
-            ictd=data,
+            ictc=data,
             same_frame_e=same_e,
             same_frame_f=same_f,
             same_frame_elapsed_s=same_elapsed,
@@ -319,7 +319,7 @@ def run_ictd(args: argparse.Namespace) -> None:
 
 def main() -> None:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--engine", choices=["native", "ictd"], required=True)
+    parser.add_argument("--engine", choices=["native", "ictc"], required=True)
     parser.add_argument("--outdir", required=True)
     parser.add_argument("--cases", default=None)
     parser.add_argument("--dtype", choices=["float64", "float32"], default="float64")
@@ -331,13 +331,13 @@ def main() -> None:
     parser.add_argument("--steps", type=int, default=None, help="override the default step count for all selected cases")
     parser.add_argument("--record-stride", type=int, default=1, help="save/evaluate every N integration steps")
     parser.add_argument("--mace-model", default="/home/ylzhang/.cache/mace/MACE-OFF23_small.model")
-    parser.add_argument("--ictd-checkpoint", default="/tmp/mace_ictc_pretrained/off23_small_ictd_bridge_u_float64.pth")
+    parser.add_argument("--ictc-checkpoint", default="/tmp/mace_ictc_pretrained/off23_small_ictc_bridge_u_float64.pth")
     parser.add_argument("--elements", default="H,C,N,O,F,P,S,Cl,Br,I")
     args = parser.parse_args()
     if args.engine == "native":
         run_native(args)
     else:
-        run_ictd(args)
+        run_ictc(args)
 
 
 if __name__ == "__main__":

@@ -10,8 +10,9 @@ import matplotlib.pyplot as plt
 from matplotlib.ticker import FuncFormatter
 
 
-ROOT = Path(__file__).resolve().parent
-FIG = ROOT / "figures"
+PAPER = Path(__file__).resolve().parents[2]
+RESULTS = PAPER / "results" / "model" / "pretrained"
+FIG = PAPER / "figures"
 FIG.mkdir(exist_ok=True)
 
 DEGREE = 50
@@ -75,7 +76,8 @@ def rows_with_metrics() -> list[dict[str, str]]:
 
 
 def write_csv(rows: list[dict[str, str]]) -> Path:
-    out = ROOT / "pretrained_off23_all_modes_4090.csv"
+    RESULTS.mkdir(parents=True, exist_ok=True)
+    out = RESULTS / "pretrained_off23_all_modes_4090.csv"
     fields = [
         "model",
         "atoms",

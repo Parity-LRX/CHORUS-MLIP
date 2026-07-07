@@ -53,8 +53,8 @@ Condensed; see the notes file for derivations, shapes, and code line references.
   probe (`W_eff=block(I)`, exact); `conv_tp` path permutation + per-path scalar calibrated empirically
   (residual `<1e-8`); radial MLP reparameterized (normalize2mom `K` fold); contraction weights copied
   1:1; first-layer `sc0` + scale/shift installed. Float64.
-- **Backends:** `ictd-bridge-u` (default, exact-parity conversion target), `native-mace` (reference),
-  `cueq` (perf, `<2e-5` fp32), `ictd-pure-u` (**diagnostic, not bit-exact** — converter refuses it).
+- **Backends:** `ictc-bridge-u` (default, exact-parity conversion target), `native-mace` (reference),
+  `cueq` (perf, `<2e-5` fp32), `ictc-pure-u` (**diagnostic, not bit-exact** — converter refuses it).
   Parity is scoped to the **MACE-style baseline configs**, not "all MACE variants".
 
 ---
@@ -63,7 +63,7 @@ Condensed; see the notes file for derivations, shapes, and code line references.
 
 | test | result | tolerances |
 |---|---|---|
-| `test_angular_basis.py` (run as a **script**, not pytest) | **PASS** | f64 `dE=0, dF=4.2e-21`, feature `\|e3nn−ictd@Q\|=8.3e-17`; f32 `dE=0, dF=7.3e-12` |
+| `test_angular_basis.py` (run as a **script**, not pytest) | **PASS** | f64 `dE=0, dF=4.2e-21`, feature `\|e3nn−ictc@Q\|=8.3e-17`; f32 `dE=0, dF=7.3e-12` |
 | `test_mace_converter.py` | **PASS** (1 passed, 58.8 s) | whole-model bridge-U parity rel`\|dE\|<1e-9`, `\|dF\|<1e-6`; rotation-inv `<1e-6` |
 | `test_cueq_product_backend.py` | **PASS** (4 passed, 1 skipped, 15.8 s) | cuEq fast vs reference `<2e-5` fp32 |
 
@@ -91,13 +91,13 @@ Condensed; see the notes file for derivations, shapes, and code line references.
 
 ## 5. Operator benchmark — ICTC product vs cartnn Cartesian product
 
-*(full numbers: `operator_cartnn_vs_ictd.csv`, `operator_ictd_compiled.csv`;*
-*summary: `operator_cartnn_vs_ictd_summary.md`; figures: `figures/operator_*.png`)*
+*(full numbers: `operator_cartnn_vs_ictc.csv`, `operator_ictc_compiled.csv`;*
+*summary: `operator_cartnn_vs_ictc_summary.md`; figures: `figures/operator_*.png`)*
 
 **Matched operator:** the equivariant **tensor product** coupling a hidden node feature
 (`0..hidden_lmax`, `C` channels) with the edge angular embedding (`0..max_ell`), per-edge weighted,
 over `E` directed edges — i.e. the MACE convolution TP, on the **identical `(l1,l2,l3)` natural-parity
-path set** for every backend: `ictd` (`EdgeWeightedPathPreservingTensorProduct`, ICTC `2l+1` basis,
+path set** for every backend: `ictc` (`EdgeWeightedPathPreservingTensorProduct`, ICTC `2l+1` basis,
 eager), `cartnn` (`o3.TensorProduct` via `cartesian_3j`, full `3**l` Cartesian, codegen-fused), `e3nn`
 (`o3.TensorProduct` via `wigner_3j`, spherical `2l+1`, codegen-fused — the MACE-native reference), and
 `ictd_compiled` (the ICTC op under `torch.compile`, the deployed form).
@@ -122,8 +122,8 @@ CSV to <2%). cartnn/e3nn (codegen-fused) warm in 2–3 calls likewise.
 | cartnn/e3nn, fp32 fwd | 1.00 | 1.00 | 1.21 | 1.20 | **2.80** |
 | cartnn/e3nn, fp32 fwd+bwd | 1.00 | 1.00 | 1.23 | 1.21 | OOM(cartnn) |
 | cartnn/e3nn, fp64 fwd+bwd | 1.00 | 1.00 | 1.28 | 1.27 | OOM |
-| cartnn/ictd (>1 ⇒ ictd faster), fp32 fwd | 0.22 | 0.40 | 0.57 | 0.59 | **1.20** |
-| ictd_compiled/ictd, fp32 fwd | 0.58 | 1.01 | 1.01 | 1.00 | 1.00 |
+| cartnn/ictc (>1 ⇒ ictc faster), fp32 fwd | 0.22 | 0.40 | 0.57 | 0.59 | **1.20** |
+| ictd_compiled/ictc, fp32 fwd | 0.58 | 1.01 | 1.01 | 1.00 | 1.00 |
 
 **What the operator benchmark shows (measured, scoped):**
 1. **At low angular order (max_ell ≤ 2):** cartnn ≈ e3nn (the `3**l` vs `2l+1` difference is negligible
@@ -135,13 +135,13 @@ CSV to <2%). cartnn/e3nn (codegen-fused) warm in 2–3 calls likewise.
 3. **e3nn (spherical `2l+1`, the MACE-native reference) is the fastest** of the three at every tested
    point; both Cartesian-basis operators (ICTC intrinsic, cartnn full) trail it at the operator level.
 4. **`torch.compile` barely changes the standalone ICTC op** (it graph-breaks on the dict-in/out
-   forward): `ictd_compiled ≈ ictd` everywhere except the tiny l1/1 case (0.58×) and reducing peak
+   forward): `ictd_compiled ≈ ictc` everywhere except the tiny l1/1 case (0.58×) and reducing peak
    memory enough to complete l3/3 fp64 (287 ms) where eager OOMs. The deployed model's competitiveness
    comes from **full-graph AOTI at the model level** (existing `benchmark_results/`), not from this
    operator in isolation.
-5. **OOM cells (RTX 4090 24 GB):** by backend — e3nn 35, cartnn 46, ictd 50 (of 720 cells); the large
+5. **OOM cells (RTX 4090 24 GB):** by backend — e3nn 35, cartnn 46, ictc 50 (of 720 cells); the large
    `E=500000`/`fp64`/high-`lmax` corner. cartnn OOMs more than e3nn (`3**l` memory); see
-   `operator_cartnn_vs_ictd_summary.md` for the full per-cell list.
+   `operator_cartnn_vs_ictc_summary.md` for the full per-cell list.
 
 **Reconciliation with the model-level `benchmark_results/` (important — prevents misreading this bench).**
 This operator bench measures the **isolated** conv tensor product and times the ICTC op **eager**
@@ -221,12 +221,12 @@ claim. cartnn ships no contraction operator, so the MACE symmetric contraction w
 | `ictd_algorithm_and_parity_notes.md` | **deliverable 1** — formula-level ICTC + parity write-up |
 | `parity_tests.log` | deliverable — parity test output (angular/converter/cueq) |
 | `sanity_full_model/` , `sanity_full_model.log` | harness sanity run |
-| `operator_bench.py` | operator benchmark harness (e3nn/cartnn/ictd) |
+| `operator_bench.py` | operator benchmark harness (e3nn/cartnn/ictc) |
 | `operator_bench_compiled.py` | torch.compile ICTC companion pass |
-| `operator_cartnn_vs_ictd.csv` | **deliverable 2** — raw operator results |
-| `operator_ictd_compiled.csv` | compiled-ICTC raw results |
-| `operator_cartnn_vs_ictd_summary.md` | operator summary + caveats |
-| `plot_operator_cartnn_vs_ictd.py` , `figures/operator_throughput.png` , `figures/operator_speedup.png` | plots |
+| `operator_cartnn_vs_ictc.csv` | **deliverable 2** — raw operator results |
+| `operator_ictc_compiled.csv` | compiled-ICTC raw results |
+| `operator_cartnn_vs_ictc_summary.md` | operator summary + caveats |
+| `plot_operator_cartnn_vs_ictc.py` , `figures/operator_throughput.png` , `figures/operator_speedup.png` | plots |
 | `summarize_operator.py` | summary generator |
 | `src/cartnn/` | cloned cartnn @ 4d0dc38 |
 | `operator_bench_aoti.py` , `operator_aoti_fwd.csv` , `operator_aoti_summary.md` | matched-fusion (torch.compile/AOTI) forward-only operator comparison |

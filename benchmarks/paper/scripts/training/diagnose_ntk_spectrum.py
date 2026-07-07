@@ -95,7 +95,7 @@ def build_mace_model(
     ).to(device=device, dtype=dtype)
 
 
-def build_ictd_model(args, atomic_numbers: list[int], scale: float, shift: float, product_backend: str, device, dtype):
+def build_ictc_model(args, atomic_numbers: list[int], scale: float, shift: float, product_backend: str, device, dtype):
     cfg = ModelConfig(dtype=dtype)
     cfg.channel_in = int(args.channels)
     cfg.irreps_output_conv_channels = int(args.channels)
@@ -199,7 +199,7 @@ def mace_outputs(model, batch, atomic_numbers: list[int], e0_values: list[float]
     return energy, forces
 
 
-def ictd_outputs(model, batch, atomic_numbers: list[int], e0_values: list[float], create_graph: bool):
+def ictc_outputs(model, batch, atomic_numbers: list[int], e0_values: list[float], create_graph: bool):
     pos, A, batch_idx, _, _, edge_src, edge_dst, edge_shifts, cell, _ = batch
     pos = pos.detach().clone().requires_grad_(True)
     e_atom = model(pos, A, batch_idx, edge_src, edge_dst, edge_shifts, cell).squeeze(-1)
@@ -303,7 +303,7 @@ def main() -> None:
     p.add_argument("--max-force-components", type=int, default=24)
     p.add_argument("--device", default="cuda")
     p.add_argument("--dtype", default="float32", choices=["float32", "float64"])
-    p.add_argument("--modes", default="mace_e3nn,mace_cueq,ictd_bridge_u,ictd_cueq")
+    p.add_argument("--modes", default="mace_e3nn,mace_cueq,ictc_bridge_u,ictc_cueq")
     p.add_argument("--channels", type=int, default=64)
     p.add_argument("--hidden-lmax", type=int, default=1)
     p.add_argument("--max-ell", type=int, default=2)
@@ -354,10 +354,10 @@ def main() -> None:
     for mode in requested_modes:
         if mode in {"mace_e3nn", "mace_cueq"}:
             continue
-        backend = {"ictd_bridge_u": "ictd-bridge-u", "ictd_cueq": "cueq"}[mode]
-        ictd = build_ictd_model(args, atomic_numbers, scale, shift, backend, device, dtype)
-        convert_mace_to_ictd(mace.eval(), ictd)
-        models[mode] = (ictd, ictd_outputs)
+        backend = {"ictc_bridge_u": "ictd-bridge-u", "ictc_cueq": "cueq"}[mode]
+        ictc = build_ictc_model(args, atomic_numbers, scale, shift, backend, device, dtype)
+        convert_mace_to_ictd(mace.eval(), ictc)
+        models[mode] = (ictc, ictc_outputs)
 
     args.out_dir.mkdir(parents=True, exist_ok=True)
     rows = []

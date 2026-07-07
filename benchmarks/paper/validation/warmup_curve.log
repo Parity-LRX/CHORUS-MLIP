@@ -64,18 +64,18 @@ e3nn:      46.21  47.92  34.78  34.74  34.54  34.76  34.76  34.80  34.72  34.74 
 ############################################
 # config l3/3 C64 E100000 float64  (per-call forward ms)
 Traceback (most recent call last):
-  File "/tmp/mace_ictd_cartnn_bench_20260614_220608/warmup_curve_probe.py", line 75, in <module>
+  File "/tmp/mace_ictc_cartnn_bench_20260614_220608/warmup_curve_probe.py", line 75, in <module>
     main()
-  File "/tmp/mace_ictd_cartnn_bench_20260614_220608/warmup_curve_probe.py", line 51, in main
+  File "/tmp/mace_ictc_cartnn_bench_20260614_220608/warmup_curve_probe.py", line 51, in main
     tc = curve(lambda i: eo3_forward(tpc, i), inpc, N, device)
          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/tmp/mace_ictd_cartnn_bench_20260614_220608/warmup_curve_probe.py", line 19, in curve
+  File "/tmp/mace_ictc_cartnn_bench_20260614_220608/warmup_curve_probe.py", line 19, in curve
     e0.record(); _ = forward_fn(inp); e1.record()
                      ^^^^^^^^^^^^^^^
-  File "/tmp/mace_ictd_cartnn_bench_20260614_220608/warmup_curve_probe.py", line 51, in <lambda>
+  File "/tmp/mace_ictc_cartnn_bench_20260614_220608/warmup_curve_probe.py", line 51, in <lambda>
     tc = curve(lambda i: eo3_forward(tpc, i), inpc, N, device)
                          ^^^^^^^^^^^^^^^^^^^
-  File "/tmp/mace_ictd_cartnn_bench_20260614_220608/operator_bench.py", line 138, in eo3_forward
+  File "/tmp/mace_ictc_cartnn_bench_20260614_220608/operator_bench.py", line 138, in eo3_forward
     return tp(x1, x2, w)
            ^^^^^^^^^^^^^
   File "/home/ylzhang/micromamba/envs/FSCETP/lib/python3.11/site-packages/torch/nn/modules/module.py", line 1751, in _wrapped_call_impl
@@ -84,7 +84,7 @@ Traceback (most recent call last):
   File "/home/ylzhang/micromamba/envs/FSCETP/lib/python3.11/site-packages/torch/nn/modules/module.py", line 1762, in _call_impl
     return forward_call(*args, **kwargs)
            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/tmp/mace_ictd_cartnn_bench_20260614_220608/src/cartnn/cartnn/o3/_tensor_product/_tensor_product.py", line 563, in forward
+  File "/tmp/mace_ictc_cartnn_bench_20260614_220608/src/cartnn/cartnn/o3/_tensor_product/_tensor_product.py", line 563, in forward
     return self._compiled_main_left_right(x, y, real_weight)
            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
   File "/home/ylzhang/micromamba/envs/FSCETP/lib/python3.11/site-packages/torch/nn/modules/module.py", line 1751, in _wrapped_call_impl

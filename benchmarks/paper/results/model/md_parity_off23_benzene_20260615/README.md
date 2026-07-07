@@ -5,8 +5,8 @@ Remote host: `XHPC-4090-01` via `ssh -p 18022 ylzhang@10.10.3.21`
 Model artifacts:
 
 - Native source model: `/home/ylzhang/.cache/mace/MACE-OFF23_small.model`
-- MACE-ICTC FP32 checkpoint: `/tmp/mace_ictc_pretrained/off23_small_ictd_bridge_u_float32.pth`
-- MACE-ICTC FP64 checkpoint generated for this check: `/tmp/mace_ictc_pretrained/off23_small_ictd_bridge_u_float64.pth`
+- MACE-ICTC FP32 checkpoint: `/tmp/mace_ictc_pretrained/off23_small_ictc_bridge_u_float32.pth`
+- MACE-ICTC FP64 checkpoint generated for this check: `/tmp/mace_ictc_pretrained/off23_small_ictc_bridge_u_float64.pth`
 
 System:
 

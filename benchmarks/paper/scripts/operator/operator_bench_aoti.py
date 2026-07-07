@@ -18,7 +18,7 @@ import torch
 from torch.export import Dim
 
 from operator_bench import (
-    build_ictd, build_eo3, eo3_make_inputs, eo3_forward, cuda_sync, free,
+    build_ictc, build_eo3, eo3_make_inputs, eo3_forward, cuda_sync, free,
     ICTC_URL, ICTC_COMMIT, CARTNN_URL, CARTNN_COMMIT, E3NN_URL, E3NN_COMMIT, CSV_COLUMNS,
 )
 from e3nn import o3 as e3o3
@@ -46,7 +46,7 @@ class FlatICTCTP(torch.nn.Module):
         return torch.cat([out[l].reshape(out[l].shape[0], -1) for l in sorted(out.keys())], dim=-1)
 
 
-def ictd_flat_inputs(tp, hl, me, C, E, dtype, device):
+def ictc_flat_inputs(tp, hl, me, C, E, dtype, device):
     din1 = sum(2 * l + 1 for l in range(hl + 1))
     din2 = sum(2 * l + 1 for l in range(me + 1))
     return (torch.randn(E, C, din1, device=device, dtype=dtype),
@@ -69,9 +69,9 @@ def time_fwd(call, inp, warmup, measured, device):
 
 
 META = {
-    "ictd_eager": (ICTC_URL, ICTC_COMMIT, "ictd_tp_eager", "ICTC eager (ref)"),
-    "ictd_compile": (ICTC_URL, ICTC_COMMIT, "ictd_tp_torchcompile", "ICTC torch.compile(flat wrapper)"),
-    "ictd_aoti": (ICTC_URL, ICTC_COMMIT, "ictd_tp_aoti", "ICTC AOTInductor (flat wrapper) = deployment fusion level"),
+    "ictc_eager": (ICTC_URL, ICTC_COMMIT, "ictc_tp_eager", "ICTC eager (ref)"),
+    "ictc_compile": (ICTC_URL, ICTC_COMMIT, "ictc_tp_torchcompile", "ICTC torch.compile(flat wrapper)"),
+    "ictc_aoti": (ICTC_URL, ICTC_COMMIT, "ictc_tp_aoti", "ICTC AOTInductor (flat wrapper) = deployment fusion level"),
     "e3nn": (E3NN_URL, E3NN_COMMIT, "e3nn_tp_fused", "e3nn codegen-fused TP (ref)"),
     "cartnn": (CARTNN_URL, CARTNN_COMMIT, "cartnn_tp_fused", "cartnn codegen-fused TP"),
 }
@@ -124,13 +124,13 @@ def main():
             torch.set_default_dtype(dtype)
             torch._dynamo.reset()  # fresh compile state per (config,dtype): no eager-fallback taint
             try:
-                tp, paths = build_ictd(hl, me, target, C, dtype, device)
+                tp, paths = build_ictc(hl, me, target, C, dtype, device)
                 flat = FlatICTCTP(tp, hl, me).to(device).eval()
                 with torch.no_grad():  # WARM the lazy (device,dtype) cache with real tensors
-                    _ = flat(*ictd_flat_inputs(tp, hl, me, C, 64, dtype, device))
+                    _ = flat(*ictc_flat_inputs(tp, hl, me, C, 64, dtype, device))
                 cuda_sync(device)
             except Exception as e:
-                emit("ictd_eager", hl, me, dn, "", "error", err=f"build:{e}"); continue
+                emit("ictc_eager", hl, me, dn, "", "error", err=f"build:{e}"); continue
             note = f"paths={len(paths)}; forward-only"
 
             eo = {}
@@ -147,13 +147,13 @@ def main():
 
             # ---- phase A: eager / compile / e3nn / cartnn (cache stays warm-real) ----
             for E in edges_list:
-                inp = ictd_flat_inputs(tp, hl, me, C, E, dtype, device)
-                for be, call in (("ictd_eager", flat), ("ictd_compile", tc)):
+                inp = ictc_flat_inputs(tp, hl, me, C, E, dtype, device)
+                for be, call in (("ictc_eager", flat), ("ictc_compile", tc)):
                     if call is None:
                         emit(be, hl, me, dn, E, "error", err="torch.compile unavailable", note=note); continue
                     try:
                         torch.cuda.reset_peak_memory_stats(device)
-                        wu = args.warmup + (10 if be == "ictd_compile" else 0)
+                        wu = args.warmup + (10 if be == "ictc_compile" else 0)
                         ms = time_fwd(call, inp, wu, args.measured, device)
                         emit(be, hl, me, dn, E, "ok", ms=ms,
                              peak=torch.cuda.max_memory_allocated(device) / 1e9, note=note, warmup=wu, measured=args.measured)
@@ -179,12 +179,12 @@ def main():
             if not args.no_aoti:
                 runner = None; aerr = ""
                 try:
-                    x1, ed, gt = ictd_flat_inputs(tp, hl, me, C, 64, dtype, device)
+                    x1, ed, gt = ictc_flat_inputs(tp, hl, me, C, 64, dtype, device)
                     bd = Dim("E", min=2, max=max(edges_list) * 4)
                     ep = torch.export.export(flat, (x1, ed, gt),
                                              dynamic_shapes=({0: bd}, {0: bd}, {0: bd}), strict=False)
                     from torch._inductor import aoti_compile_and_package, aoti_load_package
-                    pkg = os.path.join(args.out, f"ictd_op_l{hl}{me}_{dn}.pt2")
+                    pkg = os.path.join(args.out, f"ictc_op_l{hl}{me}_{dn}.pt2")
                     if os.path.exists(pkg): os.remove(pkg)
                     aoti_compile_and_package(ep, package_path=pkg)
                     runner = aoti_load_package(pkg)
@@ -192,16 +192,16 @@ def main():
                     aerr = f"{type(e).__name__}:{e}"; traceback.print_exc()
                 for E in edges_list:
                     if runner is None:
-                        emit("ictd_aoti", hl, me, dn, E, "error", err=aerr or "aoti export failed", note=note); continue
+                        emit("ictc_aoti", hl, me, dn, E, "error", err=aerr or "aoti export failed", note=note); continue
                     try:
                         torch.cuda.reset_peak_memory_stats(device)
-                        inp = ictd_flat_inputs(tp, hl, me, C, E, dtype, device)
+                        inp = ictc_flat_inputs(tp, hl, me, C, E, dtype, device)
                         ms = time_fwd(lambda a, b, c: runner(a, b, c), inp, args.warmup, args.measured, device)
-                        emit("ictd_aoti", hl, me, dn, E, "ok", ms=ms,
+                        emit("ictc_aoti", hl, me, dn, E, "ok", ms=ms,
                              peak=torch.cuda.max_memory_allocated(device) / 1e9, note=note, warmup=args.warmup, measured=args.measured)
                         del inp; free()
                     except RuntimeError as e:
-                        emit("ictd_aoti", hl, me, dn, E, "oom" if "out of memory" in str(e).lower() else "error",
+                        emit("ictc_aoti", hl, me, dn, E, "oom" if "out of memory" in str(e).lower() else "error",
                              err=f"{type(e).__name__}:{e}", note=note); free()
             del flat, tp, eo; free()
     f.close()

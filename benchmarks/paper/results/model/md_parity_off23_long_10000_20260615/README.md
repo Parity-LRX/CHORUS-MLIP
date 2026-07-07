@@ -10,7 +10,7 @@ Purpose:
 Model and runtime:
 
 - Native source model: `/home/ylzhang/.cache/mace/MACE-OFF23_small.model`
-- MACE-ICTC checkpoint: `/tmp/mace_ictc_pretrained/off23_small_ictd_bridge_u_float64.pth`
+- MACE-ICTC checkpoint: `/tmp/mace_ictc_pretrained/off23_small_ictc_bridge_u_float64.pth`
 - Native MACE runtime: `mace==0.3.16`, `e3nn==0.4.4`
 - MACE-ICTC runtime: `/home/ylzhang/lrx/MACE-ICTC`
 - Device: RTX 4090

@@ -14,7 +14,7 @@ OUT="${OUT_ROOT:-/tmp/mace_ictc_train_multisystem_apple300_maceinit_average_e0_$
 
 SYSTEMS_CSV="${SYSTEMS:-revised_benzene,revised_aspirin}"
 SEEDS_CSV="${SEEDS:-20260616,20260617,20260618}"
-MODES_CSV="${MODES:-ictd_bridge_u_eager,ictd_bridge_u_makefx,ictd_cueq_makefx,mace_e3nn,mace_cueq}"
+MODES_CSV="${MODES:-ictc_bridge_u_eager,ictc_bridge_u_makefx,ictc_cueq_makefx,mace_e3nn,mace_cueq}"
 
 ENERGY_WEIGHT="${ENERGY_WEIGHT:-1.0}"
 FORCE_WEIGHT="${FORCE_WEIGHT:-100.0}"
@@ -175,7 +175,7 @@ json_path.write_text(
 PY
 }
 
-ictd_common_flags() {
+ictc_common_flags() {
   local data="$1"
   local backend="$2"
   local e0_keys="$3"
@@ -219,16 +219,16 @@ for raw_system in "${SYSTEMS_ARR[@]}"; do
       mode="$(echo "${raw_mode}" | xargs)"
       job="${system}_${mode}_seed${seed}_epochs${EPOCHS}"
       case "${mode}" in
-        ictd_bridge_u_eager)
-          mapfile -t flags < <(ictd_common_flags "${data}" ictd-bridge-u "${E0_KEYS}" "${E0_VALS}" --seed "${seed}" --checkpoint "${OUT}/checkpoints/${job}.pth" --log-interval 200)
+        ictc_bridge_u_eager)
+          mapfile -t flags < <(ictc_common_flags "${data}" ictd-bridge-u "${E0_KEYS}" "${E0_VALS}" --seed "${seed}" --checkpoint "${OUT}/checkpoints/${job}.pth" --log-interval 200)
           run_logged "${job}" env PYTHONPATH="${REPO}:${MACE}:${PYTHONPATH:-}" "${PY}" -m mace_ictc.cli.train "${flags[@]}"
           ;;
-        ictd_bridge_u_makefx)
-          mapfile -t flags < <(ictd_common_flags "${data}" ictd-bridge-u "${E0_KEYS}" "${E0_VALS}" --seed "${seed}" --train-makefx-compile --makefx-buckets 4 --pad-nodes-to-max --pad-edges-to-max --checkpoint "${OUT}/checkpoints/${job}.pth" --log-interval 200)
+        ictc_bridge_u_makefx)
+          mapfile -t flags < <(ictc_common_flags "${data}" ictd-bridge-u "${E0_KEYS}" "${E0_VALS}" --seed "${seed}" --train-makefx-compile --makefx-buckets 4 --pad-nodes-to-max --pad-edges-to-max --checkpoint "${OUT}/checkpoints/${job}.pth" --log-interval 200)
           run_logged "${job}" env PYTHONPATH="${REPO}:${MACE}:${PYTHONPATH:-}" "${PY}" -m mace_ictc.cli.train "${flags[@]}"
           ;;
-        ictd_cueq_makefx)
-          mapfile -t flags < <(ictd_common_flags "${data}" cueq "${E0_KEYS}" "${E0_VALS}" --seed "${seed}" --train-makefx-compile --makefx-buckets 4 --pad-nodes-to-max --pad-edges-to-max --checkpoint "${OUT}/checkpoints/${job}.pth" --log-interval 200)
+        ictc_cueq_makefx)
+          mapfile -t flags < <(ictc_common_flags "${data}" cueq "${E0_KEYS}" "${E0_VALS}" --seed "${seed}" --train-makefx-compile --makefx-buckets 4 --pad-nodes-to-max --pad-edges-to-max --checkpoint "${OUT}/checkpoints/${job}.pth" --log-interval 200)
           run_logged "${job}" env PYTHONPATH="${REPO}:${MACE}:${PYTHONPATH:-}" "${PY}" -m mace_ictc.cli.train "${flags[@]}"
           ;;
         mace_e3nn)

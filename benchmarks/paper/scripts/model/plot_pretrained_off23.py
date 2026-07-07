@@ -9,8 +9,8 @@ import matplotlib.pyplot as plt
 from matplotlib.ticker import FuncFormatter
 
 
-ROOT = Path(__file__).resolve().parent
-FIG = ROOT / "figures"
+PAPER = Path(__file__).resolve().parents[2]
+FIG = PAPER / "figures"
 FIG.mkdir(exist_ok=True)
 
 BLUE = "#4C78A8"
@@ -71,7 +71,7 @@ def main() -> None:
     atoms = [128, 512]
     edges = [6400, 25600]
     native_ms = [12.232, 13.617]
-    ictd_ms = [11.391, 13.905]
+    ictc_ms = [11.391, 13.905]
     rel_energy = [7.729e-7, 3.079e-7]
     rel_force = [1.118e-6, 1.126e-6]
 
@@ -90,7 +90,7 @@ def main() -> None:
     ax = axes[0, 0]
     add_panel_label(ax, "a")
     ax.plot(edges, native_ms, marker="o", color=BLUE, label="native MACE")
-    ax.plot(edges, ictd_ms, marker="s", color=ORANGE, label="converted ICTC")
+    ax.plot(edges, ictc_ms, marker="s", color=ORANGE, label="converted ICTC")
     for x, y, n in zip(edges, native_ms, atoms):
         ax.annotate(f"{n} atoms", (x, y), textcoords="offset points", xytext=(3, 5), fontsize=7.2)
     style_axis(ax, ylabel="fwd+force time (ms)", xlabel="Directed edges")

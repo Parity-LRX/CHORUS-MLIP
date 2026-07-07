@@ -17,29 +17,29 @@ import pandas as pd
 MODE_ORDER = [
     "mace_e3nn",
     "mace_cueq",
-    "ictd_bridge_u_eager",
-    "ictd_bridge_u_makefx",
-    "ictd_cueq_makefx",
+    "ictc_bridge_u_eager",
+    "ictc_bridge_u_makefx",
+    "ictc_cueq_makefx",
 ]
 
 MODE_LABELS = {
     "mace_e3nn": "MACE e3nn",
     "mace_cueq": "MACE cuEq",
-    "ictd_bridge_u_eager": "ICTC eager",
-    "ictd_bridge_u_makefx": "ICTC compiled",
-    "ictd_cueq_makefx": "ICTC+cuEq compiled",
-    "ictd_bridge_u": "ICTC",
-    "ictd_cueq": "ICTC+cuEq",
+    "ictc_bridge_u_eager": "ICTC eager",
+    "ictc_bridge_u_makefx": "ICTC compiled",
+    "ictc_cueq_makefx": "ICTC+cuEq compiled",
+    "ictc_bridge_u": "ICTC",
+    "ictc_cueq": "ICTC+cuEq",
 }
 
 MODE_COLORS = {
     "mace_e3nn": "#4C78A8",
     "mace_cueq": "#F58518",
-    "ictd_bridge_u_eager": "#54A24B",
-    "ictd_bridge_u_makefx": "#B279A2",
-    "ictd_cueq_makefx": "#E45756",
-    "ictd_bridge_u": "#54A24B",
-    "ictd_cueq": "#E45756",
+    "ictc_bridge_u_eager": "#54A24B",
+    "ictc_bridge_u_makefx": "#B279A2",
+    "ictc_cueq_makefx": "#E45756",
+    "ictc_bridge_u": "#54A24B",
+    "ictc_cueq": "#E45756",
 }
 
 DATASET_LABELS = {
@@ -232,7 +232,7 @@ def load_ntk_runs(rmd17_dir: Path, water_dir: Path) -> pd.DataFrame:
     runs = pd.concat(frames, ignore_index=True)
     runs["dataset"] = runs["run_id"].map(infer_dataset_from_run_id)
     runs["dataset"] = pd.Categorical(runs["dataset"], NTK_SYSTEM_ORDER, ordered=True)
-    runs["mode"] = pd.Categorical(runs["mode"], ["mace_e3nn", "mace_cueq", "ictd_bridge_u", "ictd_cueq"], ordered=True)
+    runs["mode"] = pd.Categorical(runs["mode"], ["mace_e3nn", "mace_cueq", "ictc_bridge_u", "ictc_cueq"], ordered=True)
     return runs.sort_values(["dataset", "mode", "batch_index"])
 
 
@@ -258,7 +258,7 @@ def plot_ntk(ntk: pd.DataFrame, out_stem: Path, summary_csv: Path) -> None:
         ("kappa_pos_mean", "kappa_pos_std", r"$\kappa^+(K)$"),
         ("trace_mean", "trace_std", r"$\mathrm{tr}(K)$"),
     ]
-    mode_order = ["mace_e3nn", "mace_cueq", "ictd_bridge_u", "ictd_cueq"]
+    mode_order = ["mace_e3nn", "mace_cueq", "ictc_bridge_u", "ictc_cueq"]
     x = np.arange(len(NTK_SYSTEM_ORDER))
     width = 0.18
     offsets = (np.arange(len(mode_order)) - (len(mode_order) - 1) / 2.0) * width
@@ -318,7 +318,7 @@ def plot_md_parity(summary_json: Path, out_stem: Path) -> None:
     axes[1].set_yscale("log")
     axes[1].set_ylabel("Max trajectory RMS position error (A)")
     axes[2].bar(x - 0.16, df["native_ms_per_step_including_eval"], width=0.32, color="#4C78A8", label="native")
-    axes[2].bar(x + 0.16, df["ictd_ms_per_step_including_eval"], width=0.32, color="#E45756", label="ICTC")
+    axes[2].bar(x + 0.16, df["ictc_ms_per_step_including_eval"], width=0.32, color="#E45756", label="ICTC")
     axes[2].set_ylabel("ms per MD step")
     axes[2].legend(
         frameon=False,

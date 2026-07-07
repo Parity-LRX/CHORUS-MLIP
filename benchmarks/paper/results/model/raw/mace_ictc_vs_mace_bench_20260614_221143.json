@@ -95,7 +95,7 @@
     },
     {
       "task": "train",
-      "mode": "mace_ictd_bridge_u_eager",
+      "mode": "mace_ictc_bridge_u_eager",
       "atoms": 256,
       "hidden_lmax": 1,
       "max_ell": 1,
@@ -113,7 +113,7 @@
     },
     {
       "task": "train",
-      "mode": "mace_ictd_bridge_u_makefx_train",
+      "mode": "mace_ictc_bridge_u_makefx_train",
       "atoms": 256,
       "hidden_lmax": 1,
       "max_ell": 1,
@@ -131,7 +131,7 @@
     },
     {
       "task": "inference",
-      "mode": "mace_ictd_bridge_u_eager",
+      "mode": "mace_ictc_bridge_u_eager",
       "atoms": 256,
       "hidden_lmax": 1,
       "max_ell": 1,
@@ -149,7 +149,7 @@
     },
     {
       "task": "inference",
-      "mode": "mace_ictd_bridge_u_aoti",
+      "mode": "mace_ictc_bridge_u_aoti",
       "atoms": 256,
       "hidden_lmax": 1,
       "max_ell": 1,
@@ -160,14 +160,14 @@
       "speedup_vs_mace_e3nn": "9.4575",
       "loss": "",
       "cache_entries": "",
-      "artifact": "/tmp/mace_ictd_cartnn_bench_20260614_220608/sanity_full_model/aoti_packages/bridge_u_l1_e1_n256.pt2",
+      "artifact": "/tmp/mace_ictc_cartnn_bench_20260614_220608/sanity_full_model/aoti_packages/bridge_u_l1_e1_n256.pt2",
       "note": "",
       "error_type": "",
       "error": ""
     },
     {
       "task": "train",
-      "mode": "mace_ictd_cueq_product_eager",
+      "mode": "mace_ictc_cueq_product_eager",
       "atoms": 256,
       "hidden_lmax": 1,
       "max_ell": 1,
@@ -185,7 +185,7 @@
     },
     {
       "task": "train",
-      "mode": "mace_ictd_cueq_product_makefx_train",
+      "mode": "mace_ictc_cueq_product_makefx_train",
       "atoms": 256,
       "hidden_lmax": 1,
       "max_ell": 1,
@@ -203,7 +203,7 @@
     },
     {
       "task": "inference",
-      "mode": "mace_ictd_cueq_product_eager",
+      "mode": "mace_ictc_cueq_product_eager",
       "atoms": 256,
       "hidden_lmax": 1,
       "max_ell": 1,
@@ -221,7 +221,7 @@
     },
     {
       "task": "inference",
-      "mode": "mace_ictd_cueq_product_aoti",
+      "mode": "mace_ictc_cueq_product_aoti",
       "atoms": 256,
       "hidden_lmax": 1,
       "max_ell": 1,
@@ -232,7 +232,7 @@
       "speedup_vs_mace_e3nn": "5.07932",
       "loss": "",
       "cache_entries": "",
-      "artifact": "/tmp/mace_ictd_cartnn_bench_20260614_220608/sanity_full_model/aoti_packages/cueq_product_l1_e1_n256.pt2",
+      "artifact": "/tmp/mace_ictc_cartnn_bench_20260614_220608/sanity_full_model/aoti_packages/cueq_product_l1_e1_n256.pt2",
       "note": "",
       "error_type": "",
       "error": ""

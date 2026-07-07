@@ -16,7 +16,7 @@ DATA_ROOT="${DATA_ROOT:-/tmp/mace_ictc_public_md17}"
 OUT_ROOT="${OUT_ROOT:-/tmp/mace_ictc_public_md17_train_$(date +%Y%m%d_%H%M%S)}"
 
 DATASETS="${DATASETS:-revised_ethanol,revised_benzene,revised_aspirin}"
-MODES="${MODES:-ictd_bridge_u_eager,ictd_bridge_u_makefx,ictd_cueq_makefx,mace_e3nn,mace_cueq}"
+MODES="${MODES:-ictc_bridge_u_eager,ictc_bridge_u_makefx,ictc_cueq_makefx,mace_e3nn,mace_cueq}"
 
 SEED="${SEED:-20260616}"
 MAX_STEPS="${MAX_STEPS:-2000}"
@@ -51,7 +51,7 @@ mkdir -p "${OUT_ROOT}/logs" "${OUT_ROOT}/models" "${OUT_ROOT}/checkpoints" "${OU
 
 if [[ "${SMOKE}" == "1" ]]; then
   DATASETS="${SMOKE_DATASETS:-revised_ethanol}"
-  MODES="${SMOKE_MODES:-ictd_bridge_u_eager,mace_e3nn}"
+  MODES="${SMOKE_MODES:-ictc_bridge_u_eager,mace_e3nn}"
   MAX_STEPS="${SMOKE_MAX_STEPS:-50}"
   EPOCHS="${SMOKE_EPOCHS:-5}"
 fi
@@ -148,7 +148,7 @@ for dataset in "${DATASET_ARR[@]}"; do
     mode="$(echo "${mode}" | xargs)"
     job="${dataset}_${mode}_seed${SEED}_steps${MAX_STEPS}"
     case "${mode}" in
-      ictd_bridge_u_eager)
+      ictc_bridge_u_eager)
         run_cmd "${job}" env PYTHONPATH="${MACE_ICTC_REPO}:${PYTHONPATH:-}" "${PYTHON_BIN}" -m mace_ictc.cli.train \
           --data-dir "${data_dir}" --train-prefix train --val-prefix val \
           --channels "${CHANNELS}" --lmax "${HIDDEN_LMAX}" --max-ell "${MAX_ELL}" \
@@ -166,7 +166,7 @@ for dataset in "${DATASET_ARR[@]}"; do
           --device "${DEVICE}" --dtype "${DTYPE}" --num-workers "${NUM_WORKERS}" \
           --checkpoint "${OUT_ROOT}/checkpoints/${job}.pth"
         ;;
-      ictd_bridge_u_makefx)
+      ictc_bridge_u_makefx)
         run_cmd "${job}" env PYTHONPATH="${MACE_ICTC_REPO}:${PYTHONPATH:-}" "${PYTHON_BIN}" -m mace_ictc.cli.train \
           --data-dir "${data_dir}" --train-prefix train --val-prefix val \
           --channels "${CHANNELS}" --lmax "${HIDDEN_LMAX}" --max-ell "${MAX_ELL}" \
@@ -185,7 +185,7 @@ for dataset in "${DATASET_ARR[@]}"; do
           --device "${DEVICE}" --dtype "${DTYPE}" --num-workers "${NUM_WORKERS}" \
           --checkpoint "${OUT_ROOT}/checkpoints/${job}.pth"
         ;;
-      ictd_cueq_makefx)
+      ictc_cueq_makefx)
         run_cmd "${job}" env PYTHONPATH="${MACE_ICTC_REPO}:${PYTHONPATH:-}" "${PYTHON_BIN}" -m mace_ictc.cli.train \
           --data-dir "${data_dir}" --train-prefix train --val-prefix val \
           --channels "${CHANNELS}" --lmax "${HIDDEN_LMAX}" --max-ell "${MAX_ELL}" \
@@ -269,11 +269,11 @@ cat > "${OUT_ROOT}/matrix_metadata.json" <<EOF
   "r_max": ${R_MAX},
   "lr": ${LR},
   "max_grad_norm": "${MAX_GRAD_NORM}",
-  "ictd_amsgrad": "${ICTC_AMSGRAD}",
-  "ictd_use_reduced_cg": "${ICTC_USE_REDUCED_CG}",
-  "ictd_conv_tp_scale_init": "${ICTC_CONV_TP_SCALE_INIT}",
-  "ictd_freeze_conv_tp_weight": "${ICTC_FREEZE_CONV_TP_WEIGHT}",
-  "ictd_interaction_init": "${ICTC_INTERACTION_INIT}",
+  "ictc_amsgrad": "${ICTC_AMSGRAD}",
+  "ictc_use_reduced_cg": "${ICTC_USE_REDUCED_CG}",
+  "ictc_conv_tp_scale_init": "${ICTC_CONV_TP_SCALE_INIT}",
+  "ictc_freeze_conv_tp_weight": "${ICTC_FREEZE_CONV_TP_WEIGHT}",
+  "ictc_interaction_init": "${ICTC_INTERACTION_INIT}",
   "energy_weight": ${ENERGY_WEIGHT},
   "force_weight": ${FORCE_WEIGHT},
   "dtype": "${DTYPE}"

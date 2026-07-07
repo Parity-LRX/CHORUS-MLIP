@@ -15,34 +15,34 @@ import pandas as pd
 BACKEND_LABELS = {
     "e3nn": "e3nn",
     "cartnn": "cartnn (Cartesian-3j)",
-    "ictd": "ICTC eager",
-    "ictd_eager": "ICTC eager",
-    "ictd_compile": "ICTC compile",
-    "ictd_compile_fwbw": "ICTC compile",
-    "ictd_compiled": "ICTC compile",
-    "ictd_aoti": "ICTC AOTI",
+    "ictc": "ICTC eager",
+    "ictc_eager": "ICTC eager",
+    "ictc_compile": "ICTC compile",
+    "ictc_compile_fwbw": "ICTC compile",
+    "ictc_compiled": "ICTC compile",
+    "ictc_aoti": "ICTC AOTI",
 }
 
 BACKEND_COLORS = {
     "e3nn": "#4a4a4a",
     "cartnn": "#c43c39",
-    "ictd": "#9ecae1",
-    "ictd_eager": "#9ecae1",
-    "ictd_compile": "#08519c",
-    "ictd_compile_fwbw": "#08519c",
-    "ictd_compiled": "#08519c",
-    "ictd_aoti": "#41ab5d",
+    "ictc": "#9ecae1",
+    "ictc_eager": "#9ecae1",
+    "ictc_compile": "#08519c",
+    "ictc_compile_fwbw": "#08519c",
+    "ictc_compiled": "#08519c",
+    "ictc_aoti": "#41ab5d",
 }
 
 BACKEND_MARKERS = {
     "e3nn": "s",
     "cartnn": "o",
-    "ictd": "^",
-    "ictd_eager": "^",
-    "ictd_compile": "D",
-    "ictd_compile_fwbw": "D",
-    "ictd_compiled": "D",
-    "ictd_aoti": "P",
+    "ictc": "^",
+    "ictc_eager": "^",
+    "ictc_compile": "D",
+    "ictc_compile_fwbw": "D",
+    "ictc_compiled": "D",
+    "ictc_aoti": "P",
 }
 
 WHOLE_MODEL_LABELS = {
@@ -130,11 +130,11 @@ def plot_matched_fusion(aoti: pd.DataFrame, fwbw: pd.DataFrame, outdir: Path) ->
         & (forward["mode"] == "forward_only")
         & (forward["channels"] == 64)
         & (forward["edges"] == 100000)
-        & (forward["backend"].isin(["ictd_compile", "e3nn", "cartnn"]))
+        & (forward["backend"].isin(["ictc_compile", "e3nn", "cartnn"]))
     ].copy()
     forward_pivot = (
         forward.pivot_table(index="config", columns="backend", values="total_ms", aggfunc="mean")
-        .rename(columns={"ictd_compile": "ictd"})
+        .rename(columns={"ictc_compile": "ictc"})
         .reindex(configs)
     )
 
@@ -144,11 +144,11 @@ def plot_matched_fusion(aoti: pd.DataFrame, fwbw: pd.DataFrame, outdir: Path) ->
         & (train["mode"] == "forward_backward")
         & (train["channels"] == 64)
         & (train["edges"] == 100000)
-        & (train["backend"].isin(["ictd_compile_fwbw", "e3nn", "cartnn"]))
+        & (train["backend"].isin(["ictc_compile_fwbw", "e3nn", "cartnn"]))
     ].copy()
     train_pivot = (
         train.pivot_table(index="config", columns="backend", values="total_ms", aggfunc="mean")
-        .rename(columns={"ictd_compile_fwbw": "ictd"})
+        .rename(columns={"ictc_compile_fwbw": "ictc"})
         .reindex(configs)
     )
 
@@ -156,10 +156,10 @@ def plot_matched_fusion(aoti: pd.DataFrame, fwbw: pd.DataFrame, outdir: Path) ->
         ("Forward only", forward_pivot, "forward time per call (ms, log)"),
         ("Forward + backward", train_pivot, "forward+backward total time (ms, log)"),
     ]
-    backend_order = ["e3nn", "cartnn", "ictd"]
-    labels = {"e3nn": "e3nn", "cartnn": "cartnn (Cartesian-3j)", "ictd": "ICTC"}
-    colors = {"e3nn": BACKEND_COLORS["e3nn"], "cartnn": BACKEND_COLORS["cartnn"], "ictd": BACKEND_COLORS["ictd_compile"]}
-    markers = {"e3nn": BACKEND_MARKERS["e3nn"], "cartnn": BACKEND_MARKERS["cartnn"], "ictd": BACKEND_MARKERS["ictd_compile"]}
+    backend_order = ["e3nn", "cartnn", "ictc"]
+    labels = {"e3nn": "e3nn", "cartnn": "cartnn (Cartesian-3j)", "ictc": "ICTC"}
+    colors = {"e3nn": BACKEND_COLORS["e3nn"], "cartnn": BACKEND_COLORS["cartnn"], "ictc": BACKEND_COLORS["ictc_compile"]}
+    markers = {"e3nn": BACKEND_MARKERS["e3nn"], "cartnn": BACKEND_MARKERS["cartnn"], "ictc": BACKEND_MARKERS["ictc_compile"]}
 
     fig, axes = plt.subplots(
         2,
@@ -210,7 +210,7 @@ def plot_matched_fusion(aoti: pd.DataFrame, fwbw: pd.DataFrame, outdir: Path) ->
         ax = axes[row, 1]
         baseline = pivot["e3nn"]
         max_speed = 1.0
-        for backend in ["cartnn", "ictd"]:
+        for backend in ["cartnn", "ictc"]:
             speed = baseline / pivot[backend]
             max_speed = max(max_speed, np.nanmax(speed.to_numpy(dtype=float)))
             ax.plot(
@@ -222,7 +222,7 @@ def plot_matched_fusion(aoti: pd.DataFrame, fwbw: pd.DataFrame, outdir: Path) ->
                 markersize=6,
                 label=labels[backend],
             )
-            if backend == "ictd":
+            if backend == "ictc":
                 for xi, yi in zip(x, speed):
                     if np.isfinite(yi):
                         ax.annotate(
@@ -256,7 +256,7 @@ def plot_forward_scaling(aoti: pd.DataFrame, outdir: Path) -> None:
     df = ok(aoti)
     df = df[(df["dtype"] == "float32") & (df["mode"] == "forward_only") & (df["channels"] == 64)].copy()
     configs = ["1/1", "1/2", "2/2", "2/3", "3/3"]
-    backends = ["e3nn", "cartnn", "ictd_compile", "ictd_aoti"]
+    backends = ["e3nn", "cartnn", "ictc_compile", "ictc_aoti"]
     edge_ticks = [1e4, 5e4, 1e5, 5e5]
     atom_ticks = [tick / 50 for tick in edge_ticks]
 
@@ -300,7 +300,7 @@ def plot_forward_scaling(aoti: pd.DataFrame, outdir: Path) -> None:
 def combined_eager_compiled(eager: pd.DataFrame, compiled: pd.DataFrame) -> pd.DataFrame:
     eager = eager.copy()
     compiled = compiled.copy()
-    compiled["backend"] = "ictd_compiled"
+    compiled["backend"] = "ictc_compiled"
     cols = eager.columns
     return pd.concat([eager, compiled[cols]], ignore_index=True)
 
@@ -311,7 +311,7 @@ def plot_regime_map(eager: pd.DataFrame, compiled: pd.DataFrame, outdir: Path) -
     configs = ["1/1", "1/2", "2/2", "2/3", "3/3"]
     regimes = [("float32", "forward_only"), ("float32", "forward_backward"), ("float64", "forward_only"), ("float64", "forward_backward")]
     titles = ["fp32 forward", "fp32 forward+backward", "fp64 forward", "fp64 forward+backward"]
-    backends = ["e3nn", "cartnn", "ictd", "ictd_compiled"]
+    backends = ["e3nn", "cartnn", "ictc", "ictc_compiled"]
 
     fig, axes = plt.subplots(2, 2, figsize=(11.6, 7.3), sharex=True)
     x = np.arange(len(configs))
@@ -356,7 +356,7 @@ def plot_memory(eager: pd.DataFrame, compiled: pd.DataFrame, outdir: Path) -> No
     configs = ["1/1", "1/2", "2/2", "2/3", "3/3"]
     regimes = [("float32", "forward_only"), ("float32", "forward_backward"), ("float64", "forward_only"), ("float64", "forward_backward")]
     titles = ["fp32 forward", "fp32 forward+backward", "fp64 forward", "fp64 forward+backward"]
-    backends = ["e3nn", "cartnn", "ictd", "ictd_compiled"]
+    backends = ["e3nn", "cartnn", "ictc", "ictc_compiled"]
 
     fig, axes = plt.subplots(2, 2, figsize=(11.6, 7.3), sharex=True)
     x = np.arange(len(configs))
@@ -539,9 +539,9 @@ def main() -> None:
     args = parser.parse_args()
     setup_style()
 
-    eager = read_csv(args.bench_dir / "operator_cartnn_vs_ictd.csv")
+    eager = read_csv(args.bench_dir / "operator_cartnn_vs_ictc.csv")
     aoti = read_csv(args.bench_dir / "operator_aoti_fwd.csv")
-    compiled = read_csv(args.bench_dir / "operator_ictd_compiled.csv")
+    compiled = read_csv(args.bench_dir / "operator_ictc_compiled.csv")
     fwbw_path = args.bench_dir / "operator_compile_fwbw_flat.csv"
     if not fwbw_path.exists():
         fwbw_path = args.bench_dir / "compile_fwbw_flat" / "operator_compile_fwbw_flat.csv"

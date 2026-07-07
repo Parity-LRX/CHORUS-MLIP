@@ -282,7 +282,7 @@ MACE weights through a fused kernel.
 
 `convert_mace_to_ictd(mace_model, ictd_model)`
 ([mace_converter.py:263](mace_ictc/interfaces/mace_converter.py)) copies every learnable weight from a
-built `ScaleShiftMACE` (mace-torch 0.3.16) into a built `PureCartesianICTDFix`, **in float64, in
+built `ScaleShiftMACE` (mace-torch 0.3.16) into a built `PureCartesianICTCFix`, **in float64, in
 place**. Supported target backends for exact parity: `native-mace`, `ictd-bridge-u` (default), `cueq`
 ([mace_converter.py:279](mace_ictc/interfaces/mace_converter.py)). The mapping block-by-block:
 
@@ -344,7 +344,7 @@ All numbers below are from the parity suite re-run on the 4090 in this task
 | test | what it checks | result |
 |---|---|---|
 | `test_angular_basis.py` (run as **script**) | `angular_basis="e3nn"` vs `"ictd"`: output bit-identity + intermediate feature `e3nn == ictd @ Q` | **PASS**. f64: `dE=0`, `dF=4.2e-21`, feature `\|e3nn − ictd@Q\|=8.3e-17` (Q rotates l≥1 by `5.4e-2`). f32: `dE=0`, `dF=7.3e-12`, feature `4.7e-9`. |
-| `test_mace_converter.py` | whole-model `ScaleShiftMACE → PureCartesianICTDFix` parity across backends / atom counts / boxes / seeds, **and** rotation invariance | **PASS** (1 passed, 58.8 s). Asserts rel`\|dE\| < 1e-9`, max`\|dF\| < 1e-6`; rotation `d_rot_i < 1e-6`, MACE-vs-ICTC(rotated) `< 1e-5`. Default backend `ictd-bridge-u`. |
+| `test_mace_converter.py` | whole-model `ScaleShiftMACE → PureCartesianICTCFix` parity across backends / atom counts / boxes / seeds, **and** rotation invariance | **PASS** (1 passed, 58.8 s). Asserts rel`\|dE\| < 1e-9`, max`\|dF\| < 1e-6`; rotation `d_rot_i < 1e-6`, MACE-vs-ICTC(rotated) `< 1e-5`. Default backend `ictd-bridge-u`. |
 | `test_cueq_product_backend.py` | cuEq fused contraction vs reference MACE contraction; training-grad routing; eval refresh | **PASS** (4 passed, 1 skipped, 15.8 s). Asserts `max_abs < 2e-5` (fp32) for corr∈{1,2,4} × (lmax,target) combos. |
 
 Notes on coverage and the skip:

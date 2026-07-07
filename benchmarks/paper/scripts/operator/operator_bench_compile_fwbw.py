@@ -27,24 +27,24 @@ from operator_bench import (
     ICTC_COMMIT,
     ICTC_URL,
     build_eo3,
-    build_ictd,
+    build_ictc,
     cuda_sync,
     eo3_forward,
     eo3_loss,
     eo3_make_inputs,
     free,
 )
-from operator_bench_aoti import FlatICTCTP, ictd_flat_inputs
+from operator_bench_aoti import FlatICTCTP, ictc_flat_inputs
 
 
 torch._dynamo.config.cache_size_limit = 256
 
 
 META = {
-    "ictd_compile_fwbw": (
+    "ictc_compile_fwbw": (
         ICTC_URL,
         ICTC_COMMIT,
-        "ictd_tp_torchcompile_flat_fwbw",
+        "ictc_tp_torchcompile_flat_fwbw",
         "ICTC flat-wrapper torch.compile tensor product, forward+backward",
     ),
     "e3nn": (
@@ -97,8 +97,8 @@ def time_fwbw(call, loss_fn, inputs, leaves, warmup, measured, device):
     return statistics.median(fwd_ms), statistics.median(bwd_ms)
 
 
-def make_ictd_inputs(tp, hidden_lmax, max_ell, channels, edges, dtype, device):
-    x1, edge, gates = ictd_flat_inputs(tp, hidden_lmax, max_ell, channels, edges, dtype, device)
+def make_ictc_inputs(tp, hidden_lmax, max_ell, channels, edges, dtype, device):
+    x1, edge, gates = ictc_flat_inputs(tp, hidden_lmax, max_ell, channels, edges, dtype, device)
     x1.requires_grad_(True)
     gates.requires_grad_(True)
     return (x1, edge, gates), [x1, gates]
@@ -175,13 +175,13 @@ def main():
             target_lmax = hidden_lmax
             torch._dynamo.reset()
             try:
-                tp, paths = build_ictd(hidden_lmax, max_ell, target_lmax, args.channels, dtype, device)
+                tp, paths = build_ictc(hidden_lmax, max_ell, target_lmax, args.channels, dtype, device)
                 flat = FlatICTCTP(tp, hidden_lmax, max_ell).to(device).train()
                 with torch.no_grad():
-                    flat(*ictd_flat_inputs(tp, hidden_lmax, max_ell, args.channels, 64, dtype, device))
+                    flat(*ictc_flat_inputs(tp, hidden_lmax, max_ell, args.channels, 64, dtype, device))
                 cuda_sync(device)
                 compiled = torch.compile(flat, dynamic=False, mode="max-autotune-no-cudagraphs")
-                inputs, leaves = make_ictd_inputs(
+                inputs, leaves = make_ictc_inputs(
                     tp, hidden_lmax, max_ell, args.channels, args.edges, dtype, device
                 )
                 torch.cuda.reset_peak_memory_stats(device)
@@ -190,7 +190,7 @@ def main():
                 )
                 emit(
                     writer,
-                    "ictd_compile_fwbw",
+                    "ictc_compile_fwbw",
                     hidden_lmax,
                     max_ell,
                     args.channels,
@@ -210,7 +210,7 @@ def main():
                 status = "oom" if "out of memory" in str(exc).lower() else "error"
                 emit(
                     writer,
-                    "ictd_compile_fwbw",
+                    "ictc_compile_fwbw",
                     hidden_lmax,
                     max_ell,
                     args.channels,
@@ -225,7 +225,7 @@ def main():
             except Exception as exc:
                 emit(
                     writer,
-                    "ictd_compile_fwbw",
+                    "ictc_compile_fwbw",
                     hidden_lmax,
                     max_ell,
                     args.channels,
