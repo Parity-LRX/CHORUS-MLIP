@@ -32,6 +32,10 @@ DEFAULT_MODEL_ARCHITECTURE: dict[str, Any] = {
     "ictd_save_tp_mode": "fully-connected",
     "ictd_fix_use_reduced_cg": False,
     "ictd_fix_edge_lmax": None,
+    "ictd_fix_phase_mode": "none",
+    "ictd_fix_phase_hidden_channels": 32,
+    "ictd_fix_phase_residual_scale_init": 0.05,
+    "ictd_fix_phase_amplitude": "unit",
     "save_contraction_order": 3,
     "save_multiple_fusion_scheme": "serial_lastmix",
     "save_final_readout_mode": "direct-1",
@@ -473,6 +477,42 @@ def resolve_model_architecture(
         arch_meta,
         "ictd_tp_max_rank_other",
         DEFAULT_MODEL_ARCHITECTURE["ictd_tp_max_rank_other"],
+    )
+    resolved["ictd_fix_phase_mode"] = str(
+        _resolve_value(
+            overrides,
+            checkpoint,
+            arch_meta,
+            "ictd_fix_phase_mode",
+            DEFAULT_MODEL_ARCHITECTURE["ictd_fix_phase_mode"],
+        )
+    )
+    resolved["ictd_fix_phase_hidden_channels"] = int(
+        _resolve_value(
+            overrides,
+            checkpoint,
+            arch_meta,
+            "ictd_fix_phase_hidden_channels",
+            DEFAULT_MODEL_ARCHITECTURE["ictd_fix_phase_hidden_channels"],
+        )
+    )
+    resolved["ictd_fix_phase_residual_scale_init"] = float(
+        _resolve_value(
+            overrides,
+            checkpoint,
+            arch_meta,
+            "ictd_fix_phase_residual_scale_init",
+            DEFAULT_MODEL_ARCHITECTURE["ictd_fix_phase_residual_scale_init"],
+        )
+    )
+    resolved["ictd_fix_phase_amplitude"] = str(
+        _resolve_value(
+            overrides,
+            checkpoint,
+            arch_meta,
+            "ictd_fix_phase_amplitude",
+            DEFAULT_MODEL_ARCHITECTURE["ictd_fix_phase_amplitude"],
+        )
     )
     resolved["save_contraction_order"] = int(
         _resolve_value(

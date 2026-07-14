@@ -288,6 +288,10 @@ def build_ictc(
     dtype: torch.dtype,
     device: torch.device,
     use_reduced_cg: bool = True,
+    phase_mode: str = "none",
+    phase_hidden_channels: int = 32,
+    phase_residual_scale_init: float = 0.05,
+    phase_amplitude: str = "unit",
 ) -> PureCartesianICTDFix:
     with default_dtype(dtype):
         model = PureCartesianICTDFix(
@@ -318,6 +322,10 @@ def build_ictc(
             avg_num_neighbors=AVG_NUM_NEIGHBORS,
             radial_sqrt_num_basis=False,
             angular_basis="ictd",
+            ictd_fix_phase_mode=str(phase_mode),
+            ictd_fix_phase_hidden_channels=int(phase_hidden_channels),
+            ictd_fix_phase_residual_scale_init=float(phase_residual_scale_init),
+            ictd_fix_phase_amplitude=str(phase_amplitude),
             internal_compute_dtype=dtype,
             device=device,
         )

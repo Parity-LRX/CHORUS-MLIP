@@ -1423,6 +1423,50 @@ class LAMMPS_MLIAP_MFF(MLIAPUnified):
                 or (selected_state_dict["interactions.0.attn_z_bias_raw"].numel()
                     if "interactions.0.attn_z_bias_raw" in selected_state_dict else 0)
             )
+            phase_layer_indices = sorted(
+                {
+                    int(key.split(".")[1])
+                    for key in selected_state_dict
+                    if key.startswith("interactions.") and ".phase_head.weight" in key
+                }
+            )
+            inferred_phase_mode = str(
+                ckpt.get("ictd_fix_phase_mode")
+                or arch_meta.get("ictd_fix_phase_mode")
+                or ("final-scalar-residual" if phase_layer_indices else "none")
+            )
+            if phase_layer_indices:
+                phase_layer = phase_layer_indices[-1]
+                inferred_phase_hidden_channels = int(
+                    selected_state_dict[
+                        f"interactions.{phase_layer}.phase_head.weight"
+                    ].shape[1]
+                )
+                inferred_phase_amplitude = (
+                    "softplus"
+                    if f"interactions.{phase_layer}.phase_amplitude_head.weight"
+                    in selected_state_dict
+                    else "unit"
+                )
+            else:
+                inferred_phase_hidden_channels = 32
+                inferred_phase_amplitude = "unit"
+            inferred_phase_hidden_channels = int(
+                ckpt.get("ictd_fix_phase_hidden_channels")
+                or arch_meta.get(
+                    "ictd_fix_phase_hidden_channels", inferred_phase_hidden_channels
+                )
+            )
+            inferred_phase_amplitude = str(
+                ckpt.get("ictd_fix_phase_amplitude")
+                or arch_meta.get("ictd_fix_phase_amplitude", inferred_phase_amplitude)
+            )
+            inferred_phase_scale_init = float(
+                ckpt.get(
+                    "ictd_fix_phase_residual_scale_init",
+                    arch_meta.get("ictd_fix_phase_residual_scale_init", 0.05),
+                )
+            )
             # avg_num_neighbors normalizes the messages (model divides by it, pure_cartesian_ictd_fix
             # ~line 1666) so the weights are trained UNDER it -- but it is a plain Python float, NOT a
             # state_dict buffer, so a wrong value loads SILENTLY (strict load can't catch it). For
@@ -1616,6 +1660,10 @@ class LAMMPS_MLIAP_MFF(MLIAPUnified):
                     )
                 ),
                 ictd_fix_interaction_attn_heads=inferred_attn_heads,
+                ictd_fix_phase_mode=inferred_phase_mode,
+                ictd_fix_phase_hidden_channels=inferred_phase_hidden_channels,
+                ictd_fix_phase_residual_scale_init=inferred_phase_scale_init,
+                ictd_fix_phase_amplitude=inferred_phase_amplitude,
                 save_contraction_order=save_contraction_order,
                 save_multiple_mix_channels=save_multiple_mix_channels,
                 avg_num_neighbors=resolved_avg_nn,

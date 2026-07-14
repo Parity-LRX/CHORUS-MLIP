@@ -339,6 +339,10 @@ def build_baseline_model(
     radial_sqrt_num_basis: bool,
     edge_lmax: int | None,
     attn_heads: int,
+    phase_mode: str = "none",
+    phase_hidden_channels: int = 32,
+    phase_residual_scale_init: float = 0.05,
+    phase_amplitude: str = "unit",
     atomic_numbers,
     ictd_save_tp_mode: str,
     invariant_channels: int,
@@ -418,6 +422,10 @@ def build_baseline_model(
         ictd_fix_interaction_init=interaction_init,
         ictd_fix_readout_hidden_channels=int(readout_hidden_channels),
         ictd_fix_interaction_attn_heads=attn_heads,
+        ictd_fix_phase_mode=phase_mode,
+        ictd_fix_phase_hidden_channels=phase_hidden_channels,
+        ictd_fix_phase_residual_scale_init=phase_residual_scale_init,
+        ictd_fix_phase_amplitude=phase_amplitude,
         angular_basis=angular_basis,
         save_contraction_order=correlation,
         radial_sqrt_num_basis=radial_sqrt_num_basis,
@@ -516,6 +524,25 @@ def build_arg_parser() -> argparse.ArgumentParser:
                     help="Scalar hidden width of the final MACE-style readout (MACE MLP_irreps width).")
     ap.add_argument("--max-radius", type=float, default=5.0)
     ap.add_argument("--attn-heads", type=int, default=0)
+    ap.add_argument(
+        "--phase-mode",
+        default="none",
+        choices=["none", "final-scalar-residual"],
+        help="Optional PEMP Hermitian phase branch on the final interaction layer.",
+    )
+    ap.add_argument("--phase-hidden-channels", type=int, default=32)
+    ap.add_argument(
+        "--phase-scale-init",
+        type=float,
+        default=0.05,
+        help="Initial learnable scale of the Hermitian scalar residual.",
+    )
+    ap.add_argument(
+        "--phase-amplitude",
+        default="unit",
+        choices=["unit", "softplus"],
+        help="Use a pure learned phase or add a positive learned edge amplitude.",
+    )
     ap.add_argument("--radial-sqrt-num-basis", action="store_true",
                     help="Use the sqrt(num_basis) radial scale (default OFF = byte-literal MACE radial).")
     ap.add_argument("--avg-num-neighbors", type=float, default=None,
@@ -797,6 +824,10 @@ def _override_args_from_checkpoint(args):
         "max_radius": "max_radius",
         "ictd_fix_readout_hidden_channels": "readout_hidden_channels",
         "ictd_fix_product_backend": "product_backend",
+        "ictd_fix_phase_mode": "phase_mode",
+        "ictd_fix_phase_hidden_channels": "phase_hidden_channels",
+        "ictd_fix_phase_residual_scale_init": "phase_scale_init",
+        "ictd_fix_phase_amplitude": "phase_amplitude",
     }
     changed = []
     for hk, ak in mapping.items():
@@ -1012,6 +1043,10 @@ def main(argv=None):
         angular_basis=args.angular_basis,
         radial_sqrt_num_basis=args.radial_sqrt_num_basis, edge_lmax=args.max_ell,
         attn_heads=args.attn_heads,
+        phase_mode=args.phase_mode,
+        phase_hidden_channels=args.phase_hidden_channels,
+        phase_residual_scale_init=args.phase_scale_init,
+        phase_amplitude=args.phase_amplitude,
         atomic_numbers=atomic_numbers, ictd_save_tp_mode=args.ictd_save_tp_mode,
         invariant_channels=args.invariant_channels,
         energy_output_scale=scale,
@@ -1148,6 +1183,10 @@ def main(argv=None):
         save_contraction_order=args.correlation,
         ictd_save_tp_mode=args.ictd_save_tp_mode,
         ictd_fix_interaction_attn_heads=args.attn_heads,
+        ictd_fix_phase_mode=args.phase_mode,
+        ictd_fix_phase_hidden_channels=int(args.phase_hidden_channels),
+        ictd_fix_phase_residual_scale_init=float(args.phase_scale_init),
+        ictd_fix_phase_amplitude=args.phase_amplitude,
         radial_sqrt_num_basis=bool(args.radial_sqrt_num_basis),
         polynomial_cutoff_p=(None if args.polynomial_cutoff_p <= 0 else int(args.polynomial_cutoff_p)),
         optimizer_param_groups=args.optimizer_param_groups,

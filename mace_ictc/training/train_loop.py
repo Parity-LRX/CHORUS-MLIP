@@ -385,6 +385,8 @@ class ForceTrainer:
                 key = "embedding"
             elif name.startswith("products."):
                 key = "products"
+            elif name.startswith("phase_adapters."):
+                key = "other_no_decay" if name.endswith("residual_scale") else "products"
             elif name.startswith(("layer_energy_readouts", "last_layer_energy_readout", "readouts")):
                 key = "readouts"
             elif name.startswith("interactions."):
@@ -1483,6 +1485,8 @@ class ForceTrainer:
                 "ictd_fix_readout_hidden_channels",
                 "ictd_fix_fusion_heads", "ictd_fix_fusion_head_weight_mode",
                 "ictd_fix_interaction_attn_heads", "ictd_fix_interaction_scale",
+                "ictd_fix_phase_mode", "ictd_fix_phase_hidden_channels",
+                "ictd_fix_phase_residual_scale_init", "ictd_fix_phase_amplitude",
                 "ictd_fix_fusion_scale_init", "ictd_fix_gmix_gate_init",
                 "ictd_fix_gmix_output_lmax", "avg_num_neighbors",
                 "polynomial_cutoff_p", "long_range_mode", "angular_basis",

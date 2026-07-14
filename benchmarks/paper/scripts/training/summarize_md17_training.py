@@ -30,6 +30,8 @@ def _job_parts(stem: str) -> tuple[str, str]:
     marker = "_seed"
     before_seed = stem.split(marker, 1)[0]
     known_modes = [
+        "ictc_phase_softplus_eager",
+        "ictc_phase_unit_eager",
         "ictc_bridge_u_eager",
         "ictc_bridge_u_makefx",
         "ictc_cueq_makefx",

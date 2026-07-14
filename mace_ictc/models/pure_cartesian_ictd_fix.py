@@ -427,6 +427,157 @@ class ElementConditionedLinearSO3(nn.Module):
         return _merge_irreps(out_blocks, self.channels, self.lmax)
 
 
+class ElementConditionedScalarLinear(nn.Module):
+    """Element-conditioned rectangular linear map between invariant features."""
+
+    def __init__(self, num_elements: int, in_features: int, out_features: int, bias: bool = False):
+        super().__init__()
+        self.num_elements = int(num_elements)
+        self.in_features = int(in_features)
+        self.out_features = int(out_features)
+        self.weight = nn.Parameter(
+            torch.empty(self.num_elements, self.out_features, self.in_features)
+        )
+        nn.init.normal_(
+            self.weight,
+            mean=0.0,
+            std=1.0 / math.sqrt(float(max(self.in_features, 1))),
+        )
+        self.bias = (
+            nn.Parameter(torch.zeros(self.num_elements, self.out_features)) if bias else None
+        )
+
+    def forward(
+        self,
+        x: torch.Tensor,
+        node_attrs: torch.Tensor | None,
+        node_type_idx: torch.Tensor | None = None,
+    ) -> torch.Tensor:
+        if node_type_idx is not None:
+            idx = node_type_idx.to(device=x.device, dtype=torch.long)
+            weight = self.weight.to(dtype=x.dtype, device=x.device).index_select(0, idx)
+            out = torch.einsum("noi,ni->no", weight, x)
+            if self.bias is not None:
+                out = out + self.bias.to(dtype=x.dtype, device=x.device).index_select(0, idx)
+            return out
+        if node_attrs is None:
+            raise ValueError("node_attrs is required when node_type_idx is not provided")
+        attrs = node_attrs.to(dtype=x.dtype, device=x.device)
+        weight = torch.einsum(
+            "ne,eoi->noi", attrs, self.weight.to(dtype=x.dtype, device=x.device)
+        )
+        out = torch.einsum("noi,ni->no", weight, x)
+        if self.bias is not None:
+            out = out + torch.einsum(
+                "ne,eo->no", attrs, self.bias.to(dtype=x.dtype, device=x.device)
+            )
+        return out
+
+
+class SO3DoubletRMSNorm(nn.Module):
+    """Joint RMS norm for a real pair representing one complex SO(3) feature.
+
+    A shared norm and gain are essential here: independently normalizing the real
+    and imaginary streams would not commute with a global U(1) rotation.
+    """
+
+    def __init__(self, channels: int, lmax: int, eps: float = 1.0e-8):
+        super().__init__()
+        self.channels = int(channels)
+        self.lmax = int(lmax)
+        self.eps = float(eps)
+        self.gain = nn.Parameter(
+            torch.ones(self.lmax + 1, self.channels, dtype=torch.get_default_dtype())
+        )
+
+    def forward(
+        self, real: torch.Tensor, imag: torch.Tensor
+    ) -> tuple[torch.Tensor, torch.Tensor]:
+        real_blocks = _split_irreps(real, self.channels, self.lmax)
+        imag_blocks = _split_irreps(imag, self.channels, self.lmax)
+        real_out: Dict[int, torch.Tensor] = {}
+        imag_out: Dict[int, torch.Tensor] = {}
+        for l in range(self.lmax + 1):
+            re = real_blocks[l]
+            im = imag_blocks[l]
+            rms = (
+                (re.square() + im.square())
+                .mean(dim=(-1, -2), keepdim=True)
+                .add(self.eps)
+                .sqrt()
+            )
+            gain = self.gain[l].view(
+                *([1] * (re.ndim - 2)), self.channels, 1
+            ).to(dtype=re.dtype, device=re.device)
+            real_out[l] = re * (gain / rms)
+            imag_out[l] = im * (gain / rms)
+        return (
+            _merge_irreps(real_out, self.channels, self.lmax),
+            _merge_irreps(imag_out, self.channels, self.lmax),
+        )
+
+
+class PhaseHermitianScalarResidual(nn.Module):
+    """Contract a complex SO(3) doublet to a real, element-conditioned scalar residual.
+
+    ``real`` and ``imag`` encode a complex atomic environment without using a
+    complex dtype.  The contraction
+
+        <real, real>_l + <imag, imag>_l
+
+    is exactly invariant under a shared U(1) rotation of the doublet and under
+    SO(3).  It also exposes the intended pair factor cos(theta_j - theta_k).
+    """
+
+    def __init__(
+        self,
+        *,
+        num_elements: int,
+        channels: int,
+        lmax: int,
+        residual_scale_init: float = 0.05,
+        internal_compute_dtype: torch.dtype | None = None,
+    ):
+        super().__init__()
+        self.channels = int(channels)
+        self.lmax = int(lmax)
+        self.hermitian_product = HarmonicElementwiseProduct(
+            lmax=self.lmax,
+            mul=self.channels,
+            irreps_out="0e",
+            normalization="component",
+            internal_compute_dtype=internal_compute_dtype,
+        )
+        self.scalar_linear = ElementConditionedScalarLinear(
+            num_elements=num_elements,
+            in_features=self.channels * (self.lmax + 1),
+            out_features=self.channels,
+            bias=False,
+        )
+        self.residual_scale = nn.Parameter(
+            torch.tensor(float(residual_scale_init), dtype=torch.get_default_dtype())
+        )
+
+    def hermitian_features(self, real: torch.Tensor, imag: torch.Tensor) -> torch.Tensor:
+        real_blocks = _split_irreps(real, self.channels, self.lmax)
+        imag_blocks = _split_irreps(imag, self.channels, self.lmax)
+        return self.hermitian_product(real_blocks, real_blocks) + self.hermitian_product(
+            imag_blocks, imag_blocks
+        )
+
+    def forward(
+        self,
+        real: torch.Tensor,
+        imag: torch.Tensor,
+        *,
+        node_attrs: torch.Tensor | None,
+        node_type_idx: torch.Tensor | None = None,
+    ) -> torch.Tensor:
+        rho = self.hermitian_features(real, imag)
+        delta = self.scalar_linear(rho, node_attrs, node_type_idx)
+        return self.residual_scale.to(dtype=delta.dtype, device=delta.device) * delta
+
+
 class PerLScaleSO3(nn.Module):
     def __init__(self, channels: int, lmax: int, init_scales: list[float] | tuple[float, ...]):
         super().__init__()
@@ -1699,6 +1850,9 @@ class ICTDResidualInteractionBlock(nn.Module):
         interaction_init: str = "identity",
         use_rms_norm: bool = False,
         interaction_attn_heads: int = 0,
+        phase_enabled: bool = False,
+        phase_hidden_channels: int = 32,
+        phase_amplitude: str = "unit",
     ):
         super().__init__()
         self.channels = int(channels)
@@ -1821,6 +1975,61 @@ class ICTDResidualInteractionBlock(nn.Module):
         # forces stay continuous). The scalar alpha is shared across the 2l+1 m-components
         # of every l (=> equivariance preserved) and across the head's channels.
         self.interaction_attn_heads = int(interaction_attn_heads)
+        self.phase_enabled = bool(phase_enabled)
+        self.phase_hidden_channels = int(phase_hidden_channels)
+        self.phase_amplitude = str(phase_amplitude)
+        if self.phase_hidden_channels <= 0:
+            raise ValueError(
+                f"phase_hidden_channels must be positive, got {self.phase_hidden_channels}"
+            )
+        if self.phase_amplitude not in {"unit", "softplus"}:
+            raise ValueError(
+                f"phase_amplitude must be 'unit' or 'softplus', got {self.phase_amplitude!r}"
+            )
+        if self.phase_enabled and self.interaction_attn_heads > 0:
+            raise ValueError(
+                "phase-enabled interaction and neighbor attention cannot be combined in the "
+                "first PEMP implementation; benchmark them as separate operators"
+            )
+        if self.phase_enabled:
+            # Only l=0 node features and radial edge features enter this network,
+            # therefore theta is an E(3)-invariant edge scalar.  One scalar is
+            # shared across all channels, l blocks, and tensor-product paths.
+            self.phase_node_norm = nn.LayerNorm(self.channels)
+            self.phase_trunk = nn.Sequential(
+                nn.Linear(2 * self.channels + self.number_of_basis, self.phase_hidden_channels),
+                _Normalize2MomSiLU(),
+                nn.Linear(self.phase_hidden_channels, self.phase_hidden_channels),
+                _Normalize2MomSiLU(),
+            )
+            self.phase_head = nn.Linear(self.phase_hidden_channels, 1, bias=False)
+            for layer in (self.phase_trunk[0], self.phase_trunk[2]):
+                _init_mace_style_linear_(layer)
+            nn.init.normal_(
+                self.phase_head.weight,
+                mean=0.0,
+                std=0.1 / math.sqrt(float(self.phase_hidden_channels)),
+            )
+            if self.phase_amplitude == "softplus":
+                self.phase_amplitude_head = nn.Linear(self.phase_hidden_channels, 1, bias=True)
+                with torch.no_grad():
+                    self.phase_amplitude_head.weight.zero_()
+                    # softplus^{-1}(1): start as the unit-amplitude model while
+                    # retaining a learnable positive amplitude.
+                    self.phase_amplitude_head.bias.fill_(math.log(math.expm1(1.0)))
+            else:
+                self.phase_amplitude_head = None
+            self.phase_norm = (
+                SO3DoubletRMSNorm(self.channels, self.target_lmax)
+                if self.use_rms_norm
+                else None
+            )
+        else:
+            self.phase_node_norm = None
+            self.phase_trunk = None
+            self.phase_head = None
+            self.phase_amplitude_head = None
+            self.phase_norm = None
         self._fused_selector_message_enabled = False
         self._fused_selector_message_has_bias = False
         if self.interaction_attn_heads > 0:
@@ -1959,7 +2168,10 @@ class ICTDResidualInteractionBlock(nn.Module):
         edge_env: torch.Tensor | None = None,
         node_type_idx: torch.Tensor | None = None,
         sync_after_scatter: callable | None = None,
-    ) -> tuple[torch.Tensor, torch.Tensor | None]:
+    ) -> (
+        tuple[torch.Tensor, torch.Tensor | None]
+        | tuple[torch.Tensor, torch.Tensor | None, torch.Tensor, torch.Tensor]
+    ):
         edge_src = edge_index[0]
         edge_dst = edge_index[1]
         num_nodes = node_feats.size(0)
@@ -1973,6 +2185,27 @@ class ICTDResidualInteractionBlock(nn.Module):
         if edge_mask is not None:
             mask = edge_mask.to(dtype=node_feats.dtype)
             edge_blocks = {l: block * mask.unsqueeze(-1) for l, block in edge_blocks.items()}
+        phase_cos: torch.Tensor | None = None
+        phase_sin: torch.Tensor | None = None
+        if self.phase_enabled:
+            scalar_nodes = x1[0].squeeze(-1)
+            normalized_scalar_nodes = self.phase_node_norm(scalar_nodes)
+            phase_context = torch.cat(
+                (
+                    normalized_scalar_nodes[edge_dst],
+                    normalized_scalar_nodes[edge_src],
+                    edge_feats,
+                ),
+                dim=-1,
+            )
+            phase_hidden = self.phase_trunk(phase_context)
+            theta = self.phase_head(phase_hidden)
+            if self.phase_amplitude_head is None:
+                amplitude = torch.ones_like(theta)
+            else:
+                amplitude = F.softplus(self.phase_amplitude_head(phase_hidden))
+            phase_cos = amplitude.mul(torch.cos(theta)).unsqueeze(-1)
+            phase_sin = amplitude.mul(torch.sin(theta)).unsqueeze(-1)
         selector_message_fused = False
         if self.interaction_attn_heads > 0:
             if edge_env is None:
@@ -2046,8 +2279,51 @@ class ICTDResidualInteractionBlock(nn.Module):
                 else:
                     avg_num_neighbors = self.avg_num_neighbors
                 message = self.message_linear(message_blocks) / max(avg_num_neighbors, 1e-8)
+        phase_real = None
+        phase_imag = None
+        if self.phase_enabled:
+            if phase_cos is None or phase_sin is None:
+                raise RuntimeError("phase gates were not constructed")
+            phase_real_blocks = {
+                l: scatter(
+                    edge_blocks[l] * phase_cos,
+                    edge_dst,
+                    dim=0,
+                    dim_size=num_nodes,
+                    reduce="sum",
+                )
+                for l in range(self.target_lmax + 1)
+            }
+            phase_imag_blocks = {
+                l: scatter(
+                    edge_blocks[l] * phase_sin,
+                    edge_dst,
+                    dim=0,
+                    dim_size=num_nodes,
+                    reduce="sum",
+                )
+                for l in range(self.target_lmax + 1)
+            }
+            if self.avg_num_neighbors is None:
+                if edge_mask is not None:
+                    phase_avg_num_neighbors = float(edge_mask.detach().sum().item()) / float(
+                        max(num_nodes, 1)
+                    )
+                else:
+                    phase_avg_num_neighbors = float(edge_src.numel()) / float(max(num_nodes, 1))
+            else:
+                phase_avg_num_neighbors = self.avg_num_neighbors
+            phase_real = self.message_linear(phase_real_blocks) / max(
+                phase_avg_num_neighbors, 1.0e-8
+            )
+            phase_imag = self.message_linear(phase_imag_blocks) / max(
+                phase_avg_num_neighbors, 1.0e-8
+            )
         if sync_after_scatter is not None:
             message = sync_after_scatter(message)
+            if phase_real is not None and phase_imag is not None:
+                phase_real = sync_after_scatter(phase_real)
+                phase_imag = sync_after_scatter(phase_imag)
         if not self.use_self_connection and not selector_message_fused:
             if node_attrs is None:
                 raise ValueError("node_attrs is required for the unfused message selector path")
@@ -2055,6 +2331,11 @@ class ICTDResidualInteractionBlock(nn.Module):
         if not selector_message_fused:
             message = self.message_norm(message)
             message = self.message_output_scale(message)
+        if phase_real is not None and phase_imag is not None:
+            if self.phase_norm is not None:
+                phase_real, phase_imag = self.phase_norm(phase_real, phase_imag)
+            phase_real = self.message_output_scale(phase_real)
+            phase_imag = self.message_output_scale(phase_imag)
         sc = None
         if self.self_connection is not None:
             if self.sc_lmax == self.input_lmax:
@@ -2075,6 +2356,8 @@ class ICTDResidualInteractionBlock(nn.Module):
                 sc = self.self_connection(sc_input, node_attrs)
             sc = self.sc_norm(sc)
             sc = self.sc_output_scale(sc)
+        if phase_real is not None and phase_imag is not None:
+            return message, sc, phase_real, phase_imag
         return message, sc
 
 
@@ -2211,6 +2494,10 @@ class PureCartesianICTDFix(nn.Module):
         ictd_fix_interaction_rms_norm: bool = False,
         radial_sqrt_num_basis: bool = False,
         ictd_fix_interaction_attn_heads: int = 0,
+        ictd_fix_phase_mode: str = "none",
+        ictd_fix_phase_hidden_channels: int = 32,
+        ictd_fix_phase_residual_scale_init: float = 0.05,
+        ictd_fix_phase_amplitude: str = "unit",
         ictd_fix_gmix_energy_readout: bool = True,
         ictd_fix_gmix_readout_scale_init: float | None = None,
         ictd_fix_gmix_readout_output_init_std: float = 0.003,
@@ -2338,6 +2625,33 @@ class PureCartesianICTDFix(nn.Module):
         # from_checkpoint forces True for back-compat with FSCETP checkpoints trained with the scale.
         self.radial_sqrt_num_basis = bool(radial_sqrt_num_basis)
         self.ictd_fix_interaction_attn_heads = int(ictd_fix_interaction_attn_heads)
+        self.ictd_fix_phase_mode = str(ictd_fix_phase_mode)
+        self.ictd_fix_phase_hidden_channels = int(ictd_fix_phase_hidden_channels)
+        self.ictd_fix_phase_residual_scale_init = float(ictd_fix_phase_residual_scale_init)
+        self.ictd_fix_phase_amplitude = str(ictd_fix_phase_amplitude)
+        if self.ictd_fix_phase_mode not in {"none", "final-scalar-residual"}:
+            raise ValueError(
+                "ictd_fix_phase_mode must be 'none' or 'final-scalar-residual', "
+                f"got {self.ictd_fix_phase_mode!r}"
+            )
+        if self.ictd_fix_phase_hidden_channels <= 0:
+            raise ValueError(
+                "ictd_fix_phase_hidden_channels must be positive, "
+                f"got {self.ictd_fix_phase_hidden_channels}"
+            )
+        if self.ictd_fix_phase_amplitude not in {"unit", "softplus"}:
+            raise ValueError(
+                "ictd_fix_phase_amplitude must be 'unit' or 'softplus', "
+                f"got {self.ictd_fix_phase_amplitude!r}"
+            )
+        if (
+            self.ictd_fix_phase_mode != "none"
+            and self.ictd_fix_interaction_attn_heads > 0
+        ):
+            raise ValueError(
+                "phase mode and interaction attention are intentionally mutually exclusive in v1; "
+                "run them as separate ablations"
+            )
         self.ictd_fix_gmix_energy_readout = bool(ictd_fix_gmix_energy_readout)
         self.ictd_fix_gmix_readout_output_init_std = float(ictd_fix_gmix_readout_output_init_std)
         self.ictd_fix_layer_readout_output_init_std = float(ictd_fix_layer_readout_output_init_std)
@@ -2397,8 +2711,13 @@ class PureCartesianICTDFix(nn.Module):
         ]
         self.interactions = nn.ModuleList()
         self.products = nn.ModuleList()
+        self.phase_adapters = nn.ModuleDict()
         self.ictd_fix_effective_product_backends: list[str] = []
         for layer_idx, target_lmax in enumerate(product_target_lmax):
+            phase_enabled = (
+                self.ictd_fix_phase_mode == "final-scalar-residual"
+                and layer_idx == self.num_interaction - 1
+            )
             effective_product_backend = self.ictd_fix_product_backend
             self.ictd_fix_effective_product_backends.append(effective_product_backend)
             input_lmax = 0 if layer_idx == 0 else self.lmax
@@ -2447,6 +2766,9 @@ class PureCartesianICTDFix(nn.Module):
                     interaction_init=self.ictd_fix_interaction_init,
                     use_rms_norm=self.ictd_fix_interaction_rms_norm,
                     interaction_attn_heads=self.ictd_fix_interaction_attn_heads,
+                    phase_enabled=phase_enabled,
+                    phase_hidden_channels=self.ictd_fix_phase_hidden_channels,
+                    phase_amplitude=self.ictd_fix_phase_amplitude,
                 )
             )
             if effective_product_backend == "native-mace":
@@ -2523,6 +2845,14 @@ class PureCartesianICTDFix(nn.Module):
                         ictd_tp_backend=ictd_tp_backend,
                         contraction_combine=self.ictd_fix_contraction_combine,
                     )
+                )
+            if phase_enabled:
+                self.phase_adapters[str(layer_idx)] = PhaseHermitianScalarResidual(
+                    num_elements=self.num_elements,
+                    channels=self.channels,
+                    lmax=self.ictd_fix_edge_lmax,
+                    residual_scale_init=self.ictd_fix_phase_residual_scale_init,
+                    internal_compute_dtype=internal_compute_dtype,
                 )
         self.layer_energy_readouts = nn.ModuleList(
             [EquivariantScalarReadoutSO3(self.channels, self.lmax, output_init_std=self.ictd_fix_layer_readout_output_init_std) for _ in range(self.num_interaction - 1)]
@@ -3031,7 +3361,7 @@ class PureCartesianICTDFix(nn.Module):
         last_preproduct_state: torch.Tensor | None = None
         total_energy = None
         for layer_idx, (interaction, product) in enumerate(zip(self.interactions, self.products)):
-            message, sc = interaction(
+            interaction_out = interaction(
                 node_attrs=node_attrs,
                 node_feats=h,
                 edge_attrs=edge_attrs,
@@ -3042,10 +3372,28 @@ class PureCartesianICTDFix(nn.Module):
                 node_type_idx=compact_idx,
                 sync_after_scatter=sync_after_scatter,
             )
+            phase_real = None
+            phase_imag = None
+            if interaction.phase_enabled:
+                message, sc, phase_real, phase_imag = interaction_out
+            else:
+                message, sc = interaction_out
             if type(product).__name__.startswith("Cueq"):
                 h = product(node_feats=message, sc=sc, node_attrs=node_attrs, node_type_idx=compact_idx)
             else:
                 h = product(node_feats=message, sc=sc, node_attrs=node_attrs)
+            phase_key = str(layer_idx)
+            if phase_key in self.phase_adapters:
+                if phase_real is None or phase_imag is None:
+                    raise RuntimeError(
+                        f"phase adapter exists for layer {layer_idx}, but the interaction returned no doublet"
+                    )
+                h = h + self.phase_adapters[phase_key](
+                    phase_real,
+                    phase_imag,
+                    node_attrs=node_attrs,
+                    node_type_idx=compact_idx,
+                )
             if layer_idx == 0 and self.mace_first_layer_sc0 is not None:
                 add = self.mace_first_layer_sc0.to(dtype=h.dtype, device=h.device)[compact_idx]
                 h = torch.cat((h[..., : self.channels] + add, h[..., self.channels :]), dim=-1)
