@@ -32,7 +32,9 @@ Full manuals:
 - Long-range interactions: learned reciprocal-space electrostatics
   (periodic/slab, multipole sources) and anisotropic many-body dispersion (MBD),
   trained end-to-end and deployable to LAMMPS.
-- Opt-in PEMP real-doublet/Hermitian phase residual; see the
+- Opt-in PEMP real-doublet/Hermitian phase residual, including pre-product scalar
+  injection, a rank-reduced full-L equivariant density path, and an experimental
+  cross-layer persistent charged stream; see the
   [implementation and research plan](docs/phase_hermitian_strategy.md).
 - Curated benchmark records under [benchmarks/paper](benchmarks/paper).
 

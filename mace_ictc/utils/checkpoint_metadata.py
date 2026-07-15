@@ -36,6 +36,9 @@ DEFAULT_MODEL_ARCHITECTURE: dict[str, Any] = {
     "ictd_fix_phase_hidden_channels": 32,
     "ictd_fix_phase_residual_scale_init": 0.05,
     "ictd_fix_phase_amplitude": "unit",
+    "ictd_fix_phase_placement": "post-product",
+    "ictd_fix_phase_density_rank": 8,
+    "ictd_fix_phase_scope": "final",
     "save_contraction_order": 3,
     "save_multiple_fusion_scheme": "serial_lastmix",
     "save_final_readout_mode": "direct-1",
@@ -512,6 +515,33 @@ def resolve_model_architecture(
             arch_meta,
             "ictd_fix_phase_amplitude",
             DEFAULT_MODEL_ARCHITECTURE["ictd_fix_phase_amplitude"],
+        )
+    )
+    resolved["ictd_fix_phase_placement"] = str(
+        _resolve_value(
+            overrides,
+            checkpoint,
+            arch_meta,
+            "ictd_fix_phase_placement",
+            DEFAULT_MODEL_ARCHITECTURE["ictd_fix_phase_placement"],
+        )
+    )
+    resolved["ictd_fix_phase_density_rank"] = int(
+        _resolve_value(
+            overrides,
+            checkpoint,
+            arch_meta,
+            "ictd_fix_phase_density_rank",
+            DEFAULT_MODEL_ARCHITECTURE["ictd_fix_phase_density_rank"],
+        )
+    )
+    resolved["ictd_fix_phase_scope"] = str(
+        _resolve_value(
+            overrides,
+            checkpoint,
+            arch_meta,
+            "ictd_fix_phase_scope",
+            DEFAULT_MODEL_ARCHITECTURE["ictd_fix_phase_scope"],
         )
     )
     resolved["save_contraction_order"] = int(

@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Matched rMD17 comparison for the existing ICTC operator and the two phase
-# variants. Defaults reproduce the archived 300-epoch, three-seed protocol.
+# Matched rMD17 comparison for the existing ICTC operator and phase variants.
+# Defaults reproduce the archived 300-epoch, three-seed protocol.
 # Set EPOCHS/SEEDS/MAX_STEPS explicitly only for a labelled smoke run.
 
 PYTHON_BIN="${PYTHON_BIN:-/home/ylzhang/micromamba/envs/FSCETP/bin/python}"
@@ -33,9 +33,17 @@ READOUT_HIDDEN="${READOUT_HIDDEN:-64}"
 MAX_GRAD_NORM="${MAX_GRAD_NORM:-10.0}"
 PHASE_HIDDEN_CHANNELS="${PHASE_HIDDEN_CHANNELS:-32}"
 PHASE_SCALE_INIT="${PHASE_SCALE_INIT:-0.05}"
+PHASE_PLACEMENT="${PHASE_PLACEMENT:-post-product}"
+PHASE_DENSITY_RANK="${PHASE_DENSITY_RANK:-8}"
+PARALLEL_JOBS="${PARALLEL_JOBS:-1}"
 DTYPE="${DTYPE:-float32}"
 DEVICE="${DEVICE:-cuda}"
 NUM_WORKERS="${NUM_WORKERS:-2}"
+
+if ! [[ "${PARALLEL_JOBS}" =~ ^[1-9][0-9]*$ ]]; then
+  echo "PARALLEL_JOBS must be a positive integer, got ${PARALLEL_JOBS}" >&2
+  exit 2
+fi
 
 mkdir -p "${OUT_ROOT}"/{logs,checkpoints,commands,metadata,analysis}
 IFS=',' read -r -a DATASET_ARRAY <<< "${DATASETS}"
@@ -56,7 +64,8 @@ cat > "${OUT_ROOT}/matrix_metadata.json" <<EOF
   "radial": {"type": "bessel", "num_basis": 8, "polynomial_cutoff_p": 6, "r_max": ${R_MAX}},
   "optimizer": {"type": "AdamW", "lr": ${LR}, "weight_decay": ${WEIGHT_DECAY}, "amsgrad": true, "scheduler": "ExponentialLR", "gamma": ${LR_GAMMA}},
   "loss": {"type": "mse", "energy_weight": ${ENERGY_WEIGHT}, "force_weight": ${FORCE_WEIGHT}, "stress_weight": 0.0},
-  "phase": {"hidden_channels": ${PHASE_HIDDEN_CHANNELS}, "residual_scale_init": ${PHASE_SCALE_INIT}},
+  "phase": {"hidden_channels": ${PHASE_HIDDEN_CHANNELS}, "residual_scale_init": ${PHASE_SCALE_INIT}, "default_placement": "${PHASE_PLACEMENT}", "density_rank": ${PHASE_DENSITY_RANK}, "scope_is_mode_specific": true},
+  "parallel_jobs": ${PARALLEL_JOBS},
   "average_e0_rule": "minimum-norm E0_Z = mean(E) n_Z / sum_Z n_Z^2",
   "device": "${DEVICE}",
   "dtype": "${DTYPE}"
@@ -94,6 +103,25 @@ run_logged() {
     return "${rc}"
   fi
   echo "OK ${name} $(date)" | tee -a "${OUT_ROOT}/status.log"
+}
+
+ACTIVE_PIDS=()
+RUN_FAILED=0
+
+wait_oldest_job() {
+  local pid="${ACTIVE_PIDS[0]}"
+  if ! wait "${pid}"; then
+    RUN_FAILED=1
+  fi
+  ACTIVE_PIDS=("${ACTIVE_PIDS[@]:1}")
+}
+
+queue_logged() {
+  run_logged "$@" &
+  ACTIVE_PIDS+=("$!")
+  if (( ${#ACTIVE_PIDS[@]} >= PARALLEL_JOBS )); then
+    wait_oldest_job
+  fi
 }
 
 write_system_metadata() {
@@ -161,6 +189,7 @@ ictc_common_flags() {
     --optimizer adamw --optimizer-param-groups mace --weight-decay "${WEIGHT_DECAY}" \
     --amsgrad --max-grad-norm "${MAX_GRAD_NORM}" \
     --phase-hidden-channels "${PHASE_HIDDEN_CHANNELS}" --phase-scale-init "${PHASE_SCALE_INIT}" \
+    --phase-density-rank "${PHASE_DENSITY_RANK}" \
     "$@"
 }
 
@@ -179,29 +208,52 @@ for raw_dataset in "${DATASET_ARRAY[@]}"; do
     seed="$(echo "${raw_seed}" | xargs)"
     for raw_mode in "${MODE_ARRAY[@]}"; do
       mode="$(echo "${raw_mode}" | xargs)"
-      phase_args=(--phase-mode none --phase-amplitude unit)
+      phase_args=(--phase-mode none --phase-amplitude unit --phase-placement post-product --phase-scope final)
       case "${mode}" in
         ictc_bridge_u_eager) ;;
         ictc_phase_unit_eager)
-          phase_args=(--phase-mode final-scalar-residual --phase-amplitude unit)
+          phase_args=(--phase-mode final-scalar-residual --phase-amplitude unit --phase-placement "${PHASE_PLACEMENT}" --phase-scope final)
           ;;
         ictc_phase_softplus_eager)
-          phase_args=(--phase-mode final-scalar-residual --phase-amplitude softplus)
+          phase_args=(--phase-mode final-scalar-residual --phase-amplitude softplus --phase-placement "${PHASE_PLACEMENT}" --phase-scope final)
+          ;;
+        ictc_phase_full_l_softplus_eager)
+          phase_args=(--phase-mode final-full-l-residual --phase-amplitude softplus --phase-placement pre-product-full-l --phase-scope final)
+          ;;
+        ictc_phase_scalar_persistent_softplus_eager)
+          phase_args=(--phase-mode final-scalar-residual --phase-amplitude softplus --phase-placement pre-product-l0 --phase-scope persistent)
+          ;;
+        ictc_phase_full_l_persistent_softplus_eager)
+          phase_args=(--phase-mode final-full-l-residual --phase-amplitude softplus --phase-placement pre-product-full-l --phase-scope persistent)
           ;;
         *) echo "unknown mode ${mode}" >&2; exit 4 ;;
       esac
       job="${dataset}_${mode}_seed${seed}_epochs${EPOCHS}"
+      checkpoint_dir="${OUT_ROOT}/checkpoints"
+      if (( PARALLEL_JOBS > 1 )); then
+        checkpoint_dir="${checkpoint_dir}/${job}"
+        mkdir -p "${checkpoint_dir}"
+      fi
       mapfile -t flags < <(ictc_common_flags "${data}" "${E0_KEYS}" "${E0_VALS}" \
-        --seed "${seed}" --checkpoint "${OUT_ROOT}/checkpoints/${job}.pth" \
+        --seed "${seed}" --checkpoint "${checkpoint_dir}/${job}.pth" \
         --log-interval 200 "${phase_args[@]}")
       if [[ -n "${MAX_STEPS}" ]]; then
         flags+=(--max-steps "${MAX_STEPS}")
       fi
-      run_logged "${job}" env PYTHONPATH="${MACE_ICTC_REPO}:${MACE_TORCH_PATH}:${PYTHONPATH:-}" \
+      queue_logged "${job}" env PYTHONPATH="${MACE_ICTC_REPO}:${MACE_TORCH_PATH}:${PYTHONPATH:-}" \
         "${PYTHON_BIN}" -m mace_ictc.cli.train "${flags[@]}"
     done
   done
 done
+
+while (( ${#ACTIVE_PIDS[@]} > 0 )); do
+  wait_oldest_job
+done
+
+if (( RUN_FAILED != 0 )); then
+  echo "one or more matrix jobs failed; see ${OUT_ROOT}/status.log" >&2
+  exit 5
+fi
 
 "${PYTHON_BIN}" "${MACE_ICTC_REPO}/benchmarks/paper/scripts/training/analyze_md17_convergence.py" \
   "${OUT_ROOT}/logs" --out-dir "${OUT_ROOT}/analysis" --target-epoch "${EPOCHS}" --plots

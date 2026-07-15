@@ -2,8 +2,8 @@
 """Matched 4090 benchmark for the PEMP Hermitian phase branch.
 
 This reuses the fixed-edge whole-model workload and timing functions from the
-paper benchmark.  It compares the existing ICTC model against unit-amplitude
-and learned-amplitude phase residuals with the same backend and graph.
+paper benchmark.  It compares selected ICTC/phase variants with the same
+backend and graph and records both latency and graph/atom/edge throughput.
 """
 
 from __future__ import annotations
@@ -32,9 +32,27 @@ from mace_ictc.training.train_loop import disable_tf32
 
 
 PHASE_MODES = {
-    "baseline": ("none", "unit"),
-    "phase_unit": ("final-scalar-residual", "unit"),
-    "phase_softplus": ("final-scalar-residual", "softplus"),
+    "baseline": ("none", "unit", "post-product", "final"),
+    "phase_unit": ("final-scalar-residual", "unit", "post-product", "final"),
+    "phase_softplus": ("final-scalar-residual", "softplus", "post-product", "final"),
+    "phase_full_l_rank8": (
+        "final-full-l-residual",
+        "softplus",
+        "pre-product-full-l",
+        "final",
+    ),
+    "phase_scalar_persistent": (
+        "final-scalar-residual",
+        "softplus",
+        "pre-product-l0",
+        "persistent",
+    ),
+    "phase_full_l_persistent_rank8": (
+        "final-full-l-residual",
+        "softplus",
+        "pre-product-full-l",
+        "persistent",
+    ),
 }
 
 
@@ -43,6 +61,8 @@ def _time_mode(
     label: str,
     phase_mode: str,
     phase_amplitude: str,
+    phase_placement: str,
+    phase_scope: str,
     args: argparse.Namespace,
     cfg: AngularConfig,
     graph,
@@ -69,6 +89,9 @@ def _time_mode(
         phase_hidden_channels=args.phase_hidden_channels,
         phase_residual_scale_init=args.phase_scale_init,
         phase_amplitude=phase_amplitude,
+        phase_placement=phase_placement,
+        phase_density_rank=args.phase_density_rank,
+        phase_scope=phase_scope,
     )
     params = sum(parameter.numel() for parameter in model.parameters() if parameter.requires_grad)
     compile_s = ""
@@ -128,11 +151,14 @@ def _time_mode(
         if device.type == "cuda"
         else ""
     )
+    steps_per_s = 1000.0 / float(time_ms)
     return {
         "task": task,
         "mode": label,
         "phase_mode": phase_mode,
         "phase_amplitude": phase_amplitude,
+        "phase_placement": phase_placement,
+        "phase_scope": phase_scope,
         "product_backend": args.product_backend,
         "atoms": atoms,
         "edges": atoms * args.avg_degree,
@@ -141,6 +167,9 @@ def _time_mode(
         "max_ell": args.max_ell,
         "parameters": params,
         "time_ms": float(time_ms),
+        "steps_per_s": steps_per_s,
+        "atoms_per_s": float(atoms) * steps_per_s,
+        "edges_per_s": float(atoms * args.avg_degree) * steps_per_s,
         "overhead_vs_baseline": "",
         "peak_memory_mb": peak_mb,
         "compile_s": compile_s,
@@ -180,15 +209,16 @@ def _write(rows: list[dict], meta: dict, out_dir: Path) -> None:
         for key, value in meta.items():
             handle.write(f"- {key}: `{value}`\n")
         handle.write(
-            "\n| task | mode | atoms | parameters | ms | overhead | peak MiB | status |\n"
-            "|---|---|---:|---:|---:|---:|---:|---|\n"
+            "\n| task | mode | atoms | parameters | ms | steps/s | atoms/s | overhead | peak MiB | status |\n"
+            "|---|---|---:|---:|---:|---:|---:|---:|---:|---|\n"
         )
         for row in rows:
             overhead = row["overhead_vs_baseline"]
             overhead_text = "" if overhead == "" else f"{100.0 * float(overhead):.1f}%"
             handle.write(
                 f"| {row['task']} | {row['mode']} | {row['atoms']} | "
-                f"{row['parameters']} | {row['time_ms']:.4f} | {overhead_text} | "
+                f"{row['parameters']} | {row['time_ms']:.4f} | "
+                f"{row['steps_per_s']:.3f} | {row['atoms_per_s']:.1f} | {overhead_text} | "
                 f"{row['peak_memory_mb']} | {row['status']} |\n"
             )
     print(json.dumps({"csv": str(csv_path), "json": str(json_path), "md": str(md_path)}, indent=2))
@@ -201,6 +231,11 @@ def build_arg_parser() -> argparse.ArgumentParser:
     parser.add_argument("--product-backend", default="ictd-bridge-u", choices=["ictd-bridge-u", "ictd-pure-u", "cueq"])
     parser.add_argument("--atoms-list", default="128,512")
     parser.add_argument("--avg-degree", type=int, default=50)
+    parser.add_argument(
+        "--modes",
+        default=",".join(PHASE_MODES),
+        help="Comma-separated subset of benchmark mode names.",
+    )
     parser.add_argument("--channels", type=int, default=64)
     parser.add_argument("--hidden-lmax", type=int, default=1)
     parser.add_argument("--max-ell", type=int, default=2)
@@ -209,6 +244,7 @@ def build_arg_parser() -> argparse.ArgumentParser:
     parser.add_argument("--use-reduced-cg", action=argparse.BooleanOptionalAction, default=True)
     parser.add_argument("--phase-hidden-channels", type=int, default=32)
     parser.add_argument("--phase-scale-init", type=float, default=0.05)
+    parser.add_argument("--phase-density-rank", type=int, default=8)
     parser.add_argument("--seed", type=int, default=20260715)
     parser.add_argument("--lr", type=float, default=1.0e-3)
     parser.add_argument("--train-warmup", type=int, default=3)
@@ -232,6 +268,14 @@ def main(argv: list[str] | None = None) -> int:
     device = torch.device(args.device)
     dtype = dtype_from_name(args.dtype)
     cfg = AngularConfig(args.hidden_lmax, args.max_ell)
+    selected_modes = [mode.strip() for mode in args.modes.split(",") if mode.strip()]
+    unknown_modes = [mode for mode in selected_modes if mode not in PHASE_MODES]
+    if not selected_modes:
+        raise ValueError("--modes must select at least one benchmark mode")
+    if unknown_modes:
+        raise ValueError(
+            f"unknown --modes entries {unknown_modes}; choose from {list(PHASE_MODES)}"
+        )
     tasks = ["train_eager", "inference_eager"]
     if args.include_makefx:
         tasks.append("train_makefx")
@@ -248,12 +292,15 @@ def main(argv: list[str] | None = None) -> int:
             seed=args.seed + atoms,
         )
         for task in tasks:
-            for label, (phase_mode, amplitude) in PHASE_MODES.items():
+            for label in selected_modes:
+                phase_mode, amplitude, placement, scope = PHASE_MODES[label]
                 try:
                     row = _time_mode(
                         label=label,
                         phase_mode=phase_mode,
                         phase_amplitude=amplitude,
+                        phase_placement=placement,
+                        phase_scope=scope,
                         args=args,
                         cfg=cfg,
                         graph=graph,
@@ -266,6 +313,8 @@ def main(argv: list[str] | None = None) -> int:
                         "mode": label,
                         "phase_mode": phase_mode,
                         "phase_amplitude": amplitude,
+                        "phase_placement": placement,
+                        "phase_scope": scope,
                         "product_backend": args.product_backend,
                         "atoms": atoms,
                         "edges": atoms * args.avg_degree,
@@ -274,6 +323,9 @@ def main(argv: list[str] | None = None) -> int:
                         "max_ell": args.max_ell,
                         "parameters": "",
                         "time_ms": "",
+                        "steps_per_s": "",
+                        "atoms_per_s": "",
+                        "edges_per_s": "",
                         "overhead_vs_baseline": "",
                         "peak_memory_mb": "",
                         "compile_s": "",

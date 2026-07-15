@@ -32,6 +32,8 @@ Data:
 - `benchmarks/paper/results/operator/operator_compile_fwbw_flat.csv`
 - `benchmarks/paper/results/operator/operator_cartnn_vs_ictc.csv`
 - `benchmarks/paper/results/operator/cartnn_fairness_audit_20260618/*.csv`
+- `benchmarks/paper/results/operator/ictp_official_20260712/*.csv`
+- `benchmarks/paper/results/operator/ictp_official_20260712/operator_ictp_validation.json`
 
 Fresh-run commands:
 
@@ -47,6 +49,33 @@ python benchmarks/paper/scripts/operator/operator_bench.py \
   --configs 1:1,1:2,2:2,2:3 \
   --backends e3nn,cartnn,ictc,cart3l
 ```
+
+The official ICTP reference is run through a separate adapter so its
+non-commercial upstream source remains an unmodified external dependency:
+
+```bash
+python benchmarks/paper/scripts/operator/operator_bench_ictp.py \
+  --ictp-root /path/to/nec-research/ictp \
+  --out /tmp/mace_ictc_operator_ictp \
+  --device cuda --channels 64 --edges 100000 \
+  --configs 1:1,1:2,2:2,2:3,3:3 \
+  --dtype float32 --mode forward_backward \
+  --warmup 20 --measured 50
+
+python benchmarks/paper/scripts/operator/operator_bench_ictp.py \
+  --ictp-root /path/to/nec-research/ictp \
+  --out /tmp/mace_ictc_operator_ictp_forward \
+  --device cuda --channels 64 --edges 100000 \
+  --configs 1:1,1:2,2:2,2:3,3:3 \
+  --dtype float32 --mode forward_only \
+  --warmup 20 --measured 50
+```
+
+The archived ICTP record pins upstream commit
+`f40592a5687ec1d03219300ee557b2660f7d0369`. The adapter verifies path-set
+and output-width equality, float64 covariance, symmetry, tracelessness, and
+finite gradients before timing. Publications using the ICTP software must
+acknowledge that it was developed by NEC Laboratories Europe GmbH.
 
 CACE is a separate reference workload, not a matched MACE tensor-product
 baseline:

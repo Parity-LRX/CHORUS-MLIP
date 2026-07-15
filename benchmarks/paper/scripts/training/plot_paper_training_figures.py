@@ -174,30 +174,65 @@ def plot_training_convergence(curves: pd.DataFrame, out_stem: Path) -> None:
 
 def plot_training_best(agg: pd.DataFrame, out_stem: Path) -> None:
     fig, axes = plt.subplots(1, 2, figsize=(12.4, 3.8), sharex=False)
+    energy_reporting_limit = 5.0e-5
+    energy_quantization = 1.0e-4
+    energy_axis_floor = 2.0e-5
     metrics = [
         ("best_force_rmse_eV_A_mean", "best_force_rmse_eV_A_std", "Best force RMSE (eV A$^{-1}$)"),
-        ("final_energy_rmse_eV_atom_mean", "final_energy_rmse_eV_atom_std", "Final energy RMSE (eV atom$^{-1}$)"),
+        ("best_energy_rmse_eV_atom_mean", "best_energy_rmse_eV_atom_std", "Best energy RMSE (eV atom$^{-1}$)"),
     ]
     x = np.arange(len(SYSTEM_ORDER))
     width = 0.15
     offsets = (np.arange(len(MODE_ORDER)) - (len(MODE_ORDER) - 1) / 2.0) * width
-    for ax, (mean_col, std_col, ylabel) in zip(axes, metrics):
+    for metric_index, (ax, (mean_col, std_col, ylabel)) in enumerate(zip(axes, metrics)):
         for i, mode in enumerate(MODE_ORDER):
             rows = agg[agg["mode"] == mode].set_index("dataset")
-            means = [rows.loc[dataset, mean_col] for dataset in SYSTEM_ORDER]
-            stds = [rows.loc[dataset, std_col] for dataset in SYSTEM_ORDER]
-            ax.bar(
+            raw_means = np.asarray([rows.loc[dataset, mean_col] for dataset in SYSTEM_ORDER], dtype=float)
+            stds = np.asarray([rows.loc[dataset, std_col] for dataset in SYSTEM_ORDER], dtype=float)
+            censored = raw_means <= 0.0
+            means = np.where(censored, energy_reporting_limit, raw_means) if metric_index == 1 else raw_means
+            if metric_index == 1:
+                # Below the 1e-4 logging quantum, the seedwise standard
+                # deviation is dominated by rounding among a few discrete log
+                # values.  Suppress those quantization whiskers rather than
+                # presenting them as continuous uncertainty.
+                resolution_limited = raw_means < energy_quantization
+                stds = np.where(resolution_limited, 0.0, stds)
+                lower = np.minimum(stds, np.maximum(means - energy_axis_floor, 0.0))
+                yerr = np.vstack([lower, stds])
+            else:
+                yerr = stds
+            bars = ax.bar(
                 x + offsets[i],
                 means,
                 width=width,
-                yerr=stds,
+                yerr=yerr,
                 color=MODE_COLORS[mode],
                 label=MODE_LABELS[mode],
                 capsize=2,
                 linewidth=0.4,
                 edgecolor="white",
             )
+            if metric_index == 1:
+                for bar, is_censored in zip(bars, censored):
+                    if not is_censored:
+                        continue
+                    bar.set_facecolor("none")
+                    bar.set_edgecolor(MODE_COLORS[mode])
+                    bar.set_hatch("///")
+                    bar.set_linewidth(1.1)
+                    ax.plot(
+                        bar.get_x() + bar.get_width() / 2.0,
+                        energy_reporting_limit,
+                        marker="v",
+                        markersize=4.5,
+                        color=MODE_COLORS[mode],
+                        clip_on=False,
+                        zorder=5,
+                    )
         ax.set_yscale("log")
+        if metric_index == 1:
+            ax.set_ylim(bottom=energy_axis_floor)
         ax.set_xticks(x)
         ax.set_xticklabels([DATASET_LABELS[d] for d in SYSTEM_ORDER])
         ax.set_ylabel(ylabel)
@@ -206,7 +241,7 @@ def plot_training_best(agg: pd.DataFrame, out_stem: Path) -> None:
     fig.text(
         0.5,
         -0.02,
-        "Force bars report best validation RMSE during 300 epochs; energy bars report final epoch RMSE to avoid best-value artifacts from rounded log entries.",
+        r"Both panels report best validation RMSE. Energy error bars are omitted below the $10^{-4}$ eV atom$^{-1}$ logging quantum; a hatched downward-marked bar denotes a value logged as zero.",
         ha="center",
         fontsize=8,
     )

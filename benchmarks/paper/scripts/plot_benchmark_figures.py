@@ -21,6 +21,7 @@ BACKEND_LABELS = {
     "ictc_compile_fwbw": "ICTC compile",
     "ictc_compiled": "ICTC compile",
     "ictc_aoti": "ICTC AOTI",
+    "ictp_official": "ICTP (Zaverkin et al.)",
 }
 
 BACKEND_COLORS = {
@@ -32,6 +33,7 @@ BACKEND_COLORS = {
     "ictc_compile_fwbw": "#08519c",
     "ictc_compiled": "#08519c",
     "ictc_aoti": "#41ab5d",
+    "ictp_official": "#e6550d",
 }
 
 BACKEND_MARKERS = {
@@ -43,6 +45,7 @@ BACKEND_MARKERS = {
     "ictc_compile_fwbw": "D",
     "ictc_compiled": "D",
     "ictc_aoti": "P",
+    "ictp_official": "v",
 }
 
 WHOLE_MODEL_LABELS = {
@@ -120,35 +123,53 @@ def format_equiv_atom_tick(value: float) -> str:
     return f"{value:.0f}"
 
 
-def plot_matched_fusion(aoti: pd.DataFrame, fwbw: pd.DataFrame, outdir: Path) -> None:
+def plot_matched_fusion(
+    aoti: pd.DataFrame,
+    fwbw: pd.DataFrame,
+    outdir: Path,
+    ictp_fwd: pd.DataFrame | None = None,
+    ictp_fwbw: pd.DataFrame | None = None,
+) -> None:
     configs = ["1/1", "1/2", "2/2", "2/3", "3/3"]
     x = np.arange(len(configs))
 
-    forward = ok(aoti)
+    forward_sources = [aoti]
+    if ictp_fwd is not None:
+        forward_sources.append(ictp_fwd)
+    forward = ok(pd.concat(forward_sources, ignore_index=True))
     forward = forward[
         (forward["dtype"] == "float32")
         & (forward["mode"] == "forward_only")
         & (forward["channels"] == 64)
         & (forward["edges"] == 100000)
-        & (forward["backend"].isin(["ictc_compile", "e3nn", "cartnn"]))
+        & (forward["backend"].isin(["ictc_compile", "e3nn", "cartnn", "ictp_official"]))
     ].copy()
     forward_pivot = (
         forward.pivot_table(index="config", columns="backend", values="total_ms", aggfunc="mean")
-        .rename(columns={"ictc_compile": "ictc"})
+        .rename(columns={"ictc_compile": "ictc", "ictp_official": "ictp"})
         .reindex(configs)
     )
 
-    train = ok(fwbw)
+    train_sources = [fwbw]
+    if ictp_fwbw is not None:
+        train_sources.append(ictp_fwbw)
+    train = ok(pd.concat(train_sources, ignore_index=True))
     train = train[
         (train["dtype"] == "float32")
         & (train["mode"] == "forward_backward")
         & (train["channels"] == 64)
         & (train["edges"] == 100000)
-        & (train["backend"].isin(["ictc_compile_fwbw", "e3nn", "cartnn"]))
+        & (train["backend"].isin(["ictc_compile_fwbw", "ictd_compile_fwbw", "e3nn", "cartnn", "ictp_official"]))
     ].copy()
     train_pivot = (
         train.pivot_table(index="config", columns="backend", values="total_ms", aggfunc="mean")
-        .rename(columns={"ictc_compile_fwbw": "ictc"})
+        .rename(
+            columns={
+                "ictc_compile_fwbw": "ictc",
+                "ictd_compile_fwbw": "ictc",
+                "ictp_official": "ictp",
+            }
+        )
         .reindex(configs)
     )
 
@@ -156,10 +177,25 @@ def plot_matched_fusion(aoti: pd.DataFrame, fwbw: pd.DataFrame, outdir: Path) ->
         ("Forward only", forward_pivot, "forward time per call (ms, log)"),
         ("Forward + backward", train_pivot, "forward+backward total time (ms, log)"),
     ]
-    backend_order = ["e3nn", "cartnn", "ictc"]
-    labels = {"e3nn": "e3nn", "cartnn": "cartnn (Cartesian-3j)", "ictc": "ICTC"}
-    colors = {"e3nn": BACKEND_COLORS["e3nn"], "cartnn": BACKEND_COLORS["cartnn"], "ictc": BACKEND_COLORS["ictc_compile"]}
-    markers = {"e3nn": BACKEND_MARKERS["e3nn"], "cartnn": BACKEND_MARKERS["cartnn"], "ictc": BACKEND_MARKERS["ictc_compile"]}
+    backend_order = ["e3nn", "cartnn", "ictp", "ictc"]
+    labels = {
+        "e3nn": "e3nn",
+        "cartnn": "cartnn (Cartesian-3j)",
+        "ictp": "ICTP (Zaverkin et al.)",
+        "ictc": "ICTC",
+    }
+    colors = {
+        "e3nn": BACKEND_COLORS["e3nn"],
+        "cartnn": BACKEND_COLORS["cartnn"],
+        "ictp": BACKEND_COLORS["ictp_official"],
+        "ictc": BACKEND_COLORS["ictc_compile"],
+    }
+    markers = {
+        "e3nn": BACKEND_MARKERS["e3nn"],
+        "cartnn": BACKEND_MARKERS["cartnn"],
+        "ictp": BACKEND_MARKERS["ictp_official"],
+        "ictc": BACKEND_MARKERS["ictc_compile"],
+    }
 
     fig, axes = plt.subplots(
         2,
@@ -168,8 +204,8 @@ def plot_matched_fusion(aoti: pd.DataFrame, fwbw: pd.DataFrame, outdir: Path) ->
         gridspec_kw={"width_ratios": [1.35, 1.0], "height_ratios": [1.0, 1.0]},
         sharex="col",
     )
-    width = 0.22
-    offsets = np.linspace(-1, 1, len(backend_order)) * width
+    width = 0.18
+    offsets = np.linspace(-1.5, 1.5, len(backend_order)) * width
 
     for row, (workload, pivot, ylabel) in enumerate(pivots):
         ax = axes[row, 0]
@@ -205,12 +241,12 @@ def plot_matched_fusion(aoti: pd.DataFrame, fwbw: pd.DataFrame, outdir: Path) ->
         ax.set_title(f"({chr(ord('a') + row * 2)}) {workload}: time")
         ax.grid(True, axis="y", which="both", alpha=0.28)
         if row == 0:
-            ax.legend(frameon=False, ncol=1, loc="upper left")
+            ax.legend(frameon=False, ncol=2, loc="upper left")
 
         ax = axes[row, 1]
         baseline = pivot["e3nn"]
         max_speed = 1.0
-        for backend in ["cartnn", "ictc"]:
+        for backend in ["cartnn", "ictp", "ictc"]:
             speed = baseline / pivot[backend]
             max_speed = max(max_speed, np.nanmax(speed.to_numpy(dtype=float)))
             ax.plot(
@@ -549,7 +585,16 @@ def main() -> None:
         fwbw_path = Path(__file__).with_name("operator_compile_fwbw_flat.csv")
     compile_fwbw = read_csv(fwbw_path)
 
-    plot_matched_fusion(aoti, compile_fwbw, args.outdir)
+    ictp_dir = args.bench_dir / "ictp_official_20260712"
+    ictp_fwd_path = ictp_dir / "operator_ictp_fwd.csv"
+    ictp_fwbw_path = ictp_dir / "operator_ictp_fwbw.csv"
+    matched_rerun_path = ictp_dir / "operator_compile_fwbw_matched_rerun.csv"
+    ictp_fwd = read_csv(ictp_fwd_path) if ictp_fwd_path.exists() else None
+    ictp_fwbw = read_csv(ictp_fwbw_path) if ictp_fwbw_path.exists() else None
+    if matched_rerun_path.exists():
+        compile_fwbw = read_csv(matched_rerun_path)
+
+    plot_matched_fusion(aoti, compile_fwbw, args.outdir, ictp_fwd, ictp_fwbw)
     plot_forward_scaling(aoti, args.outdir)
     plot_regime_map(eager, compiled, args.outdir)
     plot_memory(eager, compiled, args.outdir)

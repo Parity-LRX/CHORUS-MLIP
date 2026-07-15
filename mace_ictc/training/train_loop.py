@@ -1147,11 +1147,15 @@ class ForceTrainer:
             f_pred_l, force_ref_l = f_pred, force_ref_scaled
             num_atoms_per_mol = scatter(torch.ones_like(batch_idx), batch_idx, dim=0, reduce="sum")
 
-        force_loss = self._loss_term(f_pred_l, force_ref_l)
+        force_loss, force_loss_sum, force_loss_count = self._loss_term_stats(
+            f_pred_l, force_ref_l
+        )
 
         E_avg_pred = E_mean / num_atoms_per_mol
         target_energy_avg = target_energies / num_atoms_per_mol
-        energy_loss = self._loss_term(E_avg_pred, target_energy_avg)
+        energy_loss, energy_loss_sum, energy_loss_count = self._loss_term_stats(
+            E_avg_pred, target_energy_avg
+        )
 
         total_loss = self.a * energy_loss + self.b * force_loss
 
@@ -1161,19 +1165,35 @@ class ForceTrainer:
         if compute_stress:
             volume = torch.abs(torch.det(cell)).clamp(min=1e-10)
             stress_pred = grad_strain / volume.view(-1, 1, 1)  # [B,3,3]
-            stress_loss = self._loss_term(stress_pred, stress_ref)
+            stress_loss, stress_loss_sum, stress_loss_count = self._loss_term_stats(
+                stress_pred, stress_ref
+            )
             total_loss = total_loss + self.c * stress_loss
             with torch.no_grad():
                 stress_rmse = self.criterion_2(stress_pred.reshape(-1), stress_ref.reshape(-1))
         else:
             stress_loss = torch.zeros((), device=self.device)
+            stress_loss_sum = torch.zeros((), device=self.device)
+            stress_loss_count = torch.zeros((), device=self.device)
             stress_rmse = torch.zeros((), device=self.device)
 
         with torch.no_grad():
-            force_rmse = self.criterion_2(f_pred_l.reshape(-1), force_ref_l.reshape(-1))
-            energy_rmse_avg = self.criterion_2(E_avg_pred, target_energy_avg)
-            force_mae = (f_pred_l.reshape(-1) - force_ref_l.reshape(-1)).abs().mean()
-            energy_mae_avg = (E_avg_pred - target_energy_avg).abs().mean()
+            force_error = f_pred_l.reshape(-1) - force_ref_l.reshape(-1)
+            energy_error = E_avg_pred - target_energy_avg
+            force_sq_error_sum = force_error.square().sum()
+            force_abs_error_sum = force_error.abs().sum()
+            force_metric_count = force_error.new_tensor(float(force_error.numel()))
+            energy_sq_error_sum = energy_error.square().sum()
+            energy_abs_error_sum = energy_error.abs().sum()
+            energy_metric_count = energy_error.new_tensor(float(energy_error.numel()))
+            force_rmse = torch.sqrt(
+                force_sq_error_sum / force_metric_count.clamp_min(1.0)
+            )
+            energy_rmse_avg = torch.sqrt(
+                energy_sq_error_sum / energy_metric_count.clamp_min(1.0)
+            )
+            force_mae = force_abs_error_sum / force_metric_count.clamp_min(1.0)
+            energy_mae_avg = energy_abs_error_sum / energy_metric_count.clamp_min(1.0)
         return {
             "total_loss": total_loss,
             "energy_loss": energy_loss.detach(),
@@ -1184,12 +1204,33 @@ class ForceTrainer:
             "force_mae": force_mae,
             "energy_mae_avg": energy_mae_avg,
             "stress_rmse": stress_rmse,
+            # Sufficient statistics for exact dataset-level validation metrics.
+            # Averaging per-batch RMSE/MAE is incorrect when the last batch is
+            # smaller or structures contain different atom counts.
+            "force_loss_sum": force_loss_sum.detach(),
+            "force_loss_count": force_loss_count.detach(),
+            "energy_loss_sum": energy_loss_sum.detach(),
+            "energy_loss_count": energy_loss_count.detach(),
+            "stress_loss_sum": stress_loss_sum.detach(),
+            "stress_loss_count": stress_loss_count.detach(),
+            "force_sq_error_sum": force_sq_error_sum,
+            "force_abs_error_sum": force_abs_error_sum,
+            "force_metric_count": force_metric_count,
+            "energy_sq_error_sum": energy_sq_error_sum,
+            "energy_abs_error_sum": energy_abs_error_sum,
+            "energy_metric_count": energy_metric_count,
         }
 
     def _loss_term(self, pred, target):
+        return self._loss_term_stats(pred, target)[0]
+
+    def _loss_term_stats(self, pred, target):
         if self.loss_type == "mse":
-            return F.mse_loss(pred, target)
-        return smooth_l1_loss_stats(pred, target, beta=self.loss_beta)[0]
+            elementwise = F.mse_loss(pred, target, reduction="none")
+            loss_sum = elementwise.sum()
+            normalizer = loss_sum.new_tensor(float(elementwise.numel()))
+            return loss_sum / normalizer.clamp_min(1.0), loss_sum, normalizer
+        return smooth_l1_loss_stats(pred, target, beta=self.loss_beta)
 
     @torch.no_grad()
     def _update_ema_state(self):
@@ -1285,12 +1326,12 @@ class ForceTrainer:
             if i in _val_pts:
                 _va = self._val_pass()
                 if self.main_process:
-                    log.info("epoch %d step %d MID-VAL loss=%.4f Frmse=%.4f Ermse=%.4f Fmae=%.4f Emae=%.4f",
+                    log.info("epoch %d step %d MID-VAL loss=%.6f Frmse=%.6f Ermse=%.6f Fmae=%.6f Emae=%.6f",
                              epoch, self.global_step, _va["total_loss"], _va["force_rmse"], _va["energy_rmse_avg"],
                              _va["force_mae"], _va["energy_mae_avg"])
-                    print(f"[epoch {epoch} step {self.global_step}] MID val loss={_va['total_loss']:.4f} "
-                          f"Frmse={_va['force_rmse']:.4f} Ermse={_va['energy_rmse_avg']:.4f} "
-                          f"Fmae={_va['force_mae']:.4f} Emae={_va['energy_mae_avg']:.4f}", flush=True)
+                    print(f"[epoch {epoch} step {self.global_step}] MID val loss={_va['total_loss']:.6f} "
+                          f"Frmse={_va['force_rmse']:.6f} Ermse={_va['energy_rmse_avg']:.6f} "
+                          f"Fmae={_va['force_mae']:.6f} Emae={_va['energy_mae_avg']:.6f}", flush=True)
                     self._append_loss_csv(epoch, self.global_step, "mid", _va)
                     self._save_rolling_checkpoint(epoch)
                 if self._dist_ready():
@@ -1305,18 +1346,49 @@ class ForceTrainer:
     def _val_pass(self):
         # force needs grad of energy wrt pos even at eval -> enable grad locally.
         self.model.eval()
-        run = {"total_loss": 0.0, "energy_loss": 0.0, "force_loss": 0.0,
-               "stress_loss": 0.0, "force_rmse": 0.0, "energy_rmse_avg": 0.0,
-               "force_mae": 0.0, "energy_mae_avg": 0.0}
-        seen = 0
+        stat_keys = (
+            "force_loss_sum",
+            "force_loss_count",
+            "energy_loss_sum",
+            "energy_loss_count",
+            "stress_loss_sum",
+            "stress_loss_count",
+            "force_sq_error_sum",
+            "force_abs_error_sum",
+            "force_metric_count",
+            "energy_sq_error_sum",
+            "energy_abs_error_sum",
+            "energy_metric_count",
+        )
+        stats = {key: 0.0 for key in stat_keys}
         for batch in self.val_loader:
             with torch.enable_grad():
                 out = self._compute(batch, training=False)
-            for k in run:
-                run[k] += float(out[k])
-            seen += 1
-        seen = max(seen, 1)
-        return {k: v / seen for k, v in run.items()}
+            for key in stat_keys:
+                stats[key] += float(out[key])
+
+        def normalized(total_key: str, count_key: str) -> float:
+            return stats[total_key] / max(stats[count_key], 1.0)
+
+        force_loss = normalized("force_loss_sum", "force_loss_count")
+        energy_loss = normalized("energy_loss_sum", "energy_loss_count")
+        stress_loss = normalized("stress_loss_sum", "stress_loss_count")
+        force_mse = normalized("force_sq_error_sum", "force_metric_count")
+        energy_mse = normalized("energy_sq_error_sum", "energy_metric_count")
+        force_mae = normalized("force_abs_error_sum", "force_metric_count")
+        energy_mae = normalized("energy_abs_error_sum", "energy_metric_count")
+        return {
+            "total_loss": self.a * energy_loss
+            + self.b * force_loss
+            + self.c * stress_loss,
+            "energy_loss": energy_loss,
+            "force_loss": force_loss,
+            "stress_loss": stress_loss,
+            "force_rmse": math.sqrt(max(force_mse, 0.0)),
+            "energy_rmse_avg": math.sqrt(max(energy_mse, 0.0)),
+            "force_mae": force_mae,
+            "energy_mae_avg": energy_mae,
+        }
 
     def _append_loss_csv(self, epoch, step, kind, val, tr=None):
         """Append one validation's losses/errors to loss.csv (next to the checkpoint)."""
@@ -1411,9 +1483,9 @@ class ForceTrainer:
                    f"Frmse={tr['force_rmse']:.4f} ({tr['time']:.1f}s)")
             if self.val_loader is not None and self.main_process:
                 va = self._val_pass()
-                msg += (f" | val loss={va['total_loss']:.4f} "
-                        f"Frmse={va['force_rmse']:.4f} Ermse={va['energy_rmse_avg']:.4f} "
-                        f"Fmae={va['force_mae']:.4f} Emae={va['energy_mae_avg']:.4f}")
+                msg += (f" | val loss={va['total_loss']:.6f} "
+                        f"Frmse={va['force_rmse']:.6f} Ermse={va['energy_rmse_avg']:.6f} "
+                        f"Fmae={va['force_mae']:.6f} Emae={va['energy_mae_avg']:.6f}")
                 self._append_loss_csv(epoch, self.global_step, "epoch", va, tr)
                 cur = va["total_loss"]
             else:
@@ -1487,6 +1559,8 @@ class ForceTrainer:
                 "ictd_fix_interaction_attn_heads", "ictd_fix_interaction_scale",
                 "ictd_fix_phase_mode", "ictd_fix_phase_hidden_channels",
                 "ictd_fix_phase_residual_scale_init", "ictd_fix_phase_amplitude",
+                "ictd_fix_phase_placement", "ictd_fix_phase_density_rank",
+                "ictd_fix_phase_scope",
                 "ictd_fix_fusion_scale_init", "ictd_fix_gmix_gate_init",
                 "ictd_fix_gmix_output_lmax", "avg_num_neighbors",
                 "polynomial_cutoff_p", "long_range_mode", "angular_basis",

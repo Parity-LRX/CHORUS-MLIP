@@ -343,6 +343,9 @@ def build_baseline_model(
     phase_hidden_channels: int = 32,
     phase_residual_scale_init: float = 0.05,
     phase_amplitude: str = "unit",
+    phase_placement: str = "post-product",
+    phase_density_rank: int = 8,
+    phase_scope: str = "final",
     atomic_numbers,
     ictd_save_tp_mode: str,
     invariant_channels: int,
@@ -426,6 +429,9 @@ def build_baseline_model(
         ictd_fix_phase_hidden_channels=phase_hidden_channels,
         ictd_fix_phase_residual_scale_init=phase_residual_scale_init,
         ictd_fix_phase_amplitude=phase_amplitude,
+        ictd_fix_phase_placement=phase_placement,
+        ictd_fix_phase_density_rank=phase_density_rank,
+        ictd_fix_phase_scope=phase_scope,
         angular_basis=angular_basis,
         save_contraction_order=correlation,
         radial_sqrt_num_basis=radial_sqrt_num_basis,
@@ -527,8 +533,11 @@ def build_arg_parser() -> argparse.ArgumentParser:
     ap.add_argument(
         "--phase-mode",
         default="none",
-        choices=["none", "final-scalar-residual"],
-        help="Optional PEMP Hermitian phase branch on the final interaction layer.",
+        choices=["none", "final-scalar-residual", "final-full-l-residual"],
+        help=(
+            "Optional Hermitian phase branch on the final interaction layer: scalar-only "
+            "or low-rank full-L equivariant density."
+        ),
     )
     ap.add_argument("--phase-hidden-channels", type=int, default=32)
     ap.add_argument(
@@ -542,6 +551,32 @@ def build_arg_parser() -> argparse.ArgumentParser:
         default="unit",
         choices=["unit", "softplus"],
         help="Use a pure learned phase or add a positive learned edge amplitude.",
+    )
+    ap.add_argument(
+        "--phase-placement",
+        default="post-product",
+        choices=["post-product", "pre-product-l0", "pre-product-full-l", "pre-and-post"],
+        help=(
+            "Place the neutral Hermitian phase feature after the final product, inject it "
+            "into the final message l=0/full-L blocks before the symmetric contraction, "
+            "or do both for the scalar operator."
+        ),
+    )
+    ap.add_argument(
+        "--phase-density-rank",
+        type=int,
+        default=8,
+        help="Latent channel rank of final-full-l-residual (ignored by scalar mode).",
+    )
+    ap.add_argument(
+        "--phase-scope",
+        default="final",
+        choices=["final", "persistent"],
+        help=(
+            "Use the phase doublet only on the final interaction, or keep a q=1 "
+            "charged stream across all interactions and inject its Hermitian density "
+            "before every product."
+        ),
     )
     ap.add_argument("--radial-sqrt-num-basis", action="store_true",
                     help="Use the sqrt(num_basis) radial scale (default OFF = byte-literal MACE radial).")
@@ -828,6 +863,9 @@ def _override_args_from_checkpoint(args):
         "ictd_fix_phase_hidden_channels": "phase_hidden_channels",
         "ictd_fix_phase_residual_scale_init": "phase_scale_init",
         "ictd_fix_phase_amplitude": "phase_amplitude",
+        "ictd_fix_phase_placement": "phase_placement",
+        "ictd_fix_phase_density_rank": "phase_density_rank",
+        "ictd_fix_phase_scope": "phase_scope",
     }
     changed = []
     for hk, ak in mapping.items():
@@ -1047,6 +1085,9 @@ def main(argv=None):
         phase_hidden_channels=args.phase_hidden_channels,
         phase_residual_scale_init=args.phase_scale_init,
         phase_amplitude=args.phase_amplitude,
+        phase_placement=args.phase_placement,
+        phase_density_rank=args.phase_density_rank,
+        phase_scope=args.phase_scope,
         atomic_numbers=atomic_numbers, ictd_save_tp_mode=args.ictd_save_tp_mode,
         invariant_channels=args.invariant_channels,
         energy_output_scale=scale,
@@ -1187,6 +1228,9 @@ def main(argv=None):
         ictd_fix_phase_hidden_channels=int(args.phase_hidden_channels),
         ictd_fix_phase_residual_scale_init=float(args.phase_scale_init),
         ictd_fix_phase_amplitude=args.phase_amplitude,
+        ictd_fix_phase_placement=args.phase_placement,
+        ictd_fix_phase_density_rank=int(args.phase_density_rank),
+        ictd_fix_phase_scope=args.phase_scope,
         radial_sqrt_num_basis=bool(args.radial_sqrt_num_basis),
         polynomial_cutoff_p=(None if args.polynomial_cutoff_p <= 0 else int(args.polynomial_cutoff_p)),
         optimizer_param_groups=args.optimizer_param_groups,
@@ -1280,9 +1324,9 @@ def main(argv=None):
     if args.eval_only:
         va = trainer._val_pass()
         print(f"[EVAL-ONLY] ckpt={args.resume_checkpoint}\n"
-              f"  val total_loss={va['total_loss']:.4f}\n"
-              f"  RMSE: Frmse={va['force_rmse']:.4f} eV/A   Ermse={va['energy_rmse_avg']:.4f} eV/atom\n"
-              f"  MAE:  Fmae={va['force_mae']:.4f} eV/A   Emae={va['energy_mae_avg']:.4f} eV/atom",
+              f"  val total_loss={va['total_loss']:.6f}\n"
+              f"  RMSE: Frmse={va['force_rmse']:.6f} eV/A   Ermse={va['energy_rmse_avg']:.6f} eV/atom\n"
+              f"  MAE:  Fmae={va['force_mae']:.6f} eV/A   Emae={va['energy_mae_avg']:.6f} eV/atom",
               flush=True)
         return
     try:

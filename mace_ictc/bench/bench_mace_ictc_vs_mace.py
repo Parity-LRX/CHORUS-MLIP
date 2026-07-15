@@ -292,6 +292,9 @@ def build_ictc(
     phase_hidden_channels: int = 32,
     phase_residual_scale_init: float = 0.05,
     phase_amplitude: str = "unit",
+    phase_placement: str = "post-product",
+    phase_density_rank: int = 8,
+    phase_scope: str = "final",
 ) -> PureCartesianICTDFix:
     with default_dtype(dtype):
         model = PureCartesianICTDFix(
@@ -326,6 +329,9 @@ def build_ictc(
             ictd_fix_phase_hidden_channels=int(phase_hidden_channels),
             ictd_fix_phase_residual_scale_init=float(phase_residual_scale_init),
             ictd_fix_phase_amplitude=str(phase_amplitude),
+            ictd_fix_phase_placement=str(phase_placement),
+            ictd_fix_phase_density_rank=int(phase_density_rank),
+            ictd_fix_phase_scope=str(phase_scope),
             internal_compute_dtype=dtype,
             device=device,
         )

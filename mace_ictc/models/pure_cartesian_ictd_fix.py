@@ -10,6 +10,7 @@ import torch.nn.functional as F
 from e3nn import o3
 
 from mace_ictc.models.ictd_irreps import (
+    build_cg_tensor,
     EdgeWeightedPathPreservingTensorProduct,
     EquivariantChannelLinearSO3,
     EquivariantChannelLinearSO3Rect,
@@ -456,7 +457,7 @@ class ElementConditionedScalarLinear(nn.Module):
         if node_type_idx is not None:
             idx = node_type_idx.to(device=x.device, dtype=torch.long)
             weight = self.weight.to(dtype=x.dtype, device=x.device).index_select(0, idx)
-            out = torch.einsum("noi,ni->no", weight, x)
+            out = torch.bmm(weight, x.unsqueeze(-1)).squeeze(-1)
             if self.bias is not None:
                 out = out + self.bias.to(dtype=x.dtype, device=x.device).index_select(0, idx)
             return out
@@ -466,7 +467,7 @@ class ElementConditionedScalarLinear(nn.Module):
         weight = torch.einsum(
             "ne,eoi->noi", attrs, self.weight.to(dtype=x.dtype, device=x.device)
         )
-        out = torch.einsum("noi,ni->no", weight, x)
+        out = torch.bmm(weight, x.unsqueeze(-1)).squeeze(-1)
         if self.bias is not None:
             out = out + torch.einsum(
                 "ne,eo->no", attrs, self.bias.to(dtype=x.dtype, device=x.device)
@@ -517,6 +518,82 @@ class SO3DoubletRMSNorm(nn.Module):
         )
 
 
+class PersistentChargedUpdate(nn.Module):
+    """Mix a previous and an incoming q=1 SO(3) doublet across network depth.
+
+    Every channel map and per-l gate is shared by the real and imaginary
+    components.  Consequently a common U(1) rotation applied to both inputs
+    commutes with this update.  This is a global-U(1) charged memory update; it
+    does not implement independently transforming node gauges or link transport.
+    """
+
+    def __init__(self, *, channels: int, lmax: int):
+        super().__init__()
+        self.channels = int(channels)
+        self.lmax = int(lmax)
+        self.previous_linear = EquivariantChannelLinearSO3(
+            self.channels, self.lmax, bias=False
+        )
+        self.incoming_linear = EquivariantChannelLinearSO3(
+            self.channels, self.lmax, bias=False
+        )
+        _init_so3_linear_identity_(self.previous_linear)
+        _init_so3_linear_identity_(self.incoming_linear)
+        # sigmoid(0)=0.5 starts as an equal-depth mixture while keeping the
+        # charged magnitude bounded when another interaction is added.
+        self.memory_logits = nn.Parameter(
+            torch.zeros(self.lmax + 1, dtype=torch.get_default_dtype())
+        )
+
+    def forward(
+        self,
+        previous_real: torch.Tensor,
+        previous_imag: torch.Tensor,
+        incoming_real: torch.Tensor,
+        incoming_imag: torch.Tensor,
+    ) -> tuple[torch.Tensor, torch.Tensor]:
+        previous = torch.stack((previous_real, previous_imag), dim=-2)
+        incoming = torch.stack((incoming_real, incoming_imag), dim=-2)
+        charged = self.forward_doublet(previous, incoming)
+        return charged[..., 0, :], charged[..., 1, :]
+
+    def forward_doublet(
+        self,
+        previous: torch.Tensor,
+        incoming: torch.Tensor,
+    ) -> torch.Tensor:
+        previous_blocks = _split_irreps(previous, self.channels, self.lmax)
+        incoming_blocks = _split_irreps(incoming, self.channels, self.lmax)
+        gates = self.memory_logits.to(
+            dtype=previous.dtype, device=previous.device
+        ).sigmoid()
+        out_blocks: Dict[int, torch.Tensor] = {}
+        for l in range(self.lmax + 1):
+            gate = gates[l]
+            # Concatenate the two charged sources along the channel axis and
+            # their gated SO(3) channel maps along the input axis.  This is
+            # algebraically identical to
+            #
+            #   g * W_prev(previous) + (1-g) * W_in(incoming),
+            #
+            # but launches one GEMM per l instead of two and avoids an
+            # intermediate merge/split of both complete irreps layouts.
+            source = torch.cat((previous_blocks[l], incoming_blocks[l]), dim=-2)
+            previous_weight = self.previous_linear.adapters[str(l)].weight.to(
+                dtype=source.dtype, device=source.device
+            )
+            incoming_weight = self.incoming_linear.adapters[str(l)].weight.to(
+                dtype=source.dtype, device=source.device
+            )
+            fused_weight = torch.cat(
+                (gate * previous_weight, (1.0 - gate) * incoming_weight), dim=-1
+            )
+            out_blocks[l] = F.linear(
+                source.movedim(-2, -1), fused_weight
+            ).movedim(-1, -2)
+        return _merge_irreps(out_blocks, self.channels, self.lmax)
+
+
 class PhaseHermitianScalarResidual(nn.Module):
     """Contract a complex SO(3) doublet to a real, element-conditioned scalar residual.
 
@@ -548,6 +625,22 @@ class PhaseHermitianScalarResidual(nn.Module):
             normalization="component",
             internal_compute_dtype=internal_compute_dtype,
         )
+        # Non-persistent because it is fully determined by lmax and the
+        # normalization convention.  Keeping hermitian_product above preserves
+        # the old module structure/checkpoint contract, while the fused forward
+        # avoids evaluating the same scalar product once for real and once for
+        # imaginary features.
+        self.register_buffer(
+            "hermitian_0e_factors",
+            torch.as_tensor(
+                self.hermitian_product._0e_factors,
+                # Preserve the Python/CG constants at full precision; module.to
+                # will downcast for float32 training without making a later
+                # float64 conversion irreversibly inherit float32 rounding.
+                dtype=torch.float64,
+            ).repeat_interleave(self.channels),
+            persistent=False,
+        )
         self.scalar_linear = ElementConditionedScalarLinear(
             num_elements=num_elements,
             in_features=self.channels * (self.lmax + 1),
@@ -559,11 +652,21 @@ class PhaseHermitianScalarResidual(nn.Module):
         )
 
     def hermitian_features(self, real: torch.Tensor, imag: torch.Tensor) -> torch.Tensor:
-        real_blocks = _split_irreps(real, self.channels, self.lmax)
-        imag_blocks = _split_irreps(imag, self.channels, self.lmax)
-        return self.hermitian_product(real_blocks, real_blocks) + self.hermitian_product(
-            imag_blocks, imag_blocks
+        return self.hermitian_features_doublet(torch.stack((real, imag), dim=-2))
+
+    def hermitian_features_doublet(self, doublet: torch.Tensor) -> torch.Tensor:
+        doublet_blocks = _split_irreps(doublet, self.channels, self.lmax)
+        # Concatenating the U(1) doublet along m lets one square/reduction form
+        # ||real_l||^2 + ||imag_l||^2.  Compared with two independent harmonic
+        # products this halves reductions and removes one output concat/add.
+        rho = torch.cat(
+            [
+                doublet_blocks[l].square().sum(dim=(-3, -1))
+                for l in range(self.lmax + 1)
+            ],
+            dim=-1,
         )
+        return rho * self.hermitian_0e_factors.to(dtype=rho.dtype, device=rho.device)
 
     def forward(
         self,
@@ -576,6 +679,285 @@ class PhaseHermitianScalarResidual(nn.Module):
         rho = self.hermitian_features(real, imag)
         delta = self.scalar_linear(rho, node_attrs, node_type_idx)
         return self.residual_scale.to(dtype=delta.dtype, device=delta.device) * delta
+
+    def forward_doublet(
+        self,
+        doublet: torch.Tensor,
+        *,
+        node_attrs: torch.Tensor | None,
+        node_type_idx: torch.Tensor | None = None,
+    ) -> torch.Tensor:
+        rho = self.hermitian_features_doublet(doublet)
+        delta = self.scalar_linear(rho, node_attrs, node_type_idx)
+        return self.residual_scale.to(dtype=delta.dtype, device=delta.device) * delta
+
+
+class PhaseHermitianFullLResidual(nn.Module):
+    """Low-rank, full-L Hermitian density mapped back to the SO(3) message layout.
+
+    ``real`` and ``imag`` are a real doublet for one complex equivariant atomic
+    environment.  A shared (real) channel projection first reduces every l block
+    from ``channels`` to ``density_rank`` latent orbitals, which commutes with a
+    U(1) rotation of the doublet.  For each natural-parity path
+
+        (l1, l2) -> L <= lmax
+
+    we retain the real Hermitian component, and for l1 < l2 also its independent
+    imaginary component.  The resulting neutral equivariant blocks are mapped
+    element-conditionally back to ``channels`` and can be added to the complete
+    pre-product SO(3) message (not just its scalar block).
+    """
+
+    def __init__(
+        self,
+        *,
+        num_elements: int,
+        channels: int,
+        lmax: int,
+        density_rank: int = 8,
+        residual_scale_init: float = 0.05,
+    ):
+        super().__init__()
+        self.num_elements = int(num_elements)
+        self.channels = int(channels)
+        self.lmax = int(lmax)
+        self.density_rank = int(density_rank)
+        if self.density_rank <= 0:
+            raise ValueError(f"density_rank must be positive, got {self.density_rank}")
+
+        self.rank_projections = nn.ModuleDict(
+            {
+                str(l): nn.Linear(self.channels, self.density_rank, bias=False)
+                for l in range(self.lmax + 1)
+            }
+        )
+        for projection in self.rank_projections.values():
+            nn.init.normal_(
+                projection.weight,
+                mean=0.0,
+                std=1.0 / math.sqrt(float(max(self.channels, 1))),
+            )
+
+        # A path is (l1, l2, L, component, cg_buffer_name).  l1 <= l2 avoids
+        # storing both Hermitian-conjugate channel blocks.  The imaginary part
+        # is independent only for an off-diagonal (l1, l2) block.
+        self.paths: list[tuple[int, int, int, str, str]] = []
+        multiplicities = [0 for _ in range(self.lmax + 1)]
+        path_idx = 0
+        for l1 in range(self.lmax + 1):
+            for l2 in range(l1, self.lmax + 1):
+                for out_l in range(abs(l1 - l2), min(l1 + l2, self.lmax) + 1):
+                    # The backbone carries natural-parity irreps only.  The
+                    # Hermitian density parity is p1*p2, so keep exactly paths
+                    # with (-1)^out_l = (-1)^(l1+l2).
+                    if (l1 + l2 + out_l) % 2 == 1:
+                        continue
+                    cg = build_cg_tensor(l1, l2, out_l).to(dtype=torch.get_default_dtype())
+                    cg_norm = cg.square().sum().sqrt().clamp_min(1.0e-30)
+                    cg = cg * (math.sqrt(float(2 * out_l + 1)) / cg_norm)
+                    cg_name = f"full_l_cg_{path_idx}"
+                    self.register_buffer(cg_name, cg.contiguous(), persistent=False)
+                    self.paths.append((l1, l2, out_l, "real", cg_name))
+                    multiplicities[out_l] += self.density_rank
+                    if l1 < l2:
+                        self.paths.append((l1, l2, out_l, "imag", cg_name))
+                        multiplicities[out_l] += self.density_rank
+                    path_idx += 1
+
+        self.input_multiplicities = tuple(int(value) for value in multiplicities)
+        if any(value <= 0 for value in self.input_multiplicities):
+            raise RuntimeError(
+                "full-L Hermitian construction produced an empty output block: "
+                f"lmax={self.lmax}, multiplicities={self.input_multiplicities}"
+            )
+
+        # Fuse every CG tensor that shares an (l1, l2) input pair.  The eager
+        # implementation used to launch a separate einsum for every real/imag
+        # term (22 tiny CUDA kernels for lmax=2).  A doublet contraction computes
+        # all four complex components at once for off-diagonal pairs, while a
+        # component-diagonal contraction directly forms xx + yy for l1 == l2.
+        # Concatenating the output CG axes also folds multiple L targets for the
+        # same input pair into one kernel.  Individual CG buffers and parameter
+        # names are retained, so existing checkpoints remain strictly loadable.
+        grouped_couplings: Dict[tuple[int, int], List[tuple[int, str]]] = {}
+        for l1, l2, out_l, component, cg_name in self.paths:
+            if component == "real":
+                grouped_couplings.setdefault((l1, l2), []).append((out_l, cg_name))
+        self.coupling_groups: list[
+            tuple[int, int, str, tuple[tuple[int, str, int, int], ...]]
+        ] = []
+        for group_idx, ((l1, l2), specs) in enumerate(grouped_couplings.items()):
+            pieces = [getattr(self, cg_name) for _, cg_name in specs]
+            fused_cg = torch.cat(pieces, dim=-1).contiguous()
+            fused_name = f"full_l_fused_cg_{group_idx}"
+            self.register_buffer(fused_name, fused_cg, persistent=False)
+            offset = 0
+            slices: list[tuple[int, str, int, int]] = []
+            for out_l, cg_name in specs:
+                width = 2 * out_l + 1
+                slices.append((out_l, cg_name, offset, offset + width))
+                offset += width
+            self.coupling_groups.append((l1, l2, fused_name, tuple(slices)))
+
+        self.output_weights = nn.ParameterDict()
+        for out_l, in_mul in enumerate(self.input_multiplicities):
+            weight = nn.Parameter(
+                torch.empty(self.num_elements, self.channels, int(in_mul))
+            )
+            nn.init.normal_(
+                weight,
+                mean=0.0,
+                std=1.0 / math.sqrt(float(max(in_mul, 1))),
+            )
+            self.output_weights[str(out_l)] = weight
+        self.residual_scale = nn.Parameter(
+            torch.full(
+                (self.lmax + 1,),
+                float(residual_scale_init),
+                dtype=torch.get_default_dtype(),
+            )
+        )
+
+    @staticmethod
+    def _project_block(x: torch.Tensor, projection: nn.Linear) -> torch.Tensor:
+        return projection(x.movedim(-2, -1)).movedim(-1, -2)
+
+    @staticmethod
+    def _couple(a: torch.Tensor, b: torch.Tensor, cg: torch.Tensor) -> torch.Tensor:
+        return torch.einsum("...rm,...rn,mnk->...rk", a, b, cg)
+
+    def hermitian_blocks(
+        self, real: torch.Tensor, imag: torch.Tensor
+    ) -> Dict[int, torch.Tensor]:
+        return self.hermitian_blocks_doublet(torch.stack((real, imag), dim=-2))
+
+    def hermitian_blocks_doublet(
+        self, doublet: torch.Tensor
+    ) -> Dict[int, torch.Tensor]:
+        doublet_in = _split_irreps(doublet, self.channels, self.lmax)
+        # One projection kernel per l instead of separate real/imag kernels.
+        # Shape: (..., U(1)=2, density_rank, 2l+1).
+        rank_doublet = {
+            l: self._project_block(
+                doublet_in[l],
+                self.rank_projections[str(l)],
+            )
+            for l in range(self.lmax + 1)
+        }
+        coupled_values: Dict[tuple[str, str], torch.Tensor] = {}
+        for l1, l2, fused_name, slices in self.coupling_groups:
+            left = rank_doublet[l1]
+            right = rank_doublet[l2]
+            cg = getattr(self, fused_name).to(dtype=left.dtype, device=left.device)
+            if l1 == 0:
+                # Coupling a scalar to l has one path, 0 x l -> l, and its CG
+                # matrix is the identity (up to normalization already applied
+                # above).  Broadcasting avoids a disproportionately expensive
+                # tiny einsum for the three scalar-input groups at lmax=2.
+                diagonal = cg[0].diagonal()
+                if l2 == 0:
+                    real_value = (left * right).sum(dim=-3) * diagonal
+                    pair_value = None
+                else:
+                    pair_value = (
+                        left[..., 0].unsqueeze(-2).unsqueeze(-1)
+                        * right.unsqueeze(-4)
+                        * diagonal
+                    )
+                    real_value = (
+                        pair_value[..., 0, 0, :, :]
+                        + pair_value[..., 1, 1, :, :]
+                    )
+            elif l1 == l2:
+                # Sum over the shared doublet index: xx + yy.
+                real_value = torch.einsum(
+                    "...arm,...arn,mnk->...rk", left, right, cg
+                )
+                pair_value = None
+            else:
+                # Compute xx, xy, yx, yy together.  Their Hermitian real and
+                # imaginary combinations are selected below without new CG
+                # contractions.
+                pair_value = torch.einsum(
+                    "...arm,...brn,mnk->...abrk", left, right, cg
+                )
+                real_value = pair_value[..., 0, 0, :, :] + pair_value[..., 1, 1, :, :]
+            for _, cg_name, start, end in slices:
+                coupled_values[(cg_name, "real")] = real_value[..., start:end]
+                if pair_value is not None:
+                    coupled_values[(cg_name, "imag")] = (
+                        pair_value[..., 1, 0, :, start:end]
+                        - pair_value[..., 0, 1, :, start:end]
+                    )
+        outputs: Dict[int, List[torch.Tensor]] = {
+            l: [] for l in range(self.lmax + 1)
+        }
+        for l1, l2, out_l, component, cg_name in self.paths:
+            outputs[out_l].append(coupled_values[(cg_name, component)])
+        return {l: torch.cat(outputs[l], dim=-2) for l in range(self.lmax + 1)}
+
+    def forward(
+        self,
+        real: torch.Tensor,
+        imag: torch.Tensor,
+        *,
+        node_attrs: torch.Tensor | None,
+        node_type_idx: torch.Tensor | None = None,
+    ) -> torch.Tensor:
+        density_blocks = self.hermitian_blocks(real, imag)
+        out_blocks: Dict[int, torch.Tensor] = {}
+        if node_type_idx is not None:
+            type_idx = node_type_idx.to(device=real.device, dtype=torch.long)
+        else:
+            type_idx = None
+            if node_attrs is None:
+                raise ValueError("node_attrs is required when node_type_idx is not provided")
+        for out_l in range(self.lmax + 1):
+            weight = self.output_weights[str(out_l)].to(dtype=real.dtype, device=real.device)
+            if type_idx is not None:
+                mixed_weight = weight.index_select(0, type_idx)
+            else:
+                mixed_weight = torch.einsum(
+                    "ne,eoi->noi",
+                    node_attrs.to(dtype=real.dtype, device=real.device),
+                    weight,
+                )
+            out = torch.bmm(mixed_weight, density_blocks[out_l])
+            scale = self.residual_scale[out_l].to(dtype=out.dtype, device=out.device)
+            out_blocks[out_l] = scale * out
+        return _merge_irreps(out_blocks, self.channels, self.lmax)
+
+    def forward_doublet(
+        self,
+        doublet: torch.Tensor,
+        *,
+        node_attrs: torch.Tensor | None,
+        node_type_idx: torch.Tensor | None = None,
+    ) -> torch.Tensor:
+        density_blocks = self.hermitian_blocks_doublet(doublet)
+        out_blocks: Dict[int, torch.Tensor] = {}
+        if node_type_idx is not None:
+            type_idx = node_type_idx.to(device=doublet.device, dtype=torch.long)
+        else:
+            type_idx = None
+            if node_attrs is None:
+                raise ValueError("node_attrs is required when node_type_idx is not provided")
+        for out_l in range(self.lmax + 1):
+            weight = self.output_weights[str(out_l)].to(
+                dtype=doublet.dtype, device=doublet.device
+            )
+            if type_idx is not None:
+                mixed_weight = weight.index_select(0, type_idx)
+            else:
+                mixed_weight = torch.einsum(
+                    "ne,eoi->noi",
+                    node_attrs.to(dtype=doublet.dtype, device=doublet.device),
+                    weight,
+                )
+            out = torch.bmm(mixed_weight, density_blocks[out_l])
+            scale = self.residual_scale[out_l].to(dtype=out.dtype, device=out.device)
+            out_blocks[out_l] = scale * out
+        return _merge_irreps(out_blocks, self.channels, self.lmax)
 
 
 class PerLScaleSO3(nn.Module):
@@ -638,7 +1020,7 @@ class PathPreservingLinearSO3(nn.Module):
                     *x_l.shape[:-2], self.out_channels, 2 * l + 1, dtype=x_l.dtype, device=x_l.device
                 )
             else:
-                out_blocks[l] = torch.einsum("oc,ncm->nom", weight, x_l)
+                out_blocks[l] = torch.einsum("oc,...cm->...om", weight, x_l)
         return _merge_irreps(out_blocks, self.out_channels, self.lmax)
 
 
@@ -2168,8 +2550,10 @@ class ICTDResidualInteractionBlock(nn.Module):
         edge_env: torch.Tensor | None = None,
         node_type_idx: torch.Tensor | None = None,
         sync_after_scatter: callable | None = None,
+        return_phase_doublet: bool = False,
     ) -> (
         tuple[torch.Tensor, torch.Tensor | None]
+        | tuple[torch.Tensor, torch.Tensor | None, torch.Tensor]
         | tuple[torch.Tensor, torch.Tensor | None, torch.Tensor, torch.Tensor]
     ):
         edge_src = edge_index[0]
@@ -2207,6 +2591,9 @@ class ICTDResidualInteractionBlock(nn.Module):
             phase_cos = amplitude.mul(torch.cos(theta)).unsqueeze(-1)
             phase_sin = amplitude.mul(torch.sin(theta)).unsqueeze(-1)
         selector_message_fused = False
+        phase_doublet = None
+        phase_doublet_blocks: Dict[int, torch.Tensor] | None = None
+        message_phase_blocks: Dict[int, torch.Tensor] | None = None
         if self.interaction_attn_heads > 0:
             if edge_env is None:
                 raise ValueError("interaction_attn_heads > 0 requires edge_env to be passed to forward()")
@@ -2225,10 +2612,41 @@ class ICTDResidualInteractionBlock(nn.Module):
             # avg_num_neighbors (that would double-normalize the attention path).
             message = self.message_linear(message_blocks)
         else:
-            message_blocks = {
-                l: scatter(edge_blocks[l], edge_dst, dim=0, dim_size=num_nodes, reduce="sum")
-                for l in range(self.target_lmax + 1)
-            }
+            if self.phase_enabled:
+                if phase_cos is None or phase_sin is None:
+                    raise RuntimeError("phase gates were not constructed")
+                # Aggregate the neutral stream and both q=1 components in one
+                # scatter.  Their edge geometry is identical; only the scalar
+                # gate differs.  Keeping the stream axis as a leading batch
+                # dimension also lets the shared SO(3) channel map below use
+                # one batched linear operation instead of separate neutral and
+                # charged calls.
+                message_phase_gates = torch.stack(
+                    (torch.ones_like(phase_cos), phase_cos, phase_sin), dim=1
+                )
+                message_phase_blocks = {
+                    l: scatter(
+                        edge_blocks[l].unsqueeze(1) * message_phase_gates,
+                        edge_dst,
+                        dim=0,
+                        dim_size=num_nodes,
+                        reduce="sum",
+                    )
+                    for l in range(self.target_lmax + 1)
+                }
+                message_blocks = {
+                    l: block[:, 0] for l, block in message_phase_blocks.items()
+                }
+                phase_doublet_blocks = {
+                    l: block[:, 1:] for l, block in message_phase_blocks.items()
+                }
+            else:
+                message_blocks = {
+                    l: scatter(
+                        edge_blocks[l], edge_dst, dim=0, dim_size=num_nodes, reduce="sum"
+                    )
+                    for l in range(self.target_lmax + 1)
+                }
             if getattr(self, "_fused_selector_message_enabled", False) and sync_after_scatter is None:
                 type_idx = (
                     node_type_idx.to(device=node_feats.device, dtype=torch.long)
@@ -2278,52 +2696,52 @@ class ICTDResidualInteractionBlock(nn.Module):
                         avg_num_neighbors = float(edge_src.numel()) / float(max(num_nodes, 1))
                 else:
                     avg_num_neighbors = self.avg_num_neighbors
-                message = self.message_linear(message_blocks) / max(avg_num_neighbors, 1e-8)
+                if message_phase_blocks is None:
+                    message = self.message_linear(message_blocks) / max(
+                        avg_num_neighbors, 1e-8
+                    )
+                else:
+                    message_phase = self.message_linear(message_phase_blocks) / max(
+                        avg_num_neighbors, 1e-8
+                    )
+                    message = message_phase[:, 0]
+                    phase_doublet = message_phase[:, 1:]
         phase_real = None
         phase_imag = None
         if self.phase_enabled:
             if phase_cos is None or phase_sin is None:
                 raise RuntimeError("phase gates were not constructed")
-            phase_real_blocks = {
-                l: scatter(
-                    edge_blocks[l] * phase_cos,
-                    edge_dst,
-                    dim=0,
-                    dim_size=num_nodes,
-                    reduce="sum",
-                )
-                for l in range(self.target_lmax + 1)
-            }
-            phase_imag_blocks = {
-                l: scatter(
-                    edge_blocks[l] * phase_sin,
-                    edge_dst,
-                    dim=0,
-                    dim_size=num_nodes,
-                    reduce="sum",
-                )
-                for l in range(self.target_lmax + 1)
-            }
-            if self.avg_num_neighbors is None:
-                if edge_mask is not None:
-                    phase_avg_num_neighbors = float(edge_mask.detach().sum().item()) / float(
-                        max(num_nodes, 1)
-                    )
+            if phase_doublet is None:
+                if phase_doublet_blocks is None:
+                    phase_gates = torch.stack((phase_cos, phase_sin), dim=1)
+                    phase_doublet_blocks = {
+                        l: scatter(
+                            edge_blocks[l].unsqueeze(1) * phase_gates,
+                            edge_dst,
+                            dim=0,
+                            dim_size=num_nodes,
+                            reduce="sum",
+                        )
+                        for l in range(self.target_lmax + 1)
+                    }
+                if self.avg_num_neighbors is None:
+                    if edge_mask is not None:
+                        phase_avg_num_neighbors = float(
+                            edge_mask.detach().sum().item()
+                        ) / float(max(num_nodes, 1))
+                    else:
+                        phase_avg_num_neighbors = float(edge_src.numel()) / float(
+                            max(num_nodes, 1)
+                        )
                 else:
-                    phase_avg_num_neighbors = float(edge_src.numel()) / float(max(num_nodes, 1))
-            else:
-                phase_avg_num_neighbors = self.avg_num_neighbors
-            phase_real = self.message_linear(phase_real_blocks) / max(
-                phase_avg_num_neighbors, 1.0e-8
-            )
-            phase_imag = self.message_linear(phase_imag_blocks) / max(
-                phase_avg_num_neighbors, 1.0e-8
-            )
+                    phase_avg_num_neighbors = self.avg_num_neighbors
+                phase_doublet = self.message_linear(phase_doublet_blocks) / max(
+                    phase_avg_num_neighbors, 1.0e-8
+                )
         if sync_after_scatter is not None:
             message = sync_after_scatter(message)
-            if phase_real is not None and phase_imag is not None:
-                phase_real = sync_after_scatter(phase_real)
-                phase_imag = sync_after_scatter(phase_imag)
+            if phase_doublet is not None:
+                phase_doublet = sync_after_scatter(phase_doublet)
         if not self.use_self_connection and not selector_message_fused:
             if node_attrs is None:
                 raise ValueError("node_attrs is required for the unfused message selector path")
@@ -2331,11 +2749,15 @@ class ICTDResidualInteractionBlock(nn.Module):
         if not selector_message_fused:
             message = self.message_norm(message)
             message = self.message_output_scale(message)
-        if phase_real is not None and phase_imag is not None:
+        if phase_doublet is not None:
+            phase_real = phase_doublet[..., 0, :]
+            phase_imag = phase_doublet[..., 1, :]
             if self.phase_norm is not None:
                 phase_real, phase_imag = self.phase_norm(phase_real, phase_imag)
-            phase_real = self.message_output_scale(phase_real)
-            phase_imag = self.message_output_scale(phase_imag)
+                phase_doublet = torch.stack((phase_real, phase_imag), dim=-2)
+            phase_doublet = self.message_output_scale(phase_doublet)
+            phase_real = phase_doublet[..., 0, :]
+            phase_imag = phase_doublet[..., 1, :]
         sc = None
         if self.self_connection is not None:
             if self.sc_lmax == self.input_lmax:
@@ -2356,6 +2778,8 @@ class ICTDResidualInteractionBlock(nn.Module):
                 sc = self.self_connection(sc_input, node_attrs)
             sc = self.sc_norm(sc)
             sc = self.sc_output_scale(sc)
+        if return_phase_doublet and phase_doublet is not None:
+            return message, sc, phase_doublet
         if phase_real is not None and phase_imag is not None:
             return message, sc, phase_real, phase_imag
         return message, sc
@@ -2498,6 +2922,9 @@ class PureCartesianICTDFix(nn.Module):
         ictd_fix_phase_hidden_channels: int = 32,
         ictd_fix_phase_residual_scale_init: float = 0.05,
         ictd_fix_phase_amplitude: str = "unit",
+        ictd_fix_phase_placement: str = "post-product",
+        ictd_fix_phase_density_rank: int = 8,
+        ictd_fix_phase_scope: str = "final",
         ictd_fix_gmix_energy_readout: bool = True,
         ictd_fix_gmix_readout_scale_init: float | None = None,
         ictd_fix_gmix_readout_output_init_std: float = 0.003,
@@ -2629,9 +3056,17 @@ class PureCartesianICTDFix(nn.Module):
         self.ictd_fix_phase_hidden_channels = int(ictd_fix_phase_hidden_channels)
         self.ictd_fix_phase_residual_scale_init = float(ictd_fix_phase_residual_scale_init)
         self.ictd_fix_phase_amplitude = str(ictd_fix_phase_amplitude)
-        if self.ictd_fix_phase_mode not in {"none", "final-scalar-residual"}:
+        self.ictd_fix_phase_placement = str(ictd_fix_phase_placement)
+        self.ictd_fix_phase_density_rank = int(ictd_fix_phase_density_rank)
+        self.ictd_fix_phase_scope = str(ictd_fix_phase_scope)
+        if self.ictd_fix_phase_mode not in {
+            "none",
+            "final-scalar-residual",
+            "final-full-l-residual",
+        }:
             raise ValueError(
-                "ictd_fix_phase_mode must be 'none' or 'final-scalar-residual', "
+                "ictd_fix_phase_mode must be 'none', 'final-scalar-residual', or "
+                "'final-full-l-residual', "
                 f"got {self.ictd_fix_phase_mode!r}"
             )
         if self.ictd_fix_phase_hidden_channels <= 0:
@@ -2643,6 +3078,57 @@ class PureCartesianICTDFix(nn.Module):
             raise ValueError(
                 "ictd_fix_phase_amplitude must be 'unit' or 'softplus', "
                 f"got {self.ictd_fix_phase_amplitude!r}"
+            )
+        if self.ictd_fix_phase_density_rank <= 0:
+            raise ValueError(
+                "ictd_fix_phase_density_rank must be positive, "
+                f"got {self.ictd_fix_phase_density_rank}"
+            )
+        if self.ictd_fix_phase_scope not in {"final", "persistent"}:
+            raise ValueError(
+                "ictd_fix_phase_scope must be 'final' or 'persistent', "
+                f"got {self.ictd_fix_phase_scope!r}"
+            )
+        if self.ictd_fix_phase_mode == "none" and self.ictd_fix_phase_scope != "final":
+            raise ValueError("ictd_fix_phase_scope='persistent' requires an enabled phase mode")
+        if self.ictd_fix_phase_scope == "persistent" and self.num_interaction < 2:
+            raise ValueError(
+                "ictd_fix_phase_scope='persistent' requires num_interaction >= 2"
+            )
+        if self.ictd_fix_phase_placement not in {
+            "post-product",
+            "pre-product-l0",
+            "pre-product-full-l",
+            "pre-and-post",
+        }:
+            raise ValueError(
+                "ictd_fix_phase_placement must be 'post-product', 'pre-product-l0', "
+                "'pre-product-full-l', or 'pre-and-post', "
+                f"got {self.ictd_fix_phase_placement!r}"
+            )
+        if (
+            self.ictd_fix_phase_mode == "final-full-l-residual"
+            and self.ictd_fix_phase_placement != "pre-product-full-l"
+        ):
+            raise ValueError(
+                "final-full-l-residual requires ictd_fix_phase_placement="
+                "'pre-product-full-l' so non-scalar irreps enter the symmetric contraction"
+            )
+        if (
+            self.ictd_fix_phase_mode != "final-full-l-residual"
+            and self.ictd_fix_phase_placement == "pre-product-full-l"
+        ):
+            raise ValueError(
+                "pre-product-full-l requires ictd_fix_phase_mode='final-full-l-residual'"
+            )
+        if (
+            self.ictd_fix_phase_scope == "persistent"
+            and self.ictd_fix_phase_mode == "final-scalar-residual"
+            and self.ictd_fix_phase_placement != "pre-product-l0"
+        ):
+            raise ValueError(
+                "persistent scalar phase requires ictd_fix_phase_placement='pre-product-l0' "
+                "so every layer can feed the neutral density into its product"
             )
         if (
             self.ictd_fix_phase_mode != "none"
@@ -2712,11 +3198,15 @@ class PureCartesianICTDFix(nn.Module):
         self.interactions = nn.ModuleList()
         self.products = nn.ModuleList()
         self.phase_adapters = nn.ModuleDict()
+        self.charged_updates = nn.ModuleDict()
         self.ictd_fix_effective_product_backends: list[str] = []
         for layer_idx, target_lmax in enumerate(product_target_lmax):
             phase_enabled = (
-                self.ictd_fix_phase_mode == "final-scalar-residual"
-                and layer_idx == self.num_interaction - 1
+                self.ictd_fix_phase_mode != "none"
+                and (
+                    self.ictd_fix_phase_scope == "persistent"
+                    or layer_idx == self.num_interaction - 1
+                )
             )
             effective_product_backend = self.ictd_fix_product_backend
             self.ictd_fix_effective_product_backends.append(effective_product_backend)
@@ -2847,13 +3337,27 @@ class PureCartesianICTDFix(nn.Module):
                     )
                 )
             if phase_enabled:
-                self.phase_adapters[str(layer_idx)] = PhaseHermitianScalarResidual(
-                    num_elements=self.num_elements,
-                    channels=self.channels,
-                    lmax=self.ictd_fix_edge_lmax,
-                    residual_scale_init=self.ictd_fix_phase_residual_scale_init,
-                    internal_compute_dtype=internal_compute_dtype,
-                )
+                if self.ictd_fix_phase_scope == "persistent" and layer_idx > 0:
+                    self.charged_updates[str(layer_idx)] = PersistentChargedUpdate(
+                        channels=self.channels,
+                        lmax=self.ictd_fix_edge_lmax,
+                    )
+                if self.ictd_fix_phase_mode == "final-full-l-residual":
+                    self.phase_adapters[str(layer_idx)] = PhaseHermitianFullLResidual(
+                        num_elements=self.num_elements,
+                        channels=self.channels,
+                        lmax=self.ictd_fix_edge_lmax,
+                        density_rank=self.ictd_fix_phase_density_rank,
+                        residual_scale_init=self.ictd_fix_phase_residual_scale_init,
+                    )
+                else:
+                    self.phase_adapters[str(layer_idx)] = PhaseHermitianScalarResidual(
+                        num_elements=self.num_elements,
+                        channels=self.channels,
+                        lmax=self.ictd_fix_edge_lmax,
+                        residual_scale_init=self.ictd_fix_phase_residual_scale_init,
+                        internal_compute_dtype=internal_compute_dtype,
+                    )
         self.layer_energy_readouts = nn.ModuleList(
             [EquivariantScalarReadoutSO3(self.channels, self.lmax, output_init_std=self.ictd_fix_layer_readout_output_init_std) for _ in range(self.num_interaction - 1)]
         )
@@ -3359,6 +3863,7 @@ class PureCartesianICTDFix(nn.Module):
 
         layer_states: List[torch.Tensor] = []
         last_preproduct_state: torch.Tensor | None = None
+        charged_doublet: torch.Tensor | None = None
         total_energy = None
         for layer_idx, (interaction, product) in enumerate(zip(self.interactions, self.products)):
             interaction_out = interaction(
@@ -3371,29 +3876,77 @@ class PureCartesianICTDFix(nn.Module):
                 edge_env=edge_env,
                 node_type_idx=compact_idx,
                 sync_after_scatter=sync_after_scatter,
+                return_phase_doublet=interaction.phase_enabled,
             )
-            phase_real = None
-            phase_imag = None
+            phase_doublet = None
             if interaction.phase_enabled:
-                message, sc, phase_real, phase_imag = interaction_out
+                message, sc, phase_doublet = interaction_out
             else:
                 message, sc = interaction_out
+            phase_key = str(layer_idx)
+            phase_delta = None
+            if phase_key in self.phase_adapters:
+                if phase_doublet is None:
+                    raise RuntimeError(
+                        f"phase adapter exists for layer {layer_idx}, but the interaction returned no doublet"
+                    )
+                if self.ictd_fix_phase_scope == "persistent":
+                    if charged_doublet is None:
+                        if layer_idx != 0:
+                            raise RuntimeError(
+                                "persistent charged stream was not initialized by the first layer"
+                            )
+                        charged_doublet = phase_doublet
+                    else:
+                        if phase_key not in self.charged_updates:
+                            raise RuntimeError(
+                                f"persistent charged update is missing for layer {layer_idx}"
+                            )
+                        charged_doublet = self.charged_updates[
+                            phase_key
+                        ].forward_doublet(
+                            charged_doublet,
+                            phase_doublet,
+                        )
+                    phase_doublet = charged_doublet
+                phase_delta = self.phase_adapters[phase_key].forward_doublet(
+                    phase_doublet,
+                    node_attrs=node_attrs,
+                    node_type_idx=compact_idx,
+                )
+                if self.ictd_fix_phase_placement in {"pre-product-l0", "pre-and-post"}:
+                    # The Hermitian contraction is a neutral l=0 feature. Inject it into
+                    # the scalar block before the ordinary MACE symmetric contraction so
+                    # correlation terms can mix the real message with the phase density.
+                    if message.shape[-1] < self.channels:
+                        raise RuntimeError(
+                            "phase pre-product injection requires an l=0 message block with "
+                            f"at least {self.channels} channels, got shape {tuple(message.shape)}"
+                        )
+                    message = torch.cat(
+                        (
+                            message[..., : self.channels] + phase_delta,
+                            message[..., self.channels :],
+                        ),
+                        dim=-1,
+                    )
+                elif self.ictd_fix_phase_placement == "pre-product-full-l":
+                    if phase_delta.shape != message.shape:
+                        raise RuntimeError(
+                            "phase full-L pre-product injection requires a complete SO(3) "
+                            f"message-shaped residual, got delta={tuple(phase_delta.shape)} "
+                            f"message={tuple(message.shape)}"
+                        )
+                    message = message + phase_delta
             if type(product).__name__.startswith("Cueq"):
                 h = product(node_feats=message, sc=sc, node_attrs=node_attrs, node_type_idx=compact_idx)
             else:
                 h = product(node_feats=message, sc=sc, node_attrs=node_attrs)
-            phase_key = str(layer_idx)
-            if phase_key in self.phase_adapters:
-                if phase_real is None or phase_imag is None:
-                    raise RuntimeError(
-                        f"phase adapter exists for layer {layer_idx}, but the interaction returned no doublet"
-                    )
-                h = h + self.phase_adapters[phase_key](
-                    phase_real,
-                    phase_imag,
-                    node_attrs=node_attrs,
-                    node_type_idx=compact_idx,
-                )
+            if (
+                phase_delta is not None
+                and self.ictd_fix_phase_placement in {"post-product", "pre-and-post"}
+            ):
+                h = h + phase_delta
             if layer_idx == 0 and self.mace_first_layer_sc0 is not None:
                 add = self.mace_first_layer_sc0.to(dtype=h.dtype, device=h.device)[compact_idx]
                 h = torch.cat((h[..., : self.channels] + add, h[..., self.channels :]), dim=-1)

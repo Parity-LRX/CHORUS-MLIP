@@ -1433,7 +1433,11 @@ class LAMMPS_MLIAP_MFF(MLIAPUnified):
             inferred_phase_mode = str(
                 ckpt.get("ictd_fix_phase_mode")
                 or arch_meta.get("ictd_fix_phase_mode")
-                or ("final-scalar-residual" if phase_layer_indices else "none")
+                or (
+                    "final-full-l-residual"
+                    if any(".rank_projections." in key for key in selected_state_dict)
+                    else ("final-scalar-residual" if phase_layer_indices else "none")
+                )
             )
             if phase_layer_indices:
                 phase_layer = phase_layer_indices[-1]
@@ -1460,6 +1464,41 @@ class LAMMPS_MLIAP_MFF(MLIAPUnified):
             inferred_phase_amplitude = str(
                 ckpt.get("ictd_fix_phase_amplitude")
                 or arch_meta.get("ictd_fix_phase_amplitude", inferred_phase_amplitude)
+            )
+            inferred_phase_scope = str(
+                ckpt.get("ictd_fix_phase_scope")
+                or arch_meta.get("ictd_fix_phase_scope")
+                or (
+                    "persistent"
+                    if any(key.startswith("charged_updates.") for key in selected_state_dict)
+                    or len(phase_layer_indices) > 1
+                    else "final"
+                )
+            )
+            inferred_phase_placement = str(
+                ckpt.get("ictd_fix_phase_placement")
+                or arch_meta.get(
+                    "ictd_fix_phase_placement",
+                    "pre-product-full-l"
+                    if inferred_phase_mode == "final-full-l-residual"
+                    else (
+                        "pre-product-l0"
+                        if inferred_phase_scope == "persistent"
+                        else "post-product"
+                    ),
+                )
+            )
+            inferred_phase_density_rank = int(
+                ckpt.get("ictd_fix_phase_density_rank")
+                or arch_meta.get("ictd_fix_phase_density_rank")
+                or next(
+                    (
+                        value.shape[0]
+                        for key, value in selected_state_dict.items()
+                        if ".rank_projections." in key and key.endswith(".weight")
+                    ),
+                    8,
+                )
             )
             inferred_phase_scale_init = float(
                 ckpt.get(
@@ -1664,6 +1703,9 @@ class LAMMPS_MLIAP_MFF(MLIAPUnified):
                 ictd_fix_phase_hidden_channels=inferred_phase_hidden_channels,
                 ictd_fix_phase_residual_scale_init=inferred_phase_scale_init,
                 ictd_fix_phase_amplitude=inferred_phase_amplitude,
+                ictd_fix_phase_placement=inferred_phase_placement,
+                ictd_fix_phase_density_rank=inferred_phase_density_rank,
+                ictd_fix_phase_scope=inferred_phase_scope,
                 save_contraction_order=save_contraction_order,
                 save_multiple_mix_channels=save_multiple_mix_channels,
                 avg_num_neighbors=resolved_avg_nn,

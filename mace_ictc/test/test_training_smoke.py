@@ -247,6 +247,79 @@ def run(device="cpu"):
                 first_loss=float(first["total_loss"]), last_loss=float(last["total_loss"]))
 
 
+def test_validation_metrics_use_global_error_sums():
+    """A small final batch must not receive the weight of a full batch."""
+    trainer = object.__new__(ForceTrainer)
+    trainer.model = torch.nn.Identity()
+    trainer.a = 2.0
+    trainer.b = 3.0
+    trainer.c = 0.0
+    trainer.val_loader = [
+        {
+            "force_loss_sum": 1.0,
+            "force_loss_count": 1.0,
+            "energy_loss_sum": 2.0,
+            "energy_loss_count": 1.0,
+            "stress_loss_sum": 0.0,
+            "stress_loss_count": 0.0,
+            "force_sq_error_sum": 1.0,
+            "force_abs_error_sum": 1.0,
+            "force_metric_count": 1.0,
+            "energy_sq_error_sum": 16.0,
+            "energy_abs_error_sum": 4.0,
+            "energy_metric_count": 1.0,
+        },
+        {
+            "force_loss_sum": 4.0,
+            "force_loss_count": 3.0,
+            "energy_loss_sum": 0.0,
+            "energy_loss_count": 3.0,
+            "stress_loss_sum": 0.0,
+            "stress_loss_count": 0.0,
+            "force_sq_error_sum": 12.0,
+            "force_abs_error_sum": 6.0,
+            "force_metric_count": 3.0,
+            "energy_sq_error_sum": 0.0,
+            "energy_abs_error_sum": 0.0,
+            "energy_metric_count": 3.0,
+        },
+    ]
+    trainer._compute = lambda batch, training: batch
+
+    metrics = trainer._val_pass()
+    assert np.isclose(metrics["force_rmse"], np.sqrt(13.0 / 4.0))
+    assert np.isclose(metrics["force_mae"], 7.0 / 4.0)
+    assert np.isclose(metrics["energy_rmse_avg"], 2.0)
+    assert np.isclose(metrics["energy_mae_avg"], 1.0)
+    assert np.isclose(metrics["force_loss"], 5.0 / 4.0)
+    assert np.isclose(metrics["energy_loss"], 2.0 / 4.0)
+    assert np.isclose(metrics["total_loss"], 4.75)
+
+
+def test_loss_term_stats_match_reference_reductions():
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    pred = torch.tensor([1.0, -2.0, 4.0], device=device)
+    target = torch.tensor([0.5, -1.0, 1.0], device=device)
+    trainer = object.__new__(ForceTrainer)
+
+    trainer.loss_type = "mse"
+    trainer.loss_beta = 0.5
+    mean, total, count = trainer._loss_term_stats(pred, target)
+    reference = torch.nn.functional.mse_loss(pred, target, reduction="none")
+    torch.testing.assert_close(total, reference.sum())
+    torch.testing.assert_close(count, count.new_tensor(float(reference.numel())))
+    torch.testing.assert_close(mean, reference.mean())
+
+    trainer.loss_type = "smooth_l1"
+    mean, total, count = trainer._loss_term_stats(pred, target)
+    reference = torch.nn.functional.smooth_l1_loss(
+        pred, target, beta=trainer.loss_beta, reduction="none"
+    )
+    torch.testing.assert_close(total, reference.sum())
+    torch.testing.assert_close(count, count.new_tensor(float(reference.numel())))
+    torch.testing.assert_close(mean, reference.mean())
+
+
 def main():
     device = "cuda" if torch.cuda.is_available() else "cpu"
     res = run(device=device)

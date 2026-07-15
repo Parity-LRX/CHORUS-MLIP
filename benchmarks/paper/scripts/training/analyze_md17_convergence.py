@@ -36,6 +36,9 @@ INITIAL_MACE_RE = re.compile(
 )
 
 KNOWN_MODES = [
+    "ictc_phase_full_l_persistent_softplus_eager",
+    "ictc_phase_scalar_persistent_softplus_eager",
+    "ictc_phase_full_l_softplus_eager",
     "ictc_phase_softplus_eager",
     "ictc_phase_unit_eager",
     "ictc_bridge_u_eager",
@@ -375,6 +378,8 @@ def plot_curves(curve_rows: list[dict[str, object]], out_dir: Path) -> None:
     out_dir.mkdir(parents=True, exist_ok=True)
     datasets = sorted({str(r["dataset"]) for r in curve_rows})
     colors = {
+        "ictc_phase_full_l_persistent_softplus_eager": "#6f4e9c",
+        "ictc_phase_scalar_persistent_softplus_eager": "#b279a2",
         "ictc_phase_softplus_eager": "#e45756",
         "ictc_phase_unit_eager": "#f2cf5b",
         "ictc_bridge_u_eager": "#4c9a48",
@@ -384,6 +389,8 @@ def plot_curves(curve_rows: list[dict[str, object]], out_dir: Path) -> None:
         "mace_cueq": "#f58518",
     }
     labels = {
+        "ictc_phase_full_l_persistent_softplus_eager": "ICTC persistent full-L phase",
+        "ictc_phase_scalar_persistent_softplus_eager": "ICTC persistent scalar phase",
         "ictc_phase_softplus_eager": "ICTC phase + learned amplitude",
         "ictc_phase_unit_eager": "ICTC unit phase",
         "ictc_bridge_u_eager": "ICTC eager",
