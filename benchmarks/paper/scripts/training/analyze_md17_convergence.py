@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
 """Analyze MD17 apple-to-apple training convergence logs.
 
-The raw MACE-ICTC and mace-torch logs report comparable validation RMSE values
-but not comparable scalar validation losses. This script therefore extracts only
-energy and force RMSE curves, computes per-run convergence metrics, and aggregates
-them by dataset and mode.
+Minimum validation loss is a valid checkpoint-selection rule only among runs
+that use the same trainer, objective, and loss normalization.  The report keeps
+that selected checkpoint together with both of its MAEs so it never constructs
+a fictitious checkpoint from independently best energy and force epochs. Scalar
+losses must not be compared between MACE-ICTC and mace-torch.
 """
 
 from __future__ import annotations
@@ -23,6 +24,7 @@ ICTC_RE = re.compile(
     r"\[epoch\s+(?P<epoch>\d+)\s+step\s+(?P<step>\d+)\s+\S+\]\s+"
     r"train loss=(?P<train_loss>[0-9.eE+-]+).*?\|\s+val loss=(?P<val_loss>[0-9.eE+-]+)\s+"
     r"Frmse=(?P<force_rmse>[0-9.eE+-]+)\s+Ermse=(?P<energy_rmse>[0-9.eE+-]+)"
+    r"(?:\s+Fmae=(?P<force_mae>[0-9.eE+-]+)\s+Emae=(?P<energy_mae>[0-9.eE+-]+))?"
 )
 MACE_RE = re.compile(
     r"Epoch\s+(?P<epoch>\d+):.*?loss=(?P<val_loss>[0-9.eE+-]+),\s+"
@@ -36,6 +38,11 @@ INITIAL_MACE_RE = re.compile(
 )
 
 KNOWN_MODES = [
+    "ictc_phase_diagonal_full_l_eager",
+    "ictc_phase_cartesian_full_l_eager",
+    "ictc_phase_positive_full_l_eager",
+    "ictc_phase_signed_full_l_eager",
+    "ictc_phase_radial_full_l_eager",
     "ictc_phase_full_l_persistent_softplus_eager",
     "ictc_phase_scalar_persistent_softplus_eager",
     "ictc_phase_full_l_softplus_eager",
@@ -44,6 +51,7 @@ KNOWN_MODES = [
     "ictc_bridge_u_eager",
     "ictc_bridge_u_makefx",
     "ictc_cueq_makefx",
+    "ictc_attention_eager",
     "mace_e3nn",
     "mace_cueq",
 ]
@@ -89,6 +97,16 @@ def parse_log(path: Path) -> list[dict[str, object]]:
                     "train_loss": float(m.group("train_loss")),
                     "energy_rmse_eV_atom": float(m.group("energy_rmse")),
                     "force_rmse_eV_A": float(m.group("force_rmse")),
+                    "energy_mae_eV_atom": (
+                        float(m.group("energy_mae"))
+                        if m.group("energy_mae") is not None
+                        else ""
+                    ),
+                    "force_mae_eV_A": (
+                        float(m.group("force_mae"))
+                        if m.group("force_mae") is not None
+                        else ""
+                    ),
                     "source_log": str(path),
                 }
             )
@@ -191,8 +209,25 @@ def summarize_run(
         }
     first = rows[0]
     final = non_init[-1]
+    best_loss = min(non_init, key=lambda r: float(r["val_loss"]))
     best_force = min(non_init, key=lambda r: float(r["force_rmse_eV_A"]))
     best_energy = min(non_init, key=lambda r: float(r["energy_rmse_eV_atom"]))
+    mae_rows = [
+        r
+        for r in non_init
+        if r.get("force_mae_eV_A") not in (None, "")
+        and r.get("energy_mae_eV_atom") not in (None, "")
+    ]
+    best_force_mae = (
+        min(mae_rows, key=lambda r: float(r["force_mae_eV_A"]))
+        if mae_rows
+        else None
+    )
+    best_energy_mae = (
+        min(mae_rows, key=lambda r: float(r["energy_mae_eV_atom"]))
+        if mae_rows
+        else None
+    )
     status = "complete"
     if target_epoch is not None and int(final["epoch"]) < target_epoch - 1:
         status = "partial"
@@ -205,6 +240,20 @@ def summarize_run(
         "final_epoch": final["epoch"],
         "final_force_rmse_eV_A": final["force_rmse_eV_A"],
         "final_energy_rmse_eV_atom": final["energy_rmse_eV_atom"],
+        "final_force_mae_eV_A": "",
+        "final_energy_mae_eV_atom": "",
+        "best_val_loss": best_loss["val_loss"],
+        "best_val_loss_epoch": best_loss["epoch"],
+        "force_rmse_at_best_val_loss_eV_A": best_loss["force_rmse_eV_A"],
+        "energy_rmse_at_best_val_loss_eV_atom": best_loss["energy_rmse_eV_atom"],
+        "force_mae_at_best_val_loss_eV_A": "",
+        "energy_mae_at_best_val_loss_eV_atom": "",
+        "best_force_mae_eV_A": "",
+        "best_force_mae_epoch": "",
+        "energy_mae_at_best_force_eV_atom": "",
+        "best_energy_mae_eV_atom": "",
+        "best_energy_mae_epoch": "",
+        "force_mae_at_best_energy_eV_A": "",
         "best_force_rmse_eV_A": best_force["force_rmse_eV_A"],
         "best_force_epoch": best_force["epoch"],
         "energy_at_best_force_eV_atom": best_force["energy_rmse_eV_atom"],
@@ -215,6 +264,25 @@ def summarize_run(
         "mean_log10_energy_rmse": mean_log_metric(rows, "energy_rmse_eV_atom"),
         "source_log": final["source_log"],
     }
+    if final.get("force_mae_eV_A") not in (None, ""):
+        out["final_force_mae_eV_A"] = final["force_mae_eV_A"]
+        out["final_energy_mae_eV_atom"] = final["energy_mae_eV_atom"]
+    if best_loss.get("force_mae_eV_A") not in (None, ""):
+        out["force_mae_at_best_val_loss_eV_A"] = best_loss["force_mae_eV_A"]
+        out["energy_mae_at_best_val_loss_eV_atom"] = best_loss[
+            "energy_mae_eV_atom"
+        ]
+    if best_force_mae is not None and best_energy_mae is not None:
+        out["best_force_mae_eV_A"] = best_force_mae["force_mae_eV_A"]
+        out["best_force_mae_epoch"] = best_force_mae["epoch"]
+        out["energy_mae_at_best_force_eV_atom"] = best_force_mae[
+            "energy_mae_eV_atom"
+        ]
+        out["best_energy_mae_eV_atom"] = best_energy_mae["energy_mae_eV_atom"]
+        out["best_energy_mae_epoch"] = best_energy_mae["epoch"]
+        out["force_mae_at_best_energy_eV_A"] = best_energy_mae[
+            "force_mae_eV_A"
+        ]
     init = [r for r in rows if int(r["epoch"]) < 0]
     if init:
         out["initial_force_rmse_eV_A"] = init[-1]["force_rmse_eV_A"]
@@ -243,6 +311,15 @@ def aggregate_runs(
             "complete_runs": sum(1 for r in rows if r.get("status") == "complete"),
         }
         for key in [
+            "best_val_loss",
+            "force_mae_at_best_val_loss_eV_A",
+            "energy_mae_at_best_val_loss_eV_atom",
+            "force_rmse_at_best_val_loss_eV_A",
+            "energy_rmse_at_best_val_loss_eV_atom",
+            "final_force_mae_eV_A",
+            "best_force_mae_eV_A",
+            "final_energy_mae_eV_atom",
+            "best_energy_mae_eV_atom",
             "final_force_rmse_eV_A",
             "best_force_rmse_eV_A",
             "final_energy_rmse_eV_atom",
@@ -290,19 +367,23 @@ def write_markdown(path: Path, run_rows: list[dict[str, object]], agg_rows: list
     lines = [
         "# MD17 convergence analysis",
         "",
-        "All force RMSE values are in eV/A and all energy RMSE values are in eV/atom.",
-        "Scalar validation losses are intentionally not compared because MACE-ICTC and mace-torch log different internal loss normalizations.",
+        "All force values are in eV/A and all energy values are in eV/atom.",
+        "Within runs that share the same trainer and objective, minimum validation loss selects the checkpoint; both MAEs below come from that same checkpoint.",
+        "Do not compare scalar validation losses between MACE-ICTC and mace-torch because they use different internal normalizations.",
+        "Final-epoch and independently best MAEs remain diagnostics in the CSV files.",
         "Partial rows are included so long-running jobs can be monitored before all modes finish.",
         "",
         "## Per-run summary",
         "",
-        "| dataset | mode | seed | status | final epoch | best F | best F epoch | E at best F | best E | best E epoch |",
-        "|---|---|---:|---|---:|---:|---:|---:|---:|---:|",
+        "| dataset | mode | seed | status | final epoch | selected epoch | best val loss | selected F MAE | selected E MAE |",
+        "|---|---|---:|---|---:|---:|---:|---:|---:|",
     ]
     for row in sorted(run_rows, key=lambda r: (str(r["dataset"]), MODE_ORDER.get(str(r["mode"]), 999), str(r["seed"]))):
         lines.append(
-            "| {dataset} | {mode} | {seed} | {status} | {final_epoch} | {best_force_rmse_eV_A} | "
-            "{best_force_epoch} | {energy_at_best_force_eV_atom} | {best_energy_rmse_eV_atom} | {best_energy_epoch} |".format(
+            "| {dataset} | {mode} | {seed} | {status} | {final_epoch} | "
+            "{best_val_loss_epoch} | {best_val_loss} | "
+            "{force_mae_at_best_val_loss_eV_A} | "
+            "{energy_mae_at_best_val_loss_eV_atom} |".format(
                 **{k: fmt(v) for k, v in row.items()}
             )
         )
@@ -311,15 +392,18 @@ def write_markdown(path: Path, run_rows: list[dict[str, object]], agg_rows: list
             "",
             "## Aggregate by mode",
             "",
-            "| dataset | mode | runs | complete | best F mean | best F std | best E mean | best E std | mean log10 F |",
-            "|---|---|---:|---:|---:|---:|---:|---:|---:|",
+            "| dataset | mode | runs | complete | best val loss mean | best val loss std | selected F MAE mean | selected F MAE std | selected E MAE mean | selected E MAE std |",
+            "|---|---|---:|---:|---:|---:|---:|---:|---:|---:|",
         ]
     )
     for row in agg_rows:
         lines.append(
-            "| {dataset} | {mode} | {runs} | {complete_runs} | {best_force_rmse_eV_A_mean} | "
-            "{best_force_rmse_eV_A_std} | {best_energy_rmse_eV_atom_mean} | "
-            "{best_energy_rmse_eV_atom_std} | {mean_log10_force_rmse_mean} |".format(
+            "| {dataset} | {mode} | {runs} | {complete_runs} | "
+            "{best_val_loss_mean} | {best_val_loss_std} | "
+            "{force_mae_at_best_val_loss_eV_A_mean} | "
+            "{force_mae_at_best_val_loss_eV_A_std} | "
+            "{energy_mae_at_best_val_loss_eV_atom_mean} | "
+            "{energy_mae_at_best_val_loss_eV_atom_std} |".format(
                 **{k: fmt(v) for k, v in row.items()}
             )
         )

@@ -927,6 +927,51 @@ class PhaseHermitianFullLResidual(nn.Module):
             out_blocks[out_l] = scale * out
         return _merge_irreps(out_blocks, self.channels, self.lmax)
 
+    def forward_diagonal_edges_doublet(
+        self,
+        edge_doublet: torch.Tensor,
+        *,
+        edge_dst: torch.Tensor,
+        num_nodes: int,
+        node_attrs: torch.Tensor | None,
+        node_type_idx: torch.Tensor | None = None,
+    ) -> torch.Tensor:
+        """Build only j=k Hermitian terms, then aggregate the neutral edge densities."""
+        edge_density_blocks = self.hermitian_blocks_doublet(edge_doublet)
+        density_blocks = {
+            out_l: scatter(
+                block,
+                edge_dst,
+                dim=0,
+                dim_size=int(num_nodes),
+                reduce="sum",
+            )
+            for out_l, block in edge_density_blocks.items()
+        }
+        out_blocks: Dict[int, torch.Tensor] = {}
+        if node_type_idx is not None:
+            type_idx = node_type_idx.to(device=edge_doublet.device, dtype=torch.long)
+        else:
+            type_idx = None
+            if node_attrs is None:
+                raise ValueError("node_attrs is required when node_type_idx is not provided")
+        for out_l in range(self.lmax + 1):
+            weight = self.output_weights[str(out_l)].to(
+                dtype=edge_doublet.dtype, device=edge_doublet.device
+            )
+            if type_idx is not None:
+                mixed_weight = weight.index_select(0, type_idx)
+            else:
+                mixed_weight = torch.einsum(
+                    "ne,eoi->noi",
+                    node_attrs.to(dtype=edge_doublet.dtype, device=edge_doublet.device),
+                    weight,
+                )
+            out = torch.bmm(mixed_weight, density_blocks[out_l])
+            scale = self.residual_scale[out_l].to(dtype=out.dtype, device=out.device)
+            out_blocks[out_l] = scale * out
+        return _merge_irreps(out_blocks, self.channels, self.lmax)
+
     def forward_doublet(
         self,
         doublet: torch.Tensor,
@@ -2235,6 +2280,8 @@ class ICTDResidualInteractionBlock(nn.Module):
         phase_enabled: bool = False,
         phase_hidden_channels: int = 32,
         phase_amplitude: str = "unit",
+        phase_coefficient: str = "polar",
+        phase_context: str = "content",
     ):
         super().__init__()
         self.channels = int(channels)
@@ -2360,6 +2407,8 @@ class ICTDResidualInteractionBlock(nn.Module):
         self.phase_enabled = bool(phase_enabled)
         self.phase_hidden_channels = int(phase_hidden_channels)
         self.phase_amplitude = str(phase_amplitude)
+        self.phase_coefficient = str(phase_coefficient)
+        self.phase_context = str(phase_context)
         if self.phase_hidden_channels <= 0:
             raise ValueError(
                 f"phase_hidden_channels must be positive, got {self.phase_hidden_channels}"
@@ -2368,10 +2417,24 @@ class ICTDResidualInteractionBlock(nn.Module):
             raise ValueError(
                 f"phase_amplitude must be 'unit' or 'softplus', got {self.phase_amplitude!r}"
             )
+        if self.phase_coefficient not in {"polar", "positive", "signed", "cartesian"}:
+            raise ValueError(
+                "phase_coefficient must be 'polar', 'positive', 'signed', or "
+                f"'cartesian', got {self.phase_coefficient!r}"
+            )
+        if self.phase_context not in {"content", "radial"}:
+            raise ValueError(
+                f"phase_context must be 'content' or 'radial', got {self.phase_context!r}"
+            )
+        if self.phase_coefficient != "polar" and self.phase_amplitude != "softplus":
+            raise ValueError(
+                f"phase_coefficient={self.phase_coefficient!r} requires "
+                "phase_amplitude='softplus' for a parameter-matched two-head control"
+            )
         if self.phase_enabled and self.interaction_attn_heads > 0:
             raise ValueError(
                 "phase-enabled interaction and neighbor attention cannot be combined in the "
-                "first PEMP implementation; benchmark them as separate operators"
+                "current U1-CHORUS implementation; benchmark them as separate operators"
             )
         if self.phase_enabled:
             # Only l=0 node features and radial edge features enter this network,
@@ -2396,9 +2459,13 @@ class ICTDResidualInteractionBlock(nn.Module):
                 self.phase_amplitude_head = nn.Linear(self.phase_hidden_channels, 1, bias=True)
                 with torch.no_grad():
                     self.phase_amplitude_head.weight.zero_()
-                    # softplus^{-1}(1): start as the unit-amplitude model while
-                    # retaining a learnable positive amplitude.
-                    self.phase_amplitude_head.bias.fill_(math.log(math.expm1(1.0)))
+                    if self.phase_coefficient == "cartesian":
+                        # Cartesian two-real-channel control starts at z ~= 1+0i.
+                        self.phase_amplitude_head.bias.zero_()
+                    else:
+                        # softplus^{-1}(1): start as the unit-amplitude model while
+                        # retaining a learnable positive amplitude.
+                        self.phase_amplitude_head.bias.fill_(math.log(math.expm1(1.0)))
             else:
                 self.phase_amplitude_head = None
             self.phase_norm = (
@@ -2551,6 +2618,7 @@ class ICTDResidualInteractionBlock(nn.Module):
         node_type_idx: torch.Tensor | None = None,
         sync_after_scatter: callable | None = None,
         return_phase_doublet: bool = False,
+        return_phase_edges: bool = False,
     ) -> (
         tuple[torch.Tensor, torch.Tensor | None]
         | tuple[torch.Tensor, torch.Tensor | None, torch.Tensor]
@@ -2574,6 +2642,10 @@ class ICTDResidualInteractionBlock(nn.Module):
         if self.phase_enabled:
             scalar_nodes = x1[0].squeeze(-1)
             normalized_scalar_nodes = self.phase_node_norm(scalar_nodes)
+            if self.phase_context == "radial":
+                # Preserve the exact trunk shape and nominal parameter budget while
+                # removing all chemical-content information from the coefficient.
+                normalized_scalar_nodes = torch.zeros_like(normalized_scalar_nodes)
             phase_context = torch.cat(
                 (
                     normalized_scalar_nodes[edge_dst],
@@ -2586,10 +2658,36 @@ class ICTDResidualInteractionBlock(nn.Module):
             theta = self.phase_head(phase_hidden)
             if self.phase_amplitude_head is None:
                 amplitude = torch.ones_like(theta)
+                amplitude_raw = None
             else:
-                amplitude = F.softplus(self.phase_amplitude_head(phase_hidden))
-            phase_cos = amplitude.mul(torch.cos(theta)).unsqueeze(-1)
-            phase_sin = amplitude.mul(torch.sin(theta)).unsqueeze(-1)
+                amplitude_raw = self.phase_amplitude_head(phase_hidden)
+                amplitude = F.softplus(amplitude_raw)
+            if self.phase_coefficient == "polar":
+                phase_cos = amplitude.mul(torch.cos(theta)).unsqueeze(-1)
+                phase_sin = amplitude.mul(torch.sin(theta)).unsqueeze(-1)
+            elif self.phase_coefficient == "positive":
+                if amplitude_raw is None:
+                    raise RuntimeError("positive coefficient requires an amplitude head")
+                # Both scalar heads remain active while the coefficient stays positive.
+                positive = F.softplus(amplitude_raw + theta)
+                phase_cos = positive.unsqueeze(-1)
+                phase_sin = torch.zeros_like(phase_cos)
+            elif self.phase_coefficient == "signed":
+                if amplitude_raw is None:
+                    raise RuntimeError("signed coefficient requires an amplitude head")
+                # Start close to the same +1 real coefficient as the polar and
+                # Cartesian controls, while retaining an unconstrained path through
+                # zero to negative weights. Starting at tanh(0)=0 would suppress
+                # the entire branch and confound parameterization with initialization.
+                signed = amplitude.mul(1.0 + theta)
+                phase_cos = signed.unsqueeze(-1)
+                phase_sin = torch.zeros_like(phase_cos)
+            else:
+                if amplitude_raw is None:
+                    raise RuntimeError("cartesian coefficient requires a second real head")
+                # Unconstrained Cartesian doublet, initialized close to 1+0i.
+                phase_cos = (1.0 + theta).unsqueeze(-1)
+                phase_sin = amplitude_raw.unsqueeze(-1)
         selector_message_fused = False
         phase_doublet = None
         phase_doublet_blocks: Dict[int, torch.Tensor] | None = None
@@ -2708,6 +2806,7 @@ class ICTDResidualInteractionBlock(nn.Module):
                     phase_doublet = message_phase[:, 1:]
         phase_real = None
         phase_imag = None
+        phase_edge_doublet = None
         if self.phase_enabled:
             if phase_cos is None or phase_sin is None:
                 raise RuntimeError("phase gates were not constructed")
@@ -2738,6 +2837,30 @@ class ICTDResidualInteractionBlock(nn.Module):
                 phase_doublet = self.message_linear(phase_doublet_blocks) / max(
                     phase_avg_num_neighbors, 1.0e-8
                 )
+            if return_phase_edges:
+                if self.phase_norm is not None:
+                    raise ValueError(
+                        "diagonal edge density is not defined with interaction RMS norm enabled"
+                    )
+                phase_gates = torch.stack((phase_cos, phase_sin), dim=1)
+                phase_edge_blocks = {
+                    l: edge_blocks[l].unsqueeze(1) * phase_gates
+                    for l in range(self.target_lmax + 1)
+                }
+                if self.avg_num_neighbors is None:
+                    if edge_mask is not None:
+                        phase_avg_num_neighbors = float(
+                            edge_mask.detach().sum().item()
+                        ) / float(max(num_nodes, 1))
+                    else:
+                        phase_avg_num_neighbors = float(edge_src.numel()) / float(
+                            max(num_nodes, 1)
+                        )
+                else:
+                    phase_avg_num_neighbors = self.avg_num_neighbors
+                phase_edge_doublet = self.message_linear(phase_edge_blocks) / max(
+                    phase_avg_num_neighbors, 1.0e-8
+                )
         if sync_after_scatter is not None:
             message = sync_after_scatter(message)
             if phase_doublet is not None:
@@ -2758,6 +2881,8 @@ class ICTDResidualInteractionBlock(nn.Module):
             phase_doublet = self.message_output_scale(phase_doublet)
             phase_real = phase_doublet[..., 0, :]
             phase_imag = phase_doublet[..., 1, :]
+        if phase_edge_doublet is not None:
+            phase_edge_doublet = self.message_output_scale(phase_edge_doublet)
         sc = None
         if self.self_connection is not None:
             if self.sc_lmax == self.input_lmax:
@@ -2779,6 +2904,10 @@ class ICTDResidualInteractionBlock(nn.Module):
             sc = self.sc_norm(sc)
             sc = self.sc_output_scale(sc)
         if return_phase_doublet and phase_doublet is not None:
+            if return_phase_edges:
+                if phase_edge_doublet is None:
+                    raise RuntimeError("phase edge doublet was requested but not constructed")
+                return message, sc, phase_doublet, phase_edge_doublet
             return message, sc, phase_doublet
         if phase_real is not None and phase_imag is not None:
             return message, sc, phase_real, phase_imag
@@ -2922,8 +3051,11 @@ class PureCartesianICTDFix(nn.Module):
         ictd_fix_phase_hidden_channels: int = 32,
         ictd_fix_phase_residual_scale_init: float = 0.05,
         ictd_fix_phase_amplitude: str = "unit",
+        ictd_fix_phase_coefficient: str = "polar",
+        ictd_fix_phase_context: str = "content",
         ictd_fix_phase_placement: str = "post-product",
         ictd_fix_phase_density_rank: int = 8,
+        ictd_fix_phase_density_pairs: str = "full",
         ictd_fix_phase_scope: str = "final",
         ictd_fix_gmix_energy_readout: bool = True,
         ictd_fix_gmix_readout_scale_init: float | None = None,
@@ -3056,8 +3188,11 @@ class PureCartesianICTDFix(nn.Module):
         self.ictd_fix_phase_hidden_channels = int(ictd_fix_phase_hidden_channels)
         self.ictd_fix_phase_residual_scale_init = float(ictd_fix_phase_residual_scale_init)
         self.ictd_fix_phase_amplitude = str(ictd_fix_phase_amplitude)
+        self.ictd_fix_phase_coefficient = str(ictd_fix_phase_coefficient)
+        self.ictd_fix_phase_context = str(ictd_fix_phase_context)
         self.ictd_fix_phase_placement = str(ictd_fix_phase_placement)
         self.ictd_fix_phase_density_rank = int(ictd_fix_phase_density_rank)
+        self.ictd_fix_phase_density_pairs = str(ictd_fix_phase_density_pairs)
         self.ictd_fix_phase_scope = str(ictd_fix_phase_scope)
         if self.ictd_fix_phase_mode not in {
             "none",
@@ -3079,6 +3214,26 @@ class PureCartesianICTDFix(nn.Module):
                 "ictd_fix_phase_amplitude must be 'unit' or 'softplus', "
                 f"got {self.ictd_fix_phase_amplitude!r}"
             )
+        if self.ictd_fix_phase_coefficient not in {
+            "polar",
+            "positive",
+            "signed",
+            "cartesian",
+        }:
+            raise ValueError(
+                "ictd_fix_phase_coefficient must be 'polar', 'positive', 'signed', "
+                f"or 'cartesian', got {self.ictd_fix_phase_coefficient!r}"
+            )
+        if self.ictd_fix_phase_context not in {"content", "radial"}:
+            raise ValueError(
+                "ictd_fix_phase_context must be 'content' or 'radial', "
+                f"got {self.ictd_fix_phase_context!r}"
+            )
+        if self.ictd_fix_phase_density_pairs not in {"full", "diagonal"}:
+            raise ValueError(
+                "ictd_fix_phase_density_pairs must be 'full' or 'diagonal', "
+                f"got {self.ictd_fix_phase_density_pairs!r}"
+            )
         if self.ictd_fix_phase_density_rank <= 0:
             raise ValueError(
                 "ictd_fix_phase_density_rank must be positive, "
@@ -3094,6 +3249,18 @@ class PureCartesianICTDFix(nn.Module):
         if self.ictd_fix_phase_scope == "persistent" and self.num_interaction < 2:
             raise ValueError(
                 "ictd_fix_phase_scope='persistent' requires num_interaction >= 2"
+            )
+        if (
+            self.ictd_fix_phase_density_pairs == "diagonal"
+            and self.ictd_fix_phase_scope != "final"
+        ):
+            raise ValueError("diagonal phase density currently requires phase_scope='final'")
+        if (
+            self.ictd_fix_phase_density_pairs == "diagonal"
+            and self.ictd_fix_phase_mode != "final-full-l-residual"
+        ):
+            raise ValueError(
+                "diagonal phase density currently requires phase_mode='final-full-l-residual'"
             )
         if self.ictd_fix_phase_placement not in {
             "post-product",
@@ -3259,6 +3426,8 @@ class PureCartesianICTDFix(nn.Module):
                     phase_enabled=phase_enabled,
                     phase_hidden_channels=self.ictd_fix_phase_hidden_channels,
                     phase_amplitude=self.ictd_fix_phase_amplitude,
+                    phase_coefficient=self.ictd_fix_phase_coefficient,
+                    phase_context=self.ictd_fix_phase_context,
                 )
             )
             if effective_product_backend == "native-mace":
@@ -3877,10 +4046,18 @@ class PureCartesianICTDFix(nn.Module):
                 node_type_idx=compact_idx,
                 sync_after_scatter=sync_after_scatter,
                 return_phase_doublet=interaction.phase_enabled,
+                return_phase_edges=(
+                    interaction.phase_enabled
+                    and self.ictd_fix_phase_density_pairs == "diagonal"
+                ),
             )
             phase_doublet = None
+            phase_edge_doublet = None
             if interaction.phase_enabled:
-                message, sc, phase_doublet = interaction_out
+                if self.ictd_fix_phase_density_pairs == "diagonal":
+                    message, sc, phase_doublet, phase_edge_doublet = interaction_out
+                else:
+                    message, sc, phase_doublet = interaction_out
             else:
                 message, sc = interaction_out
             phase_key = str(layer_idx)
@@ -3909,11 +4086,26 @@ class PureCartesianICTDFix(nn.Module):
                             phase_doublet,
                         )
                     phase_doublet = charged_doublet
-                phase_delta = self.phase_adapters[phase_key].forward_doublet(
-                    phase_doublet,
-                    node_attrs=node_attrs,
-                    node_type_idx=compact_idx,
-                )
+                if self.ictd_fix_phase_density_pairs == "diagonal":
+                    if phase_edge_doublet is None:
+                        raise RuntimeError(
+                            f"diagonal phase density is missing edge doublet at layer {layer_idx}"
+                        )
+                    phase_delta = self.phase_adapters[
+                        phase_key
+                    ].forward_diagonal_edges_doublet(
+                        phase_edge_doublet,
+                        edge_dst=edge_index[1],
+                        num_nodes=h.shape[0],
+                        node_attrs=node_attrs,
+                        node_type_idx=compact_idx,
+                    )
+                else:
+                    phase_delta = self.phase_adapters[phase_key].forward_doublet(
+                        phase_doublet,
+                        node_attrs=node_attrs,
+                        node_type_idx=compact_idx,
+                    )
                 if self.ictd_fix_phase_placement in {"pre-product-l0", "pre-and-post"}:
                     # The Hermitian contraction is a neutral l=0 feature. Inject it into
                     # the scalar block before the ordinary MACE symmetric contraction so

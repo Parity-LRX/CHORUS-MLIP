@@ -6,7 +6,7 @@ set -euo pipefail
 # Set EPOCHS/SEEDS/MAX_STEPS explicitly only for a labelled smoke run.
 
 PYTHON_BIN="${PYTHON_BIN:-/home/ylzhang/micromamba/envs/FSCETP/bin/python}"
-MACE_ICTC_REPO="${MACE_ICTC_REPO:-/home/ylzhang/MACE-ICTC-Phase}"
+MACE_ICTC_REPO="${MACE_ICTC_REPO:-/home/ylzhang/CHORUS-MLIP}"
 MACE_TORCH_PATH="${MACE_TORCH_PATH:-/tmp/mace_torch_0_3_16}"
 DATA_ROOT="${DATA_ROOT:-/tmp/mace_ictd_public_md17}"
 DATASETS="${DATASETS:-revised_aspirin,revised_ethanol,revised_benzene}"
@@ -35,6 +35,7 @@ PHASE_HIDDEN_CHANNELS="${PHASE_HIDDEN_CHANNELS:-32}"
 PHASE_SCALE_INIT="${PHASE_SCALE_INIT:-0.05}"
 PHASE_PLACEMENT="${PHASE_PLACEMENT:-post-product}"
 PHASE_DENSITY_RANK="${PHASE_DENSITY_RANK:-8}"
+ATTN_HEADS="${ATTN_HEADS:-4}"
 PARALLEL_JOBS="${PARALLEL_JOBS:-1}"
 DTYPE="${DTYPE:-float32}"
 DEVICE="${DEVICE:-cuda}"
@@ -65,6 +66,7 @@ cat > "${OUT_ROOT}/matrix_metadata.json" <<EOF
   "optimizer": {"type": "AdamW", "lr": ${LR}, "weight_decay": ${WEIGHT_DECAY}, "amsgrad": true, "scheduler": "ExponentialLR", "gamma": ${LR_GAMMA}},
   "loss": {"type": "mse", "energy_weight": ${ENERGY_WEIGHT}, "force_weight": ${FORCE_WEIGHT}, "stress_weight": 0.0},
   "phase": {"hidden_channels": ${PHASE_HIDDEN_CHANNELS}, "residual_scale_init": ${PHASE_SCALE_INIT}, "default_placement": "${PHASE_PLACEMENT}", "density_rank": ${PHASE_DENSITY_RANK}, "scope_is_mode_specific": true},
+  "attention": {"heads": ${ATTN_HEADS}},
   "parallel_jobs": ${PARALLEL_JOBS},
   "average_e0_rule": "minimum-norm E0_Z = mean(E) n_Z / sum_Z n_Z^2",
   "device": "${DEVICE}",
@@ -208,7 +210,7 @@ for raw_dataset in "${DATASET_ARRAY[@]}"; do
     seed="$(echo "${raw_seed}" | xargs)"
     for raw_mode in "${MODE_ARRAY[@]}"; do
       mode="$(echo "${raw_mode}" | xargs)"
-      phase_args=(--phase-mode none --phase-amplitude unit --phase-placement post-product --phase-scope final)
+      phase_args=(--phase-mode none --phase-amplitude unit --phase-coefficient polar --phase-context content --phase-density-pairs full --phase-placement post-product --phase-scope final)
       case "${mode}" in
         ictc_bridge_u_eager) ;;
         ictc_phase_unit_eager)
@@ -218,7 +220,25 @@ for raw_dataset in "${DATASET_ARRAY[@]}"; do
           phase_args=(--phase-mode final-scalar-residual --phase-amplitude softplus --phase-placement "${PHASE_PLACEMENT}" --phase-scope final)
           ;;
         ictc_phase_full_l_softplus_eager)
-          phase_args=(--phase-mode final-full-l-residual --phase-amplitude softplus --phase-placement pre-product-full-l --phase-scope final)
+          phase_args=(--phase-mode final-full-l-residual --phase-amplitude softplus --phase-coefficient polar --phase-context content --phase-density-pairs full --phase-placement pre-product-full-l --phase-scope final)
+          ;;
+        ictc_phase_positive_full_l_eager)
+          phase_args=(--phase-mode final-full-l-residual --phase-amplitude softplus --phase-coefficient positive --phase-context content --phase-density-pairs full --phase-placement pre-product-full-l --phase-scope final)
+          ;;
+        ictc_phase_signed_full_l_eager)
+          phase_args=(--phase-mode final-full-l-residual --phase-amplitude softplus --phase-coefficient signed --phase-context content --phase-density-pairs full --phase-placement pre-product-full-l --phase-scope final)
+          ;;
+        ictc_phase_cartesian_full_l_eager)
+          phase_args=(--phase-mode final-full-l-residual --phase-amplitude softplus --phase-coefficient cartesian --phase-context content --phase-density-pairs full --phase-placement pre-product-full-l --phase-scope final)
+          ;;
+        ictc_phase_radial_full_l_eager)
+          phase_args=(--phase-mode final-full-l-residual --phase-amplitude softplus --phase-coefficient polar --phase-context radial --phase-density-pairs full --phase-placement pre-product-full-l --phase-scope final)
+          ;;
+        ictc_phase_diagonal_full_l_eager)
+          phase_args=(--phase-mode final-full-l-residual --phase-amplitude softplus --phase-coefficient polar --phase-context content --phase-density-pairs diagonal --phase-placement pre-product-full-l --phase-scope final)
+          ;;
+        ictc_attention_eager)
+          phase_args=(--attn-heads "${ATTN_HEADS}" --phase-mode none --phase-amplitude unit --phase-coefficient polar --phase-context content --phase-density-pairs full --phase-placement post-product --phase-scope final)
           ;;
         ictc_phase_scalar_persistent_softplus_eager)
           phase_args=(--phase-mode final-scalar-residual --phase-amplitude softplus --phase-placement pre-product-l0 --phase-scope persistent)

@@ -343,8 +343,11 @@ def build_baseline_model(
     phase_hidden_channels: int = 32,
     phase_residual_scale_init: float = 0.05,
     phase_amplitude: str = "unit",
+    phase_coefficient: str = "polar",
+    phase_context: str = "content",
     phase_placement: str = "post-product",
     phase_density_rank: int = 8,
+    phase_density_pairs: str = "full",
     phase_scope: str = "final",
     atomic_numbers,
     ictd_save_tp_mode: str,
@@ -429,8 +432,11 @@ def build_baseline_model(
         ictd_fix_phase_hidden_channels=phase_hidden_channels,
         ictd_fix_phase_residual_scale_init=phase_residual_scale_init,
         ictd_fix_phase_amplitude=phase_amplitude,
+        ictd_fix_phase_coefficient=phase_coefficient,
+        ictd_fix_phase_context=phase_context,
         ictd_fix_phase_placement=phase_placement,
         ictd_fix_phase_density_rank=phase_density_rank,
+        ictd_fix_phase_density_pairs=phase_density_pairs,
         ictd_fix_phase_scope=phase_scope,
         angular_basis=angular_basis,
         save_contraction_order=correlation,
@@ -553,6 +559,21 @@ def build_arg_parser() -> argparse.ArgumentParser:
         help="Use a pure learned phase or add a positive learned edge amplitude.",
     )
     ap.add_argument(
+        "--phase-coefficient",
+        default="polar",
+        choices=["polar", "positive", "signed", "cartesian"],
+        help=(
+            "Parameterization of the two-component edge coefficient: polar complex "
+            "phase, positive real gate, signed real gate, or unconstrained Cartesian pair."
+        ),
+    )
+    ap.add_argument(
+        "--phase-context",
+        default="content",
+        choices=["content", "radial"],
+        help="Predict the coefficient from node-content plus radial features, or radial features only.",
+    )
+    ap.add_argument(
         "--phase-placement",
         default="post-product",
         choices=["post-product", "pre-product-l0", "pre-product-full-l", "pre-and-post"],
@@ -567,6 +588,15 @@ def build_arg_parser() -> argparse.ArgumentParser:
         type=int,
         default=8,
         help="Latent channel rank of final-full-l-residual (ignored by scalar mode).",
+    )
+    ap.add_argument(
+        "--phase-density-pairs",
+        default="full",
+        choices=["full", "diagonal"],
+        help=(
+            "Use the full post-aggregation Hermitian density (all j,k pairs) or "
+            "retain only edgewise j=k self-density terms."
+        ),
     )
     ap.add_argument(
         "--phase-scope",
@@ -863,8 +893,11 @@ def _override_args_from_checkpoint(args):
         "ictd_fix_phase_hidden_channels": "phase_hidden_channels",
         "ictd_fix_phase_residual_scale_init": "phase_scale_init",
         "ictd_fix_phase_amplitude": "phase_amplitude",
+        "ictd_fix_phase_coefficient": "phase_coefficient",
+        "ictd_fix_phase_context": "phase_context",
         "ictd_fix_phase_placement": "phase_placement",
         "ictd_fix_phase_density_rank": "phase_density_rank",
+        "ictd_fix_phase_density_pairs": "phase_density_pairs",
         "ictd_fix_phase_scope": "phase_scope",
     }
     changed = []
@@ -1085,8 +1118,11 @@ def main(argv=None):
         phase_hidden_channels=args.phase_hidden_channels,
         phase_residual_scale_init=args.phase_scale_init,
         phase_amplitude=args.phase_amplitude,
+        phase_coefficient=args.phase_coefficient,
+        phase_context=args.phase_context,
         phase_placement=args.phase_placement,
         phase_density_rank=args.phase_density_rank,
+        phase_density_pairs=args.phase_density_pairs,
         phase_scope=args.phase_scope,
         atomic_numbers=atomic_numbers, ictd_save_tp_mode=args.ictd_save_tp_mode,
         invariant_channels=args.invariant_channels,
@@ -1228,8 +1264,11 @@ def main(argv=None):
         ictd_fix_phase_hidden_channels=int(args.phase_hidden_channels),
         ictd_fix_phase_residual_scale_init=float(args.phase_scale_init),
         ictd_fix_phase_amplitude=args.phase_amplitude,
+        ictd_fix_phase_coefficient=args.phase_coefficient,
+        ictd_fix_phase_context=args.phase_context,
         ictd_fix_phase_placement=args.phase_placement,
         ictd_fix_phase_density_rank=int(args.phase_density_rank),
+        ictd_fix_phase_density_pairs=args.phase_density_pairs,
         ictd_fix_phase_scope=args.phase_scope,
         radial_sqrt_num_basis=bool(args.radial_sqrt_num_basis),
         polynomial_cutoff_p=(None if args.polynomial_cutoff_p <= 0 else int(args.polynomial_cutoff_p)),

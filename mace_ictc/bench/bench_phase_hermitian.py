@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Matched 4090 benchmark for the PEMP Hermitian phase branch.
+"""Matched 4090 benchmark for the U1-CHORUS Hermitian phase operator.
 
 This reuses the fixed-edge whole-model workload and timing functions from the
 paper benchmark.  It compares selected ICTC/phase variants with the same
@@ -205,7 +205,7 @@ def _write(rows: list[dict], meta: dict, out_dir: Path) -> None:
         writer.writerows(rows)
     json_path.write_text(json.dumps({"meta": meta, "rows": rows}, indent=2) + "\n")
     with md_path.open("w") as handle:
-        handle.write("# PEMP Hermitian phase matched benchmark\n\n")
+        handle.write("# U1-CHORUS Hermitian phase matched benchmark\n\n")
         for key, value in meta.items():
             handle.write(f"- {key}: `{value}`\n")
         handle.write(

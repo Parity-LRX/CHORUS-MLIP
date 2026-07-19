@@ -1,9 +1,8 @@
-"""Setup script for the standalone MACE-ICTC package.
+"""Setup script for the CHORUS-MLIP research package.
 
-MACE-ICTC = MACE in the Irreducible Cartesian Tensor Decomposition basis, extracted
-from FSCETP as a self-contained deployment stack: the ICTC-basis MACE model plus
-AOTInductor export, make_fx training compilation, the LAMMPS interface, and the
-long-range module.
+CHORUS adds phase-coherent Hermitian aggregation to the MACE-ICTC framework.
+The ``mace_ictc`` Python namespace is retained for checkpoint, extension, and
+deployment compatibility.
 """
 
 import os
@@ -58,9 +57,9 @@ cmdclass = {"build_ext": BuildExtension} if ext_modules and BuildExtension is no
 
 
 setup(
-    name="mace-ictc",
+    name="chorus-mlip",
     version="0.1.0",
-    description="MACE in the Irreducible Cartesian Tensor Decomposition basis, with AOTInductor / make_fx / LAMMPS / long-range deployment",
+    description="Phase-coherent Hermitian aggregation for equivariant machine-learned interatomic potentials",
     long_description=long_description,
     long_description_content_type="text/markdown",
     license="MIT",
@@ -113,6 +112,7 @@ setup(
     },
     entry_points={
         "console_scripts": [
+            "chorus-train=mace_ictc.cli.train:main",
             # Deployment CLIs (names kept identical to FSCETP so the LAMMPS docs apply verbatim).
             "mff-export-aoti=mace_ictc.cli.export_aoti_core:main",
             "mff-export-core=mace_ictc.cli.export_libtorch_core:main",

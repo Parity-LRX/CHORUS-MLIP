@@ -1,47 +1,175 @@
-# MACE-ICTC
+# CHORUS
 
-**DOI:** [10.5281/zenodo.20690950](https://doi.org/10.5281/zenodo.20690950)
+### U(1)-Structured Phase-Coherent Hermitian Aggregation for Equivariant Interatomic Potentials
 
-MACE-ICTC is a standalone implementation of MACE in an Irreducible Cartesian
-Tensor Decomposition (ICTC) basis. It keeps the MACE interaction/readout
-semantics, but stores equivariant angular features in compact Cartesian
-irreducible blocks and uses fixed basis-change operators to communicate with
-the original e3nn/MACE convention.
+**CHORUS** is a research framework for phase-coherent neighbor aggregation in
+equivariant machine-learned interatomic potentials. Instead of assigning only a
+real scalar weight to each neighbor, CHORUS predicts an invariant amplitude and
+phase, coherently sums the resulting equivariant messages, and converts their
+relative-phase correlations back to ordinary real irreducible representations
+through Hermitian Clebsch-Gordan contractions.
 
-The repository is intended for three workflows:
+The current reference implementation is built on our
+[MACE-ICTC](https://doi.org/10.5281/zenodo.20690950) framework. MACE-ICTC
+provides the ICTC representation, MACE-compatible many-body backbone, training,
+conversion, compilation, and deployment stack. CHORUS contributes the coherent
+aggregation operator, the full-\(L\) low-rank Hermitian density, and the
+associated controls and benchmarks.
 
-- train MACE-style force fields directly in the ICTC basis;
-- convert compatible native `mace-torch` checkpoints into MACE-ICTC checkpoints;
-- export trained or converted models for ASE, AOTInductor, and LAMMPS deployment.
+The name denotes **C**oherent **H**ermitian **O**(3) **R**epresentations with
+**U**(1)-**S**tructured aggregation. The learned \(U(1)\) phase action is the
+central operator rather than a secondary implementation option.
 
-Full manuals:
+> **Status:** research preview. The primary final-layer full-\(L\) operator is
+> implemented and benchmarkable. The persistent cross-layer charged stream is
+> experimental. Interfaces and checkpoint metadata may change before the
+> preprint release.
 
-- English: [docs/USER_MANUAL.md](docs/USER_MANUAL.md)
-- 中文: [docs/USER_MANUAL.zh-CN.md](docs/USER_MANUAL.zh-CN.md)
+## Why coherent aggregation?
 
-## What Is Included
+A conventional equivariant layer constructs a local environment by summing real
+edge messages,
 
-- MACE-compatible ICTC model: `PureCartesianICTDFix`.
-- Fixed `Q`/`U` basis bridges for ICTC/e3nn correspondence.
-- H5 training with energy/force/stress losses, SWA/EMA, resume, and optional
-  `make_fx`/Inductor compilation.
-- Native `mace-torch` checkpoint conversion for supported `ScaleShiftMACE`
-  models.
-- ASE, AOTInductor `.pt2`, and LAMMPS `USER-MFFTORCH` deployment.
-- Optional cuEquivariance product backend.
-- Long-range interactions: learned reciprocal-space electrostatics
-  (periodic/slab, multipole sources) and anisotropic many-body dispersion (MBD),
-  trained end-to-end and deployable to LAMMPS.
-- Opt-in PEMP real-doublet/Hermitian phase residual, including pre-product scalar
-  injection, a rank-reduced full-L equivariant density path, and an experimental
-  cross-layer persistent charged stream; see the
-  [implementation and research plan](docs/phase_hermitian_strategy.md).
-- Curated benchmark records under [benchmarks/paper](benchmarks/paper).
+\[
+A_i^{nlm}=\sum_{j\in\mathcal N(i)} b_{ij}^{nlm}.
+\]
+
+Positive scalar attention can change how strongly each neighbor contributes,
+but it does not give different edges an independently learned relative phase.
+CHORUS instead forms
+
+\[
+\psi_i^{nlm}
+=
+\sum_{j\in\mathcal N(i)}
+a_{ij}e^{\mathrm i\theta_{ij}}b_{ij}^{nlm},
+\qquad
+b_{ij}^{nlm}
+=
+R_n(r_{ij})Y_l^m(\hat{\mathbf r}_{ij})h_j.
+\]
+
+The phase network consumes only invariant edge context: radial features and
+the source and destination \(l=0\) node features. It therefore does not inject
+an orientation-dependent scalar into the equivariant backbone.
+
+CHORUS does not send \(\psi\) directly to the energy readout. It constructs a
+neutral Hermitian density,
+
+\[
+\rho_i^{LM}
+=
+\operatorname{CG}_{LM}
+\left(\psi_i\otimes\psi_i^\dagger\right),
+\]
+
+whose pair expansion contains
+
+\[
+\sum_{j,k}
+a_{ij}a_{ik}
+\cos\!\left(\theta_{ij}-\theta_{ik}\right)
+\operatorname{CG}_{LM}
+\left(b_{ij}\otimes b_{ik}\right).
+\]
+
+The \(j\ne k\) terms are the central mechanism: geometry-dependent neighbor
+correlations are modulated by learned constructive or destructive
+interference. The neutral full-\(L\) density is injected before the unchanged
+symmetric contraction, so its \(L>0\) components can mix with the ordinary
+equivariant trunk at the configured correlation order.
+
+## Real-doublet implementation
+
+The implementation does not require a complex PyTorch dtype. It represents
+\(\psi=x+\mathrm i y\) using two real streams,
+
+\[
+x_i=\sum_j a_{ij}\cos\theta_{ij}\,b_{ij},
+\qquad
+y_i=\sum_j a_{ij}\sin\theta_{ij}\,b_{ij},
+\]
+
+and evaluates the Hermitian contractions in real arithmetic. The same
+equivariant channel map is used for both streams. This preserves compatibility
+with the existing ICTC operators, autograd, `make_fx`, AOTInductor, and the
+deployment stack.
+
+For the full-\(L\) path, \(C\) channels are first projected to \(R\) latent
+orbitals, with the same projection applied to the two streams. Natural-parity
+Hermitian CG paths are then contracted and mapped back to the trunk channels.
+The default \(R=8\) factorization avoids explicitly materializing a
+\(C\times C\) density matrix.
+
+## Symmetry statement
+
+CHORUS is designed to preserve the spatial symmetry of the underlying
+interatomic potential:
+
+- the learned edge coefficient is an \(E(3)\)-invariant scalar;
+- both real streams transform under the same \(O(3)\) irreducible
+  representations as the original edge message;
+- Hermitian CG contractions return neutral real equivariant features;
+- a common rotation of every charged doublet in its internal two-dimensional
+  plane leaves the Hermitian density unchanged.
+
+The last property is a **global U(1) invariance of the charged stream**, not a
+complete local gauge theory. There is no node-wise gauge transformation law and
+no learned edge connection that transports a phase between independent local
+frames. The learned phase is also not an atomic charge, an electronic orbital,
+or a physical quantum wavefunction.
+
+## Data flow
+
+```text
+atomic graph
+    │
+    ├── radial basis × spherical/ICTC angular basis × neighbor features
+    │
+    ├── invariant coefficient network
+    │       └── amplitude a_ij and phase θ_ij
+    │
+    ├── coherent aggregation
+    │       └── ψ_i = Σ_j a_ij exp(i θ_ij) b_ij
+    │
+    ├── low-rank full-L Hermitian density
+    │       └── CG(ψ_i ⊗ ψ_i†)
+    │
+    ├── real equivariant residual
+    │
+    ├── unchanged symmetric contraction and interaction backbone
+    │
+    └── atomic energy readout → total energy → conservative forces
+```
+
+## Implemented modes
+
+| Mode | Purpose |
+| --- | --- |
+| `phase-mode=none` | Ordinary MACE-ICTC aggregation |
+| `final-scalar-residual` | Scalar Hermitian residual for minimal experiments |
+| `final-full-l-residual` | Low-rank full-\(L\) Hermitian residual; primary CHORUS operator |
+| `phase-density-pairs=diagonal` | Retain only \(j=k\) self-density terms |
+| `phase-density-pairs=full` | Retain \(j=k\) and coherent \(j\ne k\) correlations |
+| `phase-coefficient=positive` | Positive real-gate control |
+| `phase-coefficient=signed` | Signed real-gate control |
+| `phase-coefficient=cartesian` | Unconstrained matched two-real-channel control |
+| `phase-context=radial` | Distance-conditioned phase control |
+| `attn-heads>0` | Neighbor-attention reference with CHORUS disabled |
+| `phase-scope=persistent` | Experimental charged memory across interaction depth |
+
+The controls are not interchangeable conclusions. In particular, the Cartesian
+doublet has similar raw capacity to the polar parameterization and tests the
+value of its inductive bias; the diagonal density removes cross-neighbor
+coherence; and the current attention implementation represents a commonly used
+positive normalized reweighting mechanism rather than every possible form of
+attention.
 
 ## Installation
 
 ```bash
-cd /path/to/MACE-ICTC
+git clone https://github.com/Parity-LRX/CHORUS-MLIP.git
+cd CHORUS-MLIP
 pip install -e .
 ```
 
@@ -50,379 +178,176 @@ Optional extras:
 ```bash
 pip install -e ".[pyg]"    # torch-scatter / torch-cluster acceleration
 pip install -e ".[cue]"    # cuEquivariance product backend
-pip install -e ".[e0]"     # pandas support for fitted E0 CSV files
+pip install -e ".[e0]"     # fitted-E0 CSV support
 pip install -e ".[full]"   # all optional Python extras
 ```
 
-Runtime expectations: Python >= 3.9, PyTorch >= 2.4, `e3nn >= 0.4.4, < 0.6`.
-PyTorch >= 2.7 is recommended for AOTInductor and `make_fx`; CUDA is required
-for cuEquivariance and the main GPU benchmark paths. An optional compiled ICTC
-tensor-product extension can be built with:
+The distribution is named `chorus-mlip`, while the Python namespace remains
+`mace_ictc` for MACE-ICTC checkpoint, extension, and deployment compatibility.
+The runtime requires Python >= 3.9, PyTorch >= 2.4, and
+`e3nn >= 0.4.4, < 0.6`. Native checkpoint conversion has been validated against
+`mace==0.3.16`; the standalone CHORUS training path does not require
+`mace-torch`.
 
-```bash
-MFF_BUILD_ICTD_TP_EXT=1 pip install -e .
-```
+## Quick start
 
-The pure-Python/PyTorch path works without this extension. After installation,
-the console scripts `mff-convert-mace`, `mff-export-aoti`, `mff-export-core`,
-and `mff-lammps` are available. The examples below use `python -m ...` so they
-also work from a source checkout before the script PATH is refreshed.
-
-## Quick Check
-
-```python
-import torch
-from mace_ictc.synthetic import build_model, make_fixed_graph, compute_energy_forces
-
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-model = build_model(
-    channels=64,
-    lmax=2,
-    num_interaction=2,
-    correlation=2,
-    route="baseline",
-    product_backend="ictd-bridge-u",
-    dtype=torch.float64,
-    device=device,
-)
-
-graph = make_fixed_graph(
-    num_nodes=128,
-    avg_degree=24,
-    dtype=torch.float64,
-    device=device,
-)
-
-energy, forces, atomic_energy = compute_energy_forces(
-    model, graph, create_graph=False
-)
-```
-
-The model forward signature is:
-
-```python
-model(pos, A, batch, edge_src, edge_dst, edge_shifts, cell)
-```
-
-where `A` is a tensor of atomic numbers, not species indices.
-
-## Choosing a Runtime Mode
-
-| Goal | Recommended mode |
-| --- | --- |
-| Conservative MACE parity or native MACE conversion | `product_backend=ictd-bridge-u`, `angular_basis=ictd` |
-| Fast training | `product_backend=cueq`, `angular_basis=e3nn`, `--train-makefx-compile` |
-| Fast AOTI inference with cuEq available | `python -m mace_ictc.cli.export_aoti_core --cueq-product --angular-basis e3nn` |
-| Strictest deployment path | export the checkpoint without product replacement |
-| Debug/reference comparisons | `native-mace` or `ictd-pure-u`, depending on the question being tested |
-
-Important distinction:
-
-- `ictd-bridge-u` is the main MACE-correspondence path. It preserves the source
-  MACE product convention through the ICTC/e3nn basis bridge.
-- `cueq + angular_basis=e3nn` is the main performance path. It folds compatible
-  fixed angular operators once and uses cuEquivariance for the product block.
-- `ictd-pure-u` is useful for diagnostics and ICTC-native experiments, but it is
-  not the default exact native-MACE conversion path.
-
-## Training From Scratch
-
-The trainer consumes preprocessed H5 files such as:
-
-```text
-DATA/
-  processed_train.h5
-  processed_val.h5
-```
-
-Bridge-U training keeps the conservative MACE-correspondence product path:
+The primary final-layer, content-conditioned, full-\(L\) configuration is:
 
 ```bash
 python -m mace_ictc.cli.train \
   --data-dir DATA \
-  --channels 64 --lmax 2 --max-ell 2 \
-  --num-interaction 2 --correlation 2 \
-  --function-type bessel \
-  --product-backend ictd-bridge-u \
-  --epochs 300 --batch-size 4 \
-  --energy-weight 1.0 --force-weight 10.0 --stress-weight 0.0 \
-  --lr 1e-3 --min-lr 1e-6 --lr-scheduler plateau \
-  --swa --start-swa 225 --swa-lr 1e-4 \
-  --device cuda --dtype float64 \
-  --checkpoint model_bridge_u.pth
-```
-
-The performance path uses cuEquivariance products and compiles the force step:
-
-```bash
-python -m mace_ictc.cli.train \
-  --data-dir DATA \
-  --channels 64 --lmax 2 --max-ell 2 \
-  --num-interaction 2 --correlation 2 \
-  --function-type bessel \
-  --product-backend cueq --angular-basis e3nn \
-  --train-makefx-compile --makefx-buckets 6 \
-  --epochs 300 --batch-size 8 \
-  --energy-weight 1.0 --force-weight 10.0 --stress-weight 0.0 \
-  --lr 1e-3 --min-lr 1e-6 --lr-scheduler cosine \
-  --swa --start-swa 225 --swa-lr 1e-4 \
-  --ema-decay 0.999 \
+  --channels 64 --lmax 1 --max-ell 2 \
+  --num-interaction 2 --correlation 3 \
+  --function-type bessel --num-basis 8 \
+  --product-backend ictd-bridge-u --angular-basis ictd \
+  --phase-mode final-full-l-residual \
+  --phase-amplitude softplus \
+  --phase-coefficient polar \
+  --phase-context content \
+  --phase-density-pairs full \
+  --phase-placement pre-product-full-l \
+  --phase-scope final \
+  --phase-density-rank 8 \
+  --phase-hidden-channels 32 \
+  --phase-scale-init 0.05 \
   --device cuda --dtype float32 \
-  --checkpoint model_cueq_e3nn_makefx.pth
+  --checkpoint chorus.pth
 ```
 
-`--epochs` and `--max-steps` are independent stop conditions; if both are set,
-training stops at the first one reached. MACE-style ScaleShift is enabled by
-default through `--scaling rms_forces_scaling`. Stage Two/SWA, EMA, optimizer
-parameters, loss weights, LR schedules, stress, resume, and E0 controls are
-documented in [docs/USER_MANUAL.md](docs/USER_MANUAL.md).
+Add the dataset-specific optimizer, loss, atomic-energy, batching, and stopping
+arguments required by the training protocol. The archived rMD17 drivers contain
+complete matched configurations.
 
-## Convert a Native MACE Checkpoint
-
-MACE-ICTC can import compatible native `mace-torch` `ScaleShiftMACE` objects:
+To isolate the non-diagonal coherent terms, change only:
 
 ```bash
-python -m mace_ictc.cli.convert_mace \
-  --mace-model mace.model \
-  --out mace_ictc.pth \
+--phase-density-pairs diagonal
+```
+
+To run the attention reference:
+
+```bash
+--phase-mode none --attn-heads 4
+```
+
+CHORUS and attention are deliberately mutually exclusive in the current
+implementation so their effects remain identifiable.
+
+## Reproducible experiments
+
+The main experiment drivers are:
+
+- [`run_phase_md17_matrix.sh`](benchmarks/paper/scripts/training/run_phase_md17_matrix.sh):
+  matched rMD17 mode/seed matrix;
+- [`run_phase_confirmatory_multisystem.sh`](benchmarks/paper/scripts/training/run_phase_confirmatory_multisystem.sh):
+  confirmatory molecular systems;
+- [`run_phase_confirmatory_water.sh`](benchmarks/paper/scripts/training/run_phase_confirmatory_water.sh):
+  liquid-water confirmation;
+- [`analyze_md17_convergence.py`](benchmarks/paper/scripts/training/analyze_md17_convergence.py):
+  checkpoint-aligned convergence and MAE summaries;
+- [`bench_phase_hermitian.py`](mace_ictc/bench/bench_phase_hermitian.py):
+  eager and `make_fx` throughput comparison.
+
+Reference throughput command:
+
+```bash
+python -m mace_ictc.bench.bench_phase_hermitian \
+  --device cuda --dtype float32 \
   --product-backend ictd-bridge-u \
-  --dtype float64 \
-  --device cpu
+  --channels 64 --hidden-lmax 1 --max-ell 2 \
+  --atoms-list 128,512 --include-makefx
 ```
 
-The input must be a `torch.save(model)` object, not a raw `state_dict`.
+The archived GPU measurements use an RTX 4090 and the FSCETP environment.
+Large checkpoints and trajectories are not stored in Git.
 
-Conservative AOTI export from the converted checkpoint:
+For accuracy comparisons, use identical data splits, seeds, parameter budgets,
+optimizer schedules, and stopping rules. Select one checkpoint by validation
+loss and report energy and force MAE from that same checkpoint. Selecting the
+best energy and best force from different epochs produces an unattainable
+composite model and is not the primary reporting rule.
 
-```bash
-python -m mace_ictc.cli.export_aoti_core \
-  --checkpoint mace_ictc.pth \
-  --elements H,C,N,O \
-  --out mace_ictc.pt2 \
-  --dynamic \
-  --embed-e0
-```
+The minimum comparison set for the central mechanism is:
 
-Performance-oriented cuEq export:
+1. ordinary MACE-ICTC;
+2. CHORUS full-\(L\), full \(j,k\) density;
+3. diagonal \(j=k\) density;
+4. matched neighbor attention.
 
-```bash
-python -m mace_ictc.cli.export_aoti_core \
-  --checkpoint mace_ictc.pth \
-  --elements H,C,N,O \
-  --out mace_ictc_cueq_e3nn.pt2 \
-  --dynamic \
-  --cueq-product \
-  --angular-basis e3nn
-```
+Positive, signed, Cartesian, radial-only, and persistent controls should be
+reported as extended ablations. Current validation results are preliminary;
+held-out test evaluation and uncertainty across seeds are required before
+making a general accuracy claim.
 
-Supported conversion is intentionally structure-based and strict. The current
-converter targets the `ScaleShiftMACE` layout used in this repository's tests
-and benchmarks, validated with `mace==0.3.16` and `e3nn<0.6`. Newer MACE
-releases may work when the saved object layout remains compatible, but arbitrary
-research forks, raw state dicts, pair-repulsion variants, and changed readout or
-radial layouts are rejected rather than silently converted.
+## MACE-ICTC compatibility and deployment
 
-For exact MACE correspondence, the converted ICTC model must preserve the source
-model's structural options, including `use_reduced_cg`.
+CHORUS retains the underlying MACE-ICTC capabilities:
 
-OFF23 smoke test, RTX 4090, 2026-06-18: `MACE-OFF23_small.model` was converted
-to bridge-U ICTC and compared against native `mace-torch` in float64. On a
-benzene trajectory, same-frame maximum differences were `2.73e-12 eV` in energy
-and `4.44e-15 eV/A` in force. A fresh float32 static-6 AOTI export loaded in
-LAMMPS `mff/torch`; LAMMPS `pe=-6633.036` matched the Python checkpoint energy
-`-6633.03613281 eV`, and LAMMPS `fmax=11.767612` matched the Python maximum
-absolute force component `11.76760674 eV/A`. Some old OFF23 pickle files require
-a matching historical `mace-torch`/`e3nn` environment for the loading step before
-conversion.
+- ICTC/e3nn basis correspondence and strict supported-model conversion;
+- H5 energy/force/stress training with SWA, EMA, resume, and optional
+  `make_fx` compilation;
+- ASE calculators, AOTInductor packages, and LAMMPS `USER-MFFTORCH`;
+- optional cuEquivariance products;
+- learned reciprocal-space electrostatics and anisotropic many-body
+  dispersion.
 
-## Long-Range Interactions (Electrostatics and Dispersion)
+Detailed backbone and deployment documentation remains available in the
+[English user manual](docs/USER_MANUAL.md) and
+[中文使用说明](docs/USER_MANUAL.zh-CN.md). These manuals retain the
+MACE-ICTC name because they document the compatibility backend rather than the
+new coherent operator.
 
-Beyond the message-passing cutoff, MACE-ICTC provides two complementary
-long-range channels. Both are differentiable and trained end-to-end from the
-same energy/force/stress losses — each module is initialized near zero, so
-enabling it starts close to the short-range model and learns the correction.
-Neither is a fixed-parameter analytic post-correction, and both deploy through
-ASE, AOTInductor, and LAMMPS. See [docs/USER_MANUAL.md](docs/USER_MANUAL.md)
-(section "Long-Range and Dispersion") for the full reference.
+## Limitations
 
-### Electrostatics (learned reciprocal-space correction)
+- The current evidence does not establish that learned phases correspond to a
+  unique chemical observable.
+- A polar doublet can have similar capacity to a parameter-matched Cartesian
+  two-real-channel model; performance differences must therefore be established
+  empirically rather than inferred from notation.
+- Rank-\(R\) full-\(L\) density is a factorization, not an unrestricted
+  \(C\times C\) Hermitian kernel.
+- The persistent stream is an across-depth atomic memory, not charged spatial
+  transport between local gauges.
+- Small molecular benchmarks are useful for falsification and sample-efficiency
+  studies but are insufficient to establish universal MLIP superiority.
+- The reference implementation is currently coupled to the MACE-ICTC
+  backbone. Portability to other equivariant backbones is a design goal, not
+  yet a benchmarked result.
 
-A reciprocal-space correction driven by learned multipole sources predicted from
-the final invariant descriptor, with periodic or slab boundaries and either a
-direct k-space sum or an FFT mesh backend:
-
-```bash
-python -m mace_ictc.cli.train \
-  --data-dir DATA \
-  --channels 64 --lmax 2 --num-interaction 2 \
-  --long-range-mode reciprocal-spectral-v1 \
-  --long-range-boundary periodic \
-  --long-range-reciprocal-backend direct_kspace \
-  --long-range-kmax 4 \
-  --long-range-source-channels 1 \
-  --long-range-max-multipole-l 0 \
-  --checkpoint model_elec.pth
-```
-
-Use `--long-range-boundary slab` for 2D-periodic interfaces, and
-`--long-range-reciprocal-backend mesh_fft --long-range-mesh-size 32` for the FFT
-mesh on larger cells. `--long-range-max-multipole-l` raises the source order
-(e.g. `1` adds dipoles); `--long-range-source-channels` sets the number of
-learned scalar source channels.
-
-### Dispersion (anisotropic many-body dispersion)
-
-A many-body dispersion term evaluated by matrix-free stochastic Lanczos
-quadrature (no explicit eigendecomposition). The atomic polarizability is either
-an isotropic scalar or an **anisotropic 3x3 tensor** built from the ICTC `l=2`
-features, which keeps the dispersion energy rotationally equivariant and uses the
-ICTC representation directly:
-
-```bash
-python -m mace_ictc.cli.train \
-  --data-dir DATA \
-  --channels 64 --lmax 2 --num-interaction 2 \
-  --long-range-dispersion-mode mbd-slq \
-  --dispersion-cutoff 9.0 \
-  --mbd-operator-backend edge_sparse \
-  --dispersion-slq-num-probes 4 \
-  --mbd-anisotropic \
-  --checkpoint model_mbd.pth
-```
-
-Drop `--mbd-anisotropic` for the isotropic scalar polarizability;
-`--mbd-operator-backend` selects the direct cutoff sum (`edge_sparse`, default)
-or a reciprocal FFT dipole-field backend (`pme_fft`). The electrostatic and
-dispersion channels can be enabled together.
-
-### Deployment
-
-For deployment the model emits a compact per-atom source tensor (for anisotropic
-MBD a `[N, 8]` tensor: an effective frequency, the isotropic polarizability, and
-the six unique components of the tensor polarizability), and the C++
-`USER-MFFTORCH` solver reconstructs the coupling and evaluates the long-range
-energy and forces at runtime. The reciprocal electrostatic correction and the
-`edge_sparse` MBD path are `make_fx`/Inductor-compilable for training; the SLQ
-dispersion runs eager.
-
-Native MACE conversion preserves the source model; it does not add long-range
-terms to an already trained MACE checkpoint.
-
-## ASE, AOTI, and LAMMPS
-
-ASE:
-
-```python
-from mace_ictc.evaluation.calculator import MyE3NNCalculator
-
-atoms.calc = MyE3NNCalculator(checkpoint="model.pth", device="cuda")
-```
-
-AOTInductor:
-
-```bash
-python -m mace_ictc.cli.export_aoti_core \
-  --checkpoint model.pth \
-  --elements H,C,N,O \
-  --out model.pt2 \
-  --dynamic
-```
-
-LAMMPS support is in [lammps_user_mfftorch](lammps_user_mfftorch). After building
-LAMMPS with the provided `USER-MFFTORCH` package and LibTorch/AOTI support:
+## Repository layout
 
 ```text
-pair_style   mff/torch  5.0 cuda
-pair_coeff   * * /path/to/model.pt2 H C N O
+CHORUS-MLIP/
+  mace_ictc/                 # compatible implementation namespace
+    models/                  # ICTC backbone and CHORUS operators
+    cli/                     # training, conversion, and export
+    training/                # force trainer and compilation
+    evaluation/              # ASE integration
+    bench/                   # operator and whole-model benchmarks
+    test/                    # symmetry and numerical tests
+  benchmarks/paper/          # experiment scripts and lightweight records
+  docs/                      # CHORUS strategy and MACE-ICTC manuals
+  lammps_user_mfftorch/      # LAMMPS deployment package
 ```
 
-Read [lammps_user_mfftorch/README.md](lammps_user_mfftorch/README.md) and
-[lammps_user_mfftorch/docs/BUILD_AND_RUN.md](lammps_user_mfftorch/docs/BUILD_AND_RUN.md)
-for build details.
+## Citation and lineage
 
-## Benchmarks and Reproducibility
-
-The curated benchmark archive lives in [benchmarks/paper](benchmarks/paper). It
-contains lightweight scripts, CSV/JSON summaries, validation logs, and SVG
-figures used by the technical report. Large generated binaries such as
-checkpoint snapshots, AOTI packages, PNG/PDF figure exports, and MD trajectory
-arrays are kept out of Git and should be distributed through GitHub Releases.
-
-Representative RTX 4090 results are shown below. They are meant to summarize
-the observed regimes, not replace the full artifact tables.
-
-- Isolated tensor product, FP32, `C=64`, `E=100k`, forward+backward:
-  compiled ICTC is `45.5 ms` at `(L_h,L_e)=(2,2)` versus e3nn `50.8 ms`
-  and cartnn `62.5 ms`; at `(3,3)`, compiled ICTC is `128.5 ms` versus
-  e3nn `174.7 ms`, while cartnn OOMs.
-- Whole-model synthetic training, `lmax=max_ell=1`, 8192 atoms, avg degree 16:
-  `ICTC+cuEq compiled` reaches `46.3 ms/step`, about `1.9x` faster than
-  MACE e3nn (`89.0 ms`) and slower than native MACE cuEq (`36.5 ms`).
-- Whole-model synthetic inference, same setting: `ICTC+cuEq compiled` reaches
-  `15.3 ms/step`, about `1.5x` faster than MACE e3nn (`22.6 ms`) and slightly
-  faster than native MACE cuEq (`16.9 ms`).
-- Matched 300-epoch training runs on revised benzene/ethanol/aspirin and Cheng
-  water show lower final force RMSE for ICTC modes than for the matched MACE
-  e3nn/cuEq baselines under the archived protocol. This is a controlled
-  protocol comparison, not a universal accuracy claim.
-
-Replot the archived figures from the repository root:
-
-```bash
-python benchmarks/paper/scripts/plot_benchmark_figures.py
-python benchmarks/paper/scripts/training/plot_paper_training_figures.py
-```
-
-Selected RTX 4090 throughput figures:
-
-![Backend throughput benchmark](docs/figures/backend_throughput_benchmark_channels64.png)
-
-![Backend speedup benchmark](docs/figures/backend_speedup_benchmark_channels64.png)
-
-These benchmarks are controlled computational records, not universal
-chemical-accuracy leaderboards. The synthetic whole-model runs fix graph
-workloads to expose backend throughput; the matched training runs fix small
-protocols to compare parameterization/backend behavior under the same data and
-optimizer settings.
-
-## Validation Scope
-
-The repository contains tests and benchmark records for:
-
-- ICTC/e3nn frame correspondence;
-- converted native-MACE energy and force agreement for supported models;
-- rotation invariance/equivariance checks;
-- fused contraction agreement against reference contraction paths;
-- representation-layer SO(2) and spin-coupled double-cover prototype checks;
-- long-MD checkpoint-correspondence diagnostics for selected models.
-
-The strongest exactness statement is for the supported MACE correspondence path:
-compatible native MACE checkpoints can be represented in MACE-ICTC with the same
-energy/force behavior up to expected floating-point tolerances. This should not
-be read as a guarantee for arbitrary MACE forks, unsupported model structures,
-or every possible ICTC-native experimental backend.
-
-## Repository Layout
+The CHORUS preprint citation will be added when it is released. Until then,
+please cite the MACE-ICTC software record:
 
 ```text
-MACE-ICTC/
-  mace_ictc/
-    cli/                 # training, conversion, export, LAMMPS helpers
-    data/                # preprocessing, H5 datasets, batching
-    evaluation/          # ASE calculator wrappers
-    interfaces/          # checkpoint and deployment wrappers
-    models/              # ICTC model, irreps, products, radial, long-range
-    training/            # ForceTrainer and make_fx compile helpers
-    utils/               # graph, scatter, config, checkpoint metadata
-  lammps_user_mfftorch/  # LAMMPS USER-MFFTORCH package
-  benchmarks/paper/      # curated paper benchmark records and scripts
-  docs/                  # user manuals and figures
+MACE-ICTC. Zenodo. https://doi.org/10.5281/zenodo.20690950
 ```
 
-## Citation
+CHORUS and MACE-ICTC build on the MACE architecture:
 
-If you use MACE-ICTC, cite the Zenodo DOI:
+> I. Batatia et al., *MACE: Higher Order Equivariant Message Passing Neural
+> Networks for Fast and Accurate Force Fields*, NeurIPS 2022.
 
-```text
-MACE-ICTC DOI: 10.5281/zenodo.20690950
-```
+See [`NOTICE.md`](NOTICE.md) for software lineage and attribution.
+
+## License
+
+The code is released under the MIT License. The license and attribution apply
+to source code; separately distributed pretrained models or datasets may use
+different terms.

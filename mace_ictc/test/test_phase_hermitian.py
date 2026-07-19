@@ -1,4 +1,4 @@
-"""Tests for the PEMP real-doublet/Hermitian residual operator."""
+"""Tests for the U1-CHORUS real-doublet/Hermitian residual operator."""
 
 from __future__ import annotations
 
@@ -31,8 +31,11 @@ def _build(
     *,
     phase_mode: str = "none",
     phase_amplitude: str = "unit",
+    phase_coefficient: str = "polar",
+    phase_context: str = "content",
     phase_placement: str = "post-product",
     phase_density_rank: int = 8,
+    phase_density_pairs: str = "full",
     phase_scope: str = "final",
 ):
     return build_model(
@@ -49,8 +52,11 @@ def _build(
         ictd_fix_phase_hidden_channels=12,
         ictd_fix_phase_residual_scale_init=0.05,
         ictd_fix_phase_amplitude=phase_amplitude,
+        ictd_fix_phase_coefficient=phase_coefficient,
+        ictd_fix_phase_context=phase_context,
         ictd_fix_phase_placement=phase_placement,
         ictd_fix_phase_density_rank=phase_density_rank,
+        ictd_fix_phase_density_pairs=phase_density_pairs,
         ictd_fix_phase_scope=phase_scope,
     ).to(device=DEVICE, dtype=torch.float64)
 
@@ -183,6 +189,75 @@ def test_full_l_low_rank_density_u1_invariance_and_shapes():
         assert blocks[out_l].abs().max().item() > 0.0
 
 
+def test_full_l_diagonal_density_is_invariant_to_independent_edge_phases():
+    torch.manual_seed(44)
+    operator = PhaseHermitianFullLResidual(
+        num_elements=2,
+        channels=3,
+        lmax=2,
+        density_rank=2,
+        residual_scale_init=0.05,
+    ).to(device=DEVICE, dtype=torch.float64)
+    num_edges = 9
+    num_nodes = 4
+    dim = operator.channels * (operator.lmax + 1) ** 2
+    edge_doublet = torch.randn(
+        num_edges,
+        2,
+        dim,
+        dtype=torch.float64,
+        device=DEVICE,
+        requires_grad=True,
+    )
+    edge_dst = torch.tensor(
+        [0, 0, 1, 1, 1, 2, 2, 3, 3], dtype=torch.long, device=DEVICE
+    )
+    node_type_idx = torch.tensor([0, 1, 0, 1], dtype=torch.long, device=DEVICE)
+    diagonal = operator.forward_diagonal_edges_doublet(
+        edge_doublet,
+        edge_dst=edge_dst,
+        num_nodes=num_nodes,
+        node_attrs=None,
+        node_type_idx=node_type_idx,
+    )
+
+    phi = torch.linspace(
+        -1.2, 0.9, num_edges, dtype=torch.float64, device=DEVICE
+    ).reshape(num_edges, 1)
+    c, s = torch.cos(phi), torch.sin(phi)
+    real, imag = edge_doublet[:, 0], edge_doublet[:, 1]
+    rotated = torch.stack((c * real - s * imag, s * real + c * imag), dim=1)
+    diagonal_rotated = operator.forward_diagonal_edges_doublet(
+        rotated,
+        edge_dst=edge_dst,
+        num_nodes=num_nodes,
+        node_attrs=None,
+        node_type_idx=node_type_idx,
+    )
+    torch.testing.assert_close(
+        diagonal_rotated, diagonal, atol=4.0e-13, rtol=4.0e-13
+    )
+
+    # The full post-aggregation density retains cross-edge relative phases.
+    node_doublet = pure_cartesian_ictd_fix.scatter(
+        edge_doublet, edge_dst, dim=0, dim_size=num_nodes, reduce="sum"
+    )
+    node_doublet_rotated = pure_cartesian_ictd_fix.scatter(
+        rotated, edge_dst, dim=0, dim_size=num_nodes, reduce="sum"
+    )
+    full = operator.forward_doublet(
+        node_doublet, node_attrs=None, node_type_idx=node_type_idx
+    )
+    full_rotated = operator.forward_doublet(
+        node_doublet_rotated, node_attrs=None, node_type_idx=node_type_idx
+    )
+    assert not torch.allclose(full_rotated, full, atol=1.0e-10, rtol=1.0e-10)
+
+    diagonal.square().mean().backward()
+    assert edge_doublet.grad is not None
+    assert edge_doublet.grad.abs().max().item() > 0.0
+
+
 def test_persistent_charged_update_global_u1_equivariance_and_gradients():
     torch.manual_seed(45)
     update = PersistentChargedUpdate(channels=4, lmax=2).to(
@@ -295,6 +370,51 @@ def test_full_l_phase_model_rotation_force_covariance_and_gradients():
     assert adapter.output_weights["1"].grad.abs().max().item() > 0.0
     phase_head_grad = model.interactions[-1].phase_head.weight.grad
     assert phase_head_grad is not None and phase_head_grad.abs().max().item() > 0.0
+
+
+@pytest.mark.parametrize(
+    "coefficient,context,density_pairs",
+    [
+        ("positive", "content", "full"),
+        ("signed", "content", "full"),
+        ("cartesian", "content", "full"),
+        ("polar", "radial", "full"),
+        ("polar", "content", "diagonal"),
+    ],
+)
+def test_full_l_coefficient_controls_forward_backward(
+    coefficient: str, context: str, density_pairs: str
+):
+    torch.manual_seed(52)
+    model = _build(
+        phase_mode="final-full-l-residual",
+        phase_amplitude="softplus",
+        phase_coefficient=coefficient,
+        phase_context=context,
+        phase_placement="pre-product-full-l",
+        phase_density_rank=4,
+        phase_density_pairs=density_pairs,
+    )
+    graph = make_fixed_graph(
+        num_nodes=7,
+        avg_degree=4,
+        dtype=torch.float64,
+        device=DEVICE,
+        seed=54,
+    )
+    model.train()
+    model.zero_grad(set_to_none=True)
+    energy = model(*graph)
+    assert torch.isfinite(energy).all()
+    energy.sum().backward()
+    interaction = model.interactions[-1]
+    amplitude_grad = interaction.phase_amplitude_head.weight.grad
+    assert amplitude_grad is not None
+    assert amplitude_grad.abs().max().item() > 0.0
+    if density_pairs == "full":
+        phase_grad = interaction.phase_head.weight.grad
+        assert phase_grad is not None
+        assert phase_grad.abs().max().item() > 0.0
 
 
 @pytest.mark.parametrize(

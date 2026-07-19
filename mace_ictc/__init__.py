@@ -1,9 +1,9 @@
 """
-MACE-ICTC - MACE in the Irreducible Cartesian Tensor Decomposition basis.
+CHORUS-MLIP reference implementation.
 
-Standalone extraction from FSCETP: the ICTC-basis MACE model plus AOTInductor
-deployment, make_fx training compilation, the LAMMPS interface, and the
-long-range module.
+CHORUS adds phase-coherent Hermitian neighbor aggregation to the MACE-ICTC
+framework. The ``mace_ictc`` namespace is retained for checkpoint, compiled
+extension, and deployment compatibility.
 """
 
 __version__ = "0.1.0"
@@ -24,8 +24,8 @@ if not hasattr(torch, "compiler"):
 if hasattr(torch.serialization, 'add_safe_globals'):
     torch.serialization.add_safe_globals([slice])
 
-# Import the baseline ICTC-MACE model + small shared helpers (guarded so version metadata
-# is still importable when heavy deps are absent).
+# Import the compatible ICTC model and shared helpers. Keep this guarded so
+# version metadata is still importable when heavy dependencies are absent.
 try:
     from mace_ictc.models import (
         PureCartesianICTDFix,

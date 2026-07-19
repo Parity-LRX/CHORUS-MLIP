@@ -1,8 +1,8 @@
-# PEMP / Hermitian phase branch: implementation and research plan
+# CHORUS: implementation and research plan
 
 ## What is implemented
 
-This branch adds opt-in phase-modulated atomic-environment paths to
+CHORUS adds opt-in phase-coherent atomic-environment paths to
 `PureCartesianICTDFix`. The original interaction and product path remains as a
 residual backbone. With `phase-scope=final`, the phase path is attached only to
 the last interaction. With `phase-scope=persistent`, every interaction produces
@@ -137,7 +137,7 @@ seeds `20260616,20260617,20260618`:
 
 ```bash
 PYTHON_BIN=/home/ylzhang/micromamba/envs/FSCETP/bin/python \
-MACE_ICTC_REPO=/home/ylzhang/MACE-ICTC-Phase \
+MACE_ICTC_REPO=/home/ylzhang/CHORUS-MLIP \
 DATA_ROOT=/tmp/mace_ictd_public_md17 \
 benchmarks/paper/scripts/training/run_phase_md17_matrix.sh
 ```
@@ -146,7 +146,7 @@ For a separately labelled smoke run, override `SEEDS`, `EPOCHS`, and optionally
 `MAX_STEPS`; those results are not comparable with the archived 300-epoch
 baseline.
 
-`none` is the default and introduces no phase parameters or state-dict keys.
+`none` is the default and introduces no CHORUS parameters or state-dict keys.
 Phase mode is deliberately rejected when `--attn-heads` is nonzero in v1. Both
 operators reweight neighbors, so combining them before separate ablations would
 make the result hard to interpret.
