@@ -1,0 +1,109 @@
+{
+  "status": "verified_test_metrics",
+  "selection_rule": "one checkpoint per model selected by minimum full-validation Force MAE; test never selects",
+  "units": {
+    "energy_mae": "meV/atom",
+    "force_mae": "meV/Angstrom",
+    "parameters": "million trainable parameters"
+  },
+  "transition1x_energy_calibration": "per-element constant residual fitted on the 50000-structure training split only",
+  "parameter_ranges": {
+    "Native MACE": "0.576-0.651",
+    "MACE-ICTC": "0.578-0.653",
+    "CHORUS R16": "0.672-0.792",
+    "DPA-4 C32": "0.650",
+    "TECE-C36": "0.640-0.825",
+    "DPA-4 C48": "1.297",
+    "TECE-C48": "1.107-1.435"
+  },
+  "metrics": {
+    "Transition1x": {
+      "Native MACE": [28.490, 120.901],
+      "MACE-ICTC": [24.066, 91.888],
+      "CHORUS R16": [20.540, 82.513],
+      "DPA-4 C32": [14.967, 88.696],
+      "TECE-C36": [19.917, 94.744],
+      "DPA-4 C48": [11.978, 80.148],
+      "TECE-C48": [17.297, 88.289]
+    },
+    "xxMD MAL": {
+      "Native MACE": [22.766, 228.300],
+      "MACE-ICTC": [13.319, 166.928],
+      "CHORUS R16": [12.766, 159.062],
+      "DPA-4 C32": [18.676, 225.660],
+      "TECE-C36": [18.408, 216.259],
+      "DPA-4 C48": [15.404, 162.248],
+      "TECE-C48": [23.809, 210.597]
+    },
+    "xxMD STI": {
+      "Native MACE": [15.463, 169.600],
+      "MACE-ICTC": [18.967, 168.271],
+      "CHORUS R16": [17.831, 147.830],
+      "DPA-4 C32": [13.822, 144.155],
+      "TECE-C36": [17.954, 161.573],
+      "DPA-4 C48": [14.063, 129.724],
+      "TECE-C48": [14.325, 169.212]
+    },
+    "MD22 Buckyball": {
+      "Native MACE": [1.455, 22.282],
+      "MACE-ICTC": [0.234, 7.355],
+      "CHORUS R16": [0.237, 6.724],
+      "DPA-4 C32": [0.201, 5.915],
+      "TECE-C36": [0.233, 12.079],
+      "DPA-4 C48": [0.173, 4.972],
+      "TECE-C48": [0.240, 11.315]
+    },
+    "3BPA 300 K": {
+      "Native MACE": [3.433, 23.403],
+      "MACE-ICTC": [0.163, 9.455],
+      "CHORUS R16": [0.154, 9.096],
+      "DPA-4 C32": [0.189, 15.963],
+      "TECE-C36": [0.220, 12.799],
+      "DPA-4 C48": [0.148, 14.032],
+      "TECE-C48": [0.229, 11.868]
+    },
+    "3BPA 600 K": {
+      "Native MACE": [3.367, 50.211],
+      "MACE-ICTC": [0.393, 25.192],
+      "CHORUS R16": [0.360, 24.216],
+      "DPA-4 C32": [0.592, 39.236],
+      "TECE-C36": [0.500, 26.515],
+      "DPA-4 C48": [0.644, 38.678],
+      "TECE-C48": [0.465, 24.487]
+    },
+    "3BPA 1200 K": {
+      "Native MACE": [7.564, 173.362],
+      "MACE-ICTC": [3.192, 119.038],
+      "CHORUS R16": [3.348, 119.618],
+      "DPA-4 C32": [3.830, 130.431],
+      "TECE-C36": [1.584, 68.464],
+      "DPA-4 C48": [5.291, 150.605],
+      "TECE-C48": [1.271, 62.040]
+    }
+  },
+  "newly_completed_audits": {
+    "Native MACE xxMD STI": {
+      "selected_epoch": 33,
+      "validation_checkpoint_count": 56,
+      "test_frames": 6396,
+      "energy_mae": 15.462525059313028,
+      "force_mae": 169.59988375940757,
+      "source": "/home/ylzhang/chorus_runs/large_scale_main_20260724/baselines/native_mace_xxmd_sti/validation_force_selected_eval/metrics.json/metrics.json"
+    },
+    "DPA-4 C32 Transition1x train-only calibration": {
+      "raw_test_energy_mae": 15.501572652922409,
+      "calibrated_test_energy_mae": 14.96694656709488,
+      "forces_changed": false,
+      "source": "/home/ylzhang/chorus_runs/dpa4_fp32_compiled_all_20260728/c32_mix3/t1x_c48_mix3/train_only_energy_calibration/metrics.json"
+    }
+  },
+  "principal_sources": [
+    "/home/ylzhang/chorus_runs/large_scale_main_20260724",
+    "/home/ylzhang/chorus_runs/3bpa_standard_20260727",
+    "/home/ylzhang/chorus_runs/3bpa_rank16_20260727",
+    "/home/ylzhang/chorus_runs/3bpa_external_20260727",
+    "/home/ylzhang/chorus_runs/dpa4_fp32_compiled_all_20260728",
+    "/home/ylzhang/tace_chorus_runs/xxmd_tece_large_mae_seed20260616",
+    "/home/ylzhang/tace_chorus_runs/xxmd_tece_c48_seed20260616"
+  ]
+}

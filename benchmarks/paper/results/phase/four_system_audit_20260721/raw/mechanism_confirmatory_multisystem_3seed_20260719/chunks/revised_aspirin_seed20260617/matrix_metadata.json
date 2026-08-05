@@ -1,0 +1,20 @@
+{
+  "benchmark": "phase_hermitian_rmd17_matched_archived_baseline",
+  "datasets": "revised_aspirin",
+  "data_root": "/tmp/mace_ictd_public_md17",
+  "mace_torch_path": "/tmp/mace_torch_0_3_16",
+  "modes": "ictc_phase_positive_full_l_eager,ictc_phase_signed_full_l_eager,ictc_phase_cartesian_full_l_eager,ictc_phase_radial_full_l_eager,ictc_phase_full_l_softplus_eager,ictc_phase_diagonal_full_l_eager,ictc_attention_eager",
+  "seeds": "20260617",
+  "epochs": 300,
+  "max_steps": "",
+  "architecture": {"channels": 64, "hidden_lmax": 1, "max_ell": 2, "num_interactions": 2, "correlation": 2, "readout_hidden_channels": 64, "first_layer_self_connection": true, "use_reduced_cg": true},
+  "radial": {"type": "bessel", "num_basis": 8, "polynomial_cutoff_p": 6, "r_max": 4.5},
+  "optimizer": {"type": "AdamW", "lr": 0.001, "weight_decay": 5e-7, "amsgrad": true, "scheduler": "ExponentialLR", "gamma": 0.9993},
+  "loss": {"type": "mse", "energy_weight": 1.0, "force_weight": 100.0, "stress_weight": 0.0},
+  "phase": {"hidden_channels": 32, "residual_scale_init": 0.05, "default_placement": "post-product", "density_rank": 8, "scope_is_mode_specific": true},
+  "attention": {"heads": 4},
+  "parallel_jobs": 1,
+  "average_e0_rule": "minimum-norm E0_Z = mean(E) n_Z / sum_Z n_Z^2",
+  "device": "cuda",
+  "dtype": "float32"
+}

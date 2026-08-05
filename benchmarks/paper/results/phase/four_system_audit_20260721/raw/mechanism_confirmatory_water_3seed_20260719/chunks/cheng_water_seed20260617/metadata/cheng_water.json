@@ -1,0 +1,13 @@
+{
+  "composition": {
+    "1": 128,
+    "8": 64
+  },
+  "data": "/tmp/mace_ictd_public_water/cheng_water",
+  "mean_train_energy": -30016.737538652014,
+  "minimum_norm_e0": {
+    "1": -187.6046096165751,
+    "8": -93.80230480828754
+  },
+  "n_train": 1000
+}

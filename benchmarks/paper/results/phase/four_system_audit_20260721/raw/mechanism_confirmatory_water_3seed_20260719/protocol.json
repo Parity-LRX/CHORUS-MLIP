@@ -1,0 +1,15 @@
+{
+  "protocol": "confirmatory_cheng_liquid_water_three_seed_phase_mechanisms",
+  "dataset": "cheng_water",
+  "source_split": "/tmp/mace_ictd_public_water/cheng_water",
+  "archived_baseline_results": "/home/ylzhang/MACE-ICTC-Phase/benchmarks/paper/results/training/water_cheng_convergence_20260618",
+  "seeds": "20260616,20260617,20260618",
+  "modes": "ictc_phase_positive_full_l_eager,ictc_phase_signed_full_l_eager,ictc_phase_cartesian_full_l_eager,ictc_phase_radial_full_l_eager,ictc_phase_full_l_softplus_eager,ictc_phase_diagonal_full_l_eager,ictc_attention_eager",
+  "checkpoint_selection": "minimum validation loss",
+  "primary_reporting": "force and energy MAE from the same minimum-validation-loss checkpoint",
+  "epochs": 300,
+  "batch_size": 16,
+  "average_num_neighbors": 34.0,
+  "r_max_angstrom": 4.5,
+  "parallel_jobs": 1
+}

@@ -1,0 +1,15 @@
+{
+  "composition": {
+    "1": 8,
+    "6": 9,
+    "8": 4
+  },
+  "data": "/tmp/mace_ictd_public_md17/revised_aspirin",
+  "mean_train_energy": -17617.734086136104,
+  "minimum_norm_e0": {
+    "1": -875.415358317322,
+    "6": -984.8422781069872,
+    "8": -437.707679158661
+  },
+  "n_train": 1000
+}

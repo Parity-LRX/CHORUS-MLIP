@@ -1,0 +1,58 @@
+{
+  "status": "verified_remote_test_metrics",
+  "selection_rule": "minimum 300 K validation Force MAE; earliest step breaks ties",
+  "test_used_for_selection": false,
+  "units": {
+    "energy_mae": "eV/atom",
+    "force_mae": "eV/Angstrom"
+  },
+  "models": {
+    "CHORUS-off C128": {
+      "step": 39620,
+      "force_mae": {
+        "300K": 0.009455,
+        "600K": 0.025192,
+        "1200K": 0.119038
+      }
+    },
+    "CHORUS R8 C128": {
+      "step": 41160,
+      "force_mae": {
+        "300K": 0.009053,
+        "600K": 0.024497,
+        "1200K": 0.118637
+      }
+    },
+    "CHORUS R16 C128": {
+      "step": 38192,
+      "force_mae": {
+        "300K": 0.009096,
+        "600K": 0.024216,
+        "1200K": 0.119618
+      }
+    },
+    "CHORUS R32 C128": {
+      "step": 38416,
+      "force_mae": {
+        "300K": 0.009308,
+        "600K": 0.026585,
+        "1200K": 0.140938
+      }
+    },
+    "CHORUS-off C140": {
+      "step": 39956,
+      "force_mae": {
+        "300K": 0.008903,
+        "600K": 0.022043,
+        "1200K": 0.088466
+      }
+    }
+  },
+  "remote_sources": {
+    "CHORUS-off C128": "/home/ylzhang/chorus_runs/3bpa_standard_20260727/3bpa_phaseoff_c128_l2_corr3/validation_force_selected_eval/metrics.json",
+    "CHORUS R8 C128": "/home/ylzhang/chorus_runs/3bpa_rank8_20260727/3bpa_chorus_c128_l2_corr3_rank8/validation_force_selected_eval/metrics.json",
+    "CHORUS R16 C128": "/home/ylzhang/chorus_runs/3bpa_rank16_20260727/3bpa_chorus_c128_l2_corr3_rank16/validation_force_selected_eval/metrics.json",
+    "CHORUS R32 C128": "/home/ylzhang/chorus_runs/3bpa_standard_20260727/3bpa_chorus_c128_l2_corr3_rank32/validation_force_selected_eval/metrics.json",
+    "CHORUS-off C140": "/home/ylzhang/chorus_runs/ictc_c140_matched_all_20260729/3bpa/3bpa_phaseoff_c140_l2_corr3/validation_force_selected_eval/metrics.json"
+  }
+}

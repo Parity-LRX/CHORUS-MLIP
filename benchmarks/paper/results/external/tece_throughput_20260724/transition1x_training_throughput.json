@@ -1,0 +1,65 @@
+{
+  "benchmark": "Transition1x training throughput",
+  "date": "2026-07-24",
+  "hardware": "single NVIDIA GeForce RTX 4090 D",
+  "dataset": "Transition1x reaction-disjoint 50k train / 10k validation",
+  "precision": "float32",
+  "batch_size": 16,
+  "optimizer_steps": 3125,
+  "force_training": "conservative force gradients enabled",
+  "serial_execution": true,
+  "rows": [
+    {
+      "model": "CHORUS",
+      "acceleration": "MakeFX, 4 shape buckets",
+      "parameters": 168634,
+      "steady_steps_per_second": 50.29909995540985,
+      "steady_measurement": "timestamp slope, steps 201 through 3001 after all four buckets compiled",
+      "wall_seconds": 209.04,
+      "end_to_end_steps_per_second": 14.949292001530807
+    },
+    {
+      "model": "TECE",
+      "acceleration": "eager",
+      "parameters": 263361,
+      "steady_steps_per_second": 10.1,
+      "steady_measurement": "Lightning training progress at step 3109/3125, before validation",
+      "epoch_including_validation_steps_per_second": 9.33,
+      "wall_seconds": 426.35,
+      "end_to_end_steps_per_second": 7.32965873108948
+    },
+    {
+      "model": "TECE",
+      "acceleration": "cuEquivariance on first-layer O(3) scatter tensor product",
+      "parameters": 263361,
+      "steady_steps_per_second": 9.97,
+      "steady_measurement": "Lightning training progress at step 3109/3125, before validation",
+      "epoch_including_validation_steps_per_second": 9.2,
+      "wall_seconds": 396.21,
+      "end_to_end_steps_per_second": 7.887231518639106,
+      "caveat": "The lower end-to-end wall time than eager is confounded by warm filesystem cache; steady training was slightly slower."
+    },
+    {
+      "model": "TECE",
+      "acceleration": "AOTI",
+      "parameters": 263361,
+      "status": "unsupported in tested master revision",
+      "failure_wall_seconds": 98.74,
+      "failure": "torch._dynamo.exc.Unsupported: dynamic-shape aten.bincount.default during validation sanity check"
+    }
+  ],
+  "steady_speedup": {
+    "chorus_vs_tece_eager": 4.980108906476223,
+    "chorus_vs_tece_cue": 5.0450451309337865
+  },
+  "end_to_end_speedup": {
+    "chorus_vs_tece_eager": 2.039561806352851,
+    "chorus_vs_tece_cue_cache_confounded": 1.8953788748564868
+  },
+  "implementation_notes": {
+    "chorus": "C=48, lmax=2, two interactions, correlation=2, rank-8 full-nonlinear Hermitian residual",
+    "tece": "C=24, lmax=Lmax=mmax=2, two layers [CGTP, SO2], correlation=2",
+    "cue_scope": "Only TECE's first-layer O(3) scatter tensor product is replaced; the SO(2) attention layer remains unchanged.",
+    "comparison_scope": "Deployed configurations, not an iso-parameter or iso-FLOP comparison."
+  }
+}

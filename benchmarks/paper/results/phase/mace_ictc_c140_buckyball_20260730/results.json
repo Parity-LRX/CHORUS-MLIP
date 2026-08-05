@@ -1,0 +1,24 @@
+{
+  "status": "verified_remote_test_metrics",
+  "remote_root": "/home/ylzhang/chorus_runs/ictc_c140_matched_all_20260729/bucky",
+  "model": "MACE-ICTC CHORUS off",
+  "width": 140,
+  "selection_rule": "minimum validation Force MAE; earliest step breaks ties",
+  "test_used_for_selection": false,
+  "selected_checkpoint": "ictc_c140_bucky_ictc_bridge_u_makefx_seed20260616_epochs300.e295s44400.pth",
+  "epoch": 295,
+  "step": 44400,
+  "validation_checkpoint_count": 300,
+  "validation": {
+    "energy_mae_ev_per_atom": 0.000228,
+    "energy_rmse_ev_per_atom": 0.000280,
+    "force_mae_ev_per_angstrom": 0.006975,
+    "force_rmse_ev_per_angstrom": 0.009567
+  },
+  "test": {
+    "energy_mae_ev_per_atom": 0.000239,
+    "energy_rmse_ev_per_atom": 0.000297,
+    "force_mae_ev_per_angstrom": 0.006932,
+    "force_rmse_ev_per_angstrom": 0.009426
+  }
+}

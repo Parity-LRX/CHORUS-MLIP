@@ -1,0 +1,159 @@
+{
+  "schema_version": 1,
+  "created_date": "2026-07-24",
+  "dataset": {
+    "name": "MD22 buckyball_catcher",
+    "train_frames": 600,
+    "validation_frames": 600,
+    "test_frames": 4902,
+    "split_manifest": "/home/ylzhang/lrx/md22/dpa4_buckyball_matched_20260724/conversion_manifest.json"
+  },
+  "protocol": {
+    "seed": 20260616,
+    "cutoff_angstrom": 5.0,
+    "batch_size": 4,
+    "max_steps": 45000,
+    "energy_force_weight_ratio": "1:100",
+    "ema": false,
+    "tf32": false,
+    "precision": "float32",
+    "note": "Single-seed comparison. DPA-4 and CHORUS used their native learning-rate schedules."
+  },
+  "models": {
+    "dpa4_large": {
+      "implementation": "DPA-4 master",
+      "git_sha": "286f12d3e3cb69eefb33d4716267f6457dffa80b",
+      "parameters": 650348,
+      "channels": 32,
+      "blocks": 2,
+      "mixing_layers": 3,
+      "lmax": 2,
+      "mmax": 1,
+      "learning_rate": {
+        "type": "wsd",
+        "start": 0.00045,
+        "stop": 0.000001,
+        "warmup_ratio": 0.003,
+        "decay_phase_ratio": 0.65,
+        "decay_type": "cosine"
+      },
+      "checkpoints": {
+        "43000": {
+          "validation": {
+            "energy_total_mae_ev": 0.03207173,
+            "energy_total_rmse_ev": 0.03990157,
+            "energy_mae_mev_per_atom": 0.2167009,
+            "energy_rmse_mev_per_atom": 0.2696052,
+            "force_mae_mev_per_angstrom": 5.671459,
+            "force_rmse_mev_per_angstrom": 7.970129
+          },
+          "test": {
+            "energy_total_mae_ev": 0.03241053,
+            "energy_total_rmse_ev": 0.04053268,
+            "energy_mae_mev_per_atom": 0.21899,
+            "energy_rmse_mev_per_atom": 0.2738695,
+            "force_mae_mev_per_angstrom": 5.582183,
+            "force_rmse_mev_per_angstrom": 7.84289
+          }
+        },
+        "44000": {
+          "validation": {
+            "energy_total_mae_ev": 0.07304204,
+            "energy_total_rmse_ev": 0.08190681,
+            "energy_mae_mev_per_atom": 0.4935273,
+            "energy_rmse_mev_per_atom": 0.5534244,
+            "force_mae_mev_per_angstrom": 5.667088,
+            "force_rmse_mev_per_angstrom": 7.969314
+          },
+          "test": {
+            "energy_total_mae_ev": 0.07225062,
+            "energy_total_rmse_ev": 0.08147093,
+            "energy_mae_mev_per_atom": 0.4881799,
+            "energy_rmse_mev_per_atom": 0.5504793,
+            "force_mae_mev_per_angstrom": 5.580629,
+            "force_rmse_mev_per_angstrom": 7.843814
+          }
+        },
+        "45000": {
+          "validation": {
+            "energy_total_mae_ev": 0.03686677,
+            "energy_total_rmse_ev": 0.04397095,
+            "energy_mae_mev_per_atom": 0.2490998,
+            "energy_rmse_mev_per_atom": 0.297101,
+            "force_mae_mev_per_angstrom": 5.668047,
+            "force_rmse_mev_per_angstrom": 7.965998
+          },
+          "test": {
+            "energy_total_mae_ev": 0.03715671,
+            "energy_total_rmse_ev": 0.04409683,
+            "energy_mae_mev_per_atom": 0.2510589,
+            "energy_rmse_mev_per_atom": 0.2979515,
+            "force_mae_mev_per_angstrom": 5.581403,
+            "force_rmse_mev_per_angstrom": 7.84092
+          }
+        }
+      }
+    },
+    "chorus_small": {
+      "parameters": 226310,
+      "channels": 64,
+      "hidden_lmax": 2,
+      "correlation": 3,
+      "hermitian_rank": 8,
+      "phase_density_pairs": "full-nonlinear",
+      "checkpoint_selection": "trainer-saved minimum validation-loss checkpoint",
+      "learning_rate": {
+        "type": "cosine",
+        "start": 0.001,
+        "stop": 0.000001
+      },
+      "validation": {
+        "energy_mae_mev_per_atom": 0.256,
+        "energy_rmse_mev_per_atom": 0.312,
+        "force_mae_mev_per_angstrom": 8.891,
+        "force_rmse_mev_per_angstrom": 12.024,
+        "weighted_loss": 0.014457
+      },
+      "test": {
+        "energy_mae_mev_per_atom": 0.241,
+        "energy_rmse_mev_per_atom": 0.298,
+        "force_mae_mev_per_angstrom": 8.85,
+        "force_rmse_mev_per_angstrom": 11.981,
+        "weighted_loss": 0.014355
+      }
+    },
+    "chorus_large": {
+      "parameters": 672134,
+      "channels": 128,
+      "hidden_lmax": 2,
+      "correlation": 3,
+      "hermitian_rank": 16,
+      "phase_density_pairs": "full-nonlinear",
+      "checkpoint_selection": "trainer-saved minimum validation-loss checkpoint",
+      "learning_rate": {
+        "type": "cosine",
+        "start": 0.001,
+        "stop": 0.000001
+      },
+      "validation": {
+        "energy_mae_mev_per_atom": 0.241,
+        "energy_rmse_mev_per_atom": 0.293,
+        "force_mae_mev_per_angstrom": 6.74,
+        "force_rmse_mev_per_angstrom": 9.152,
+        "weighted_loss": 0.008377
+      },
+      "test": {
+        "energy_mae_mev_per_atom": 0.233,
+        "energy_rmse_mev_per_atom": 0.288,
+        "force_mae_mev_per_angstrom": 6.724,
+        "force_rmse_mev_per_angstrom": 9.089,
+        "weighted_loss": 0.008261
+      }
+    }
+  },
+  "selection_note": {
+    "dpa4_primary": "45000 is the final protocol checkpoint and has the lowest full-validation force RMSE among the retained checkpoints.",
+    "dpa4_energy_pareto": "43000 has substantially lower validation and test energy error with practically unchanged force error.",
+    "warning": "Do not combine the energy minimum from one checkpoint with the force minimum from another as if they came from one model."
+  }
+}

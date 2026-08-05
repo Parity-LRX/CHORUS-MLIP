@@ -1,0 +1,18 @@
+{
+  "protocol": "main4_from_scratch_cosine500",
+  "datasets": ["revised_aspirin", "revised_benzene", "revised_ethanol", "cheng_water"],
+  "seeds": "20260616,20260617,20260618",
+  "modes": "ictc_bridge_u_makefx,ictc_phase_full_l_softplus_makefx,ictc_phase_diagonal_full_l_makefx,ictc_attention_makefx",
+  "epochs": 500,
+  "initial_learning_rate": 0.001,
+  "minimum_learning_rate": 1e-6,
+  "scheduler": "optimizer-step cosine",
+  "execution": "required make_fx compilation",
+  "makefx_buckets": "4",
+  "makefx_max_slots": 8,
+  "padding": ["nodes-to-bucket-max", "edges-to-bucket-max"],
+  "checkpoint_selection": "minimum validation loss",
+  "primary_reporting": "force and energy MAE from the same selected checkpoint",
+  "from_scratch": true,
+  "parallel_campaigns": 2
+}

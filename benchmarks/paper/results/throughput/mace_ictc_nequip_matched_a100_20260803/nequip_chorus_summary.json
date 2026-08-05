@@ -1,0 +1,22 @@
+{
+  "('final', 'inference')": {
+    "optimized_ms": 10.441945353522897,
+    "speedup": 1.5986954396425896,
+    "stable_ms": 16.693490417674184
+  },
+  "('final', 'training')": {
+    "optimized_ms": 26.35289872996509,
+    "speedup": 1.464704204524807,
+    "stable_ms": 38.59920157119632
+  },
+  "('persistent', 'inference')": {
+    "optimized_ms": 13.962965179234743,
+    "speedup": 1.9740399738145828,
+    "stable_ms": 27.563451416790485
+  },
+  "('persistent', 'training')": {
+    "optimized_ms": 35.9031077940017,
+    "speedup": 1.7443871793616073,
+    "stable_ms": 62.62892093509436
+  }
+}

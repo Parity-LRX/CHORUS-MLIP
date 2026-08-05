@@ -1,0 +1,11 @@
+{
+  "protocol": "confirmatory_multisystem_three_seed_phase_mechanisms",
+  "datasets": ["revised_aspirin", "revised_ethanol", "revised_benzene"],
+  "seeds": [20260616, 20260617, 20260618],
+  "modes": "ictc_phase_positive_full_l_eager,ictc_phase_signed_full_l_eager,ictc_phase_cartesian_full_l_eager,ictc_phase_radial_full_l_eager,ictc_phase_full_l_softplus_eager,ictc_phase_diagonal_full_l_eager,ictc_attention_eager",
+  "checkpoint_selection": "minimum validation loss",
+  "primary_reporting": "force and energy MAE from the same minimum-validation-loss checkpoint",
+  "epochs": 300,
+  "parallel_jobs": 1,
+  "reused_chunk": "/home/ylzhang/MACE-ICTC-Phase/benchmarks/paper/results/phase/mechanism_controls_aspirin_seed16_formal_20260719"
+}

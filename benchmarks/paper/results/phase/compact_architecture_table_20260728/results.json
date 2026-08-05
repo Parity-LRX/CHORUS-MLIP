@@ -1,0 +1,68 @@
+{
+  "status": "verified_test_metrics",
+  "selection_rule": "minimum full-validation Force MAE; test never selects",
+  "transition1x_energy_calibration": "per-element constant residual fitted on the 50000-structure training split only",
+  "units": {
+    "energy": "meV/atom",
+    "force": "meV/Angstrom"
+  },
+  "representative_main_table": [
+    {"dataset": "Transition1x", "model": "native MACE", "params": 650944, "energy_mae": 28.490, "force_mae": 120.901},
+    {"dataset": "Transition1x", "model": "MACE-ICTC", "params": 652736, "energy_mae": 24.066, "force_mae": 91.888},
+    {"dataset": "Transition1x", "model": "CHORUS R16", "params": 792198, "energy_mae": 20.540, "force_mae": 82.513},
+    {"dataset": "xxMD MAL", "model": "native MACE", "params": 613440, "energy_mae": 22.766, "force_mae": 228.300},
+    {"dataset": "xxMD MAL", "model": "MACE-ICTC", "params": 615232, "energy_mae": 13.319, "force_mae": 166.928},
+    {"dataset": "xxMD MAL", "model": "CHORUS R16", "params": 732166, "energy_mae": 12.766, "force_mae": 159.062},
+    {"dataset": "MD22 Buckyball", "model": "native MACE", "params": 575936, "energy_mae": 1.455, "force_mae": 22.282},
+    {"dataset": "MD22 Buckyball", "model": "MACE-ICTC", "params": 577728, "energy_mae": 0.234, "force_mae": 7.355},
+    {"dataset": "MD22 Buckyball", "model": "CHORUS R16", "params": 672134, "energy_mae": 0.237, "energy_rmse": 0.292, "force_mae": 6.724, "force_rmse": 9.089, "checkpoint_note": "final step 45000; tied for minimum recorded validation Force MAE at six-decimal log precision"}
+  ],
+  "capacity_resolved_external_comparison": [
+    {"dataset": "Transition1x", "model": "CHORUS R16", "params": 792198, "energy_mae": 20.540, "force_mae": 82.513},
+    {"dataset": "Transition1x", "model": "DPA-4 C32 (Mini)", "params": 650428, "energy_mae": 14.622, "force_mae": 88.540},
+    {"dataset": "Transition1x", "model": "DPA-4 C48", "params": 1296800, "energy_mae": 12.033914066709812, "energy_rmse": 17.478612405535067, "force_mae": 79.62751, "force_rmse": 155.5195},
+    {"dataset": "Transition1x", "model": "TECE-C36", "params": 824541, "energy_mae": 19.917274, "force_mae": 94.7440},
+    {"dataset": "Transition1x", "model": "TECE-C48", "params": 1435065, "energy_mae": 17.2971675, "force_mae": 88.2888},
+    {"dataset": "xxMD MAL", "model": "CHORUS R16", "params": 732166, "energy_mae": 12.766, "force_mae": 159.062},
+    {"dataset": "xxMD MAL", "model": "DPA-4 C32 (Mini)", "params": 650388, "energy_mae": 19.377, "force_mae": 225.200},
+    {"dataset": "xxMD MAL", "model": "DPA-4 C48", "params": 1296740, "energy_mae": 15.474, "energy_rmse": 30.145, "force_mae": 163.097, "force_rmse": 412.474},
+    {"dataset": "xxMD MAL", "model": "TECE-C36", "params": 732093, "energy_mae": 18.4078, "force_mae": 216.2594},
+    {"dataset": "xxMD MAL", "model": "TECE-C48", "params": 1270905, "energy_mae": 23.8091, "force_mae": 210.5970},
+    {"dataset": "MD22 Buckyball", "model": "CHORUS R16", "params": 672134, "energy_mae": 0.237, "force_mae": 6.724},
+    {"dataset": "MD22 Buckyball", "model": "DPA-4 C32 (Mini)", "params": 650348, "energy_mae": 0.219, "force_mae": 5.582},
+    {"dataset": "MD22 Buckyball", "model": "DPA-4 C48", "params": 1296680, "energy_mae": 0.545, "energy_rmse": 0.587, "force_mae": 5.055, "force_rmse": 7.602},
+    {"dataset": "MD22 Buckyball", "model": "TECE-C36", "params": 639645, "energy_mae": 0.2325, "force_mae": 12.0788},
+    {"dataset": "MD22 Buckyball", "model": "TECE-C48", "params": 1106745, "energy_mae": 0.2404, "force_mae": 11.3152},
+    {"dataset": "3BPA 300K", "model": "CHORUS R16", "params": 792198, "energy_mae": 0.154, "force_mae": 9.096},
+    {"dataset": "3BPA 300K", "model": "DPA-4 C32 (Mini)", "params": 650428, "energy_mae": 0.2034195, "force_mae": 15.88775},
+    {"dataset": "3BPA 300K", "model": "DPA-4 C48", "params": 1296800, "energy_mae": 1.22003, "force_mae": 13.89326},
+    {"dataset": "3BPA 300K", "model": "TECE-C36", "params": 824541, "energy_mae": 0.2201, "force_mae": 12.7986},
+    {"dataset": "3BPA 300K", "model": "TECE-C48", "params": 1435065, "energy_mae": 0.2290, "force_mae": 11.8678},
+    {"dataset": "3BPA 600K", "model": "CHORUS R16", "params": 792198, "energy_mae": 0.360, "force_mae": 24.216},
+    {"dataset": "3BPA 600K", "model": "DPA-4 C32 (Mini)", "params": 650428, "energy_mae": 0.6481593, "force_mae": 39.33506},
+    {"dataset": "3BPA 600K", "model": "DPA-4 C48", "params": 1296800, "energy_mae": 1.024177, "force_mae": 37.57439},
+    {"dataset": "3BPA 600K", "model": "TECE-C36", "params": 824541, "energy_mae": 0.4999, "force_mae": 26.5146},
+    {"dataset": "3BPA 600K", "model": "TECE-C48", "params": 1435065, "energy_mae": 0.4652, "force_mae": 24.4870},
+    {"dataset": "3BPA 1200K", "model": "CHORUS R16", "params": 792198, "energy_mae": 3.348, "force_mae": 119.618},
+    {"dataset": "3BPA 1200K", "model": "DPA-4 C32 (Mini)", "params": 650428, "energy_mae": 4.060349, "force_mae": 130.6107},
+    {"dataset": "3BPA 1200K", "model": "DPA-4 C48", "params": 1296800, "energy_mae": 3.936569, "force_mae": 142.0842},
+    {"dataset": "3BPA 1200K", "model": "TECE-C36", "params": 824541, "energy_mae": 1.5840, "force_mae": 68.4640},
+    {"dataset": "3BPA 1200K", "model": "TECE-C48", "params": 1435065, "energy_mae": 1.2708, "force_mae": 62.0402}
+  ],
+  "rank_sensitivity_validation_force_mae": [
+    {"dataset": "Transition1x", "rank8": 87.540, "rank16": 85.542, "rank32": 82.549},
+    {"dataset": "xxMD MAL", "rank8": 131.907, "rank16": 127.843, "rank32": 131.956},
+    {"dataset": "xxMD STI", "rank8": 121.211, "rank16": 106.684, "rank32": 108.414},
+    {"dataset": "xxMD DIA", "rank8": 36.393, "rank16": 44.091, "rank32": 36.802},
+    {"dataset": "MD22 Buckyball", "rank8": 7.021, "rank16": 6.740, "rank32": 6.379}
+  ],
+  "new_remote_evidence": {
+    "native_mace": "/home/ylzhang/chorus_runs/compact_table_missing_20260728",
+    "dpa4_c48_t1x_calibration": "/home/ylzhang/chorus_runs/dpa4_c48_scaling_20260727/t1x_c48_mix3/train_only_energy_calibration/metrics.json",
+    "chorus_r16_buckyball_test": "/home/ylzhang/chorus_runs/buckyball_fair_r5_noema_20260724/chorus_c128_l2_corr3_rank16/final_checkpoint_official_test/test.log",
+    "3bpa_chorus_r16": "/home/ylzhang/chorus_runs/3bpa_rank16_20260727/3bpa_chorus_c128_l2_corr3_rank16/validation_force_selected_eval/metrics.json",
+    "3bpa_dpa_c32": "/home/ylzhang/chorus_runs/3bpa_external_20260727",
+    "3bpa_dpa_c48": "/home/ylzhang/chorus_runs/dpa4_c48_scaling_20260727",
+    "3bpa_tece_c36_c48": "/home/ylzhang/chorus_runs/3bpa_external_20260727/tece_c36 and tece_c48"
+  }
+}

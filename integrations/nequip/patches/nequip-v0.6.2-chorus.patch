@@ -1,0 +1,2430 @@
+diff --git a/nequip/data/__init__.py b/nequip/data/__init__.py
+index 5cbbc85..a4a825d 100644
+--- a/nequip/data/__init__.py
++++ b/nequip/data/__init__.py
+@@ -16,6 +16,7 @@ from ._dataset import (
+     NpzDataset,
+     ASEDataset,
+     HDF5Dataset,
++    MACEGraphHDF5Dataset,
+ )
+ from .dataloader import DataLoader, Collater, PartialSampler
+ from ._build import dataset_from_config
+@@ -32,6 +33,7 @@ __all__ = [
+     NpzDataset,
+     ASEDataset,
+     HDF5Dataset,
++    MACEGraphHDF5Dataset,
+     DataLoader,
+     Collater,
+     PartialSampler,
+diff --git a/nequip/data/_dataset/__init__.py b/nequip/data/_dataset/__init__.py
+index 9948e37..fe80b8f 100644
+--- a/nequip/data/_dataset/__init__.py
++++ b/nequip/data/_dataset/__init__.py
+@@ -2,5 +2,13 @@ from ._base_datasets import AtomicDataset, AtomicInMemoryDataset
+ from ._ase_dataset import ASEDataset
+ from ._npz_dataset import NpzDataset
+ from ._hdf5_dataset import HDF5Dataset
++from ._mace_graph_hdf5_dataset import MACEGraphHDF5Dataset
+
+-__all__ = [ASEDataset, AtomicDataset, AtomicInMemoryDataset, NpzDataset, HDF5Dataset]
++__all__ = [
++    ASEDataset,
++    AtomicDataset,
++    AtomicInMemoryDataset,
++    NpzDataset,
++    HDF5Dataset,
++    MACEGraphHDF5Dataset,
++]
+diff --git a/nequip/data/_dataset/_ase_dataset.py b/nequip/data/_dataset/_ase_dataset.py
+index 633b5e4..f015210 100644
+--- a/nequip/data/_dataset/_ase_dataset.py
++++ b/nequip/data/_dataset/_ase_dataset.py
+@@ -228,7 +228,10 @@ class ASEDataset(AtomicInMemoryDataset):
+                     # map it over the `rank` argument
+                     datas = p.map(reader, list(range(n_proc)))
+                 # clean up the pool before loading the data
+-                datas = [torch.load(d) for d in datas]
++                # These files were written immediately above by our own reader
++                # workers and contain AtomicData objects, not only tensors.
++                # PyTorch >= 2.6 defaults weights_only=True.
++                datas = [torch.load(d, weights_only=False) for d in datas]
+                 datas = sum(datas, [])
+                 # un-interleave the datas
+                 datas = sorted(datas, key=lambda e: e[0])
+diff --git a/nequip/data/_dataset/_base_datasets.py b/nequip/data/_dataset/_base_datasets.py
+index 933a87a..464f62d 100644
+--- a/nequip/data/_dataset/_base_datasets.py
++++ b/nequip/data/_dataset/_base_datasets.py
+@@ -151,7 +151,11 @@ class AtomicInMemoryDataset(AtomicDataset):
+         # Then pre-process the data if disk files are not found
+         super().__init__(root=root, type_mapper=type_mapper)
+         if self.data is None:
+-            self.data, include_frames = torch.load(self.processed_paths[0])
++            # This is a locally generated NequIP dataset cache containing
++            # AtomicData objects. PyTorch >= 2.6 defaults weights_only=True.
++            self.data, include_frames = torch.load(
++                self.processed_paths[0], weights_only=False
++            )
+             if not np.all(include_frames == self.include_frames):
+                 raise ValueError(
+                     f"the include_frames is changed. "
+diff --git a/nequip/data/_dataset/_mace_graph_hdf5_dataset.py b/nequip/data/_dataset/_mace_graph_hdf5_dataset.py
+new file mode 100644
+index 0000000..f2edccb
+--- /dev/null
++++ b/nequip/data/_dataset/_mace_graph_hdf5_dataset.py
+@@ -0,0 +1,122 @@
++"""Read fixed-topology MACE graph HDF5 files without rebuilding neighbors."""
++
++from pathlib import Path
++from collections import Counter
++from typing import Any, Callable, Dict, List, Optional, Union
++
++import numpy as np
++import torch
++
++from .. import AtomicData, AtomicDataDict
++from ..transforms import TypeMapper
++from ._base_datasets import AtomicDataset
++
++
++class MACEGraphHDF5Dataset(AtomicDataset):
++    """Lazy reader for ``sample_N`` graph groups written by MACE-ICTC tools.
++
++    These files already contain the 4.5 Å neighbor graph.  Reusing it is both
++    exact and avoids NequIP 0.6's expensive ASE/forkserver preprocessing path.
++    """
++
++    def __init__(
++        self,
++        root: str,
++        file_name: str,
++        AtomicData_options: Dict[str, Any] = {},
++        type_mapper: Optional[TypeMapper] = None,
++    ) -> None:
++        super().__init__(root=root, type_mapper=type_mapper)
++        self.file_name = str(Path(file_name).expanduser().resolve())
++        self.r_max = float(AtomicData_options["r_max"])
++        self._h5 = None
++        self._group_names = self._read_group_names()
++
++    def _read_group_names(self):
++        import h5py
++
++        with h5py.File(self.file_name, "r") as handle:
++            names = list(handle.keys())
++        return sorted(names, key=lambda name: int(name.rsplit("_", 1)[-1]))
++
++    def _handle(self):
++        if self._h5 is None:
++            import h5py
++
++            self._h5 = h5py.File(self.file_name, "r")
++        return self._h5
++
++    def len(self) -> int:
++        return len(self._group_names)
++
++    def get(self, idx: int) -> AtomicData:
++        group = self._handle()[self._group_names[int(idx)]]
++        # MACE stores neighbor -> center as (edge_src, edge_dst), while NequIP
++        # stores center in edge_index[0] and neighbor in edge_index[1].
++        edge_index = np.stack(
++            (group["edge_dst"][...], group["edge_src"][...]), axis=0
++        )
++        return AtomicData(
++            pos=group["pos"][...],
++            edge_index=edge_index,
++            atomic_numbers=group["A"][...],
++            total_energy=np.asarray(group["y"][...]).reshape(1),
++            forces=group["force"][...],
++        )
++
++    def statistics(
++        self,
++        fields: List[Union[str, Callable]],
++        modes: List[str],
++        stride: int = 1,
++        unbiased: bool = True,
++        kwargs: Dict[str, dict] = {},
++    ) -> List[tuple]:
++        """Compute the statistics required by NequIP model builders."""
++        del kwargs
++        if len(fields) != len(modes):
++            raise ValueError("fields and modes must have equal length")
++        results = []
++        for field, mode in zip(fields, modes):
++            chunks = []
++            counts = Counter()
++            for index in range(0, len(self), int(stride)):
++                sample = self[index]
++                if callable(field):
++                    values, _ = field(sample)
++                else:
++                    values = sample[field]
++                values = torch.as_tensor(values).detach().cpu().numpy()
++                if mode == "per_atom_mean_std":
++                    values = values / int(sample.num_nodes)
++                flat = values.reshape(-1)
++                if mode == "count":
++                    counts.update(flat.tolist())
++                else:
++                    chunks.append(flat.astype(np.float64, copy=False))
++            if mode == "count":
++                keys = sorted(counts)
++                results.append(
++                    (
++                        torch.tensor(keys),
++                        torch.tensor([counts[key] for key in keys]),
++                    )
++                )
++                continue
++            values = np.concatenate(chunks)
++            if mode == "rms":
++                results.append(torch.tensor((np.sqrt(np.mean(values**2)),)))
++            elif mode in ("mean_std", "per_atom_mean_std"):
++                results.append(
++                    (
++                        torch.tensor(np.mean(values)),
++                        torch.tensor(np.std(values, ddof=int(unbiased))),
++                    )
++                )
++            else:
++                raise NotImplementedError(f"unsupported statistics mode {mode!r}")
++        return results
++
++    def __del__(self):
++        if self._h5 is not None:
++            self._h5.close()
+diff --git a/nequip/model/_eng.py b/nequip/model/_eng.py
+index 421e911..bbf5dc8 100644
+--- a/nequip/model/_eng.py
++++ b/nequip/model/_eng.py
+@@ -9,6 +9,8 @@ from nequip.nn import (
+     AtomwiseLinear,
+     AtomwiseReduce,
+     ConvNetLayer,
++    InteractionBlock,
++    ICTCInteractionBlock,
+ )
+ from nequip.nn.embedding import (
+     OneHotAtomEncoding,
+@@ -97,6 +99,16 @@ def EnergyModel(
+     )
+
+     num_layers = config.get("num_layers", 3)
++    interaction_backend = str(config.get("interaction_backend", "e3nn")).lower()
++    if interaction_backend == "e3nn":
++        interaction_block = InteractionBlock
++    elif interaction_backend == "ictc":
++        interaction_block = ICTCInteractionBlock
++    else:
++        raise ValueError(
++            "interaction_backend must be 'e3nn' or 'ictc', "
++            f"got {interaction_backend!r}"
++        )
+
+     layers = {
+         # -- Encode --
+@@ -110,7 +122,10 @@ def EnergyModel(
+     # add convnet layers
+     # insertion preserves order
+     for layer_i in range(num_layers):
+-        layers[f"layer{layer_i}_convnet"] = ConvNetLayer
++        layers[f"layer{layer_i}_convnet"] = (
++            ConvNetLayer,
++            {"convolution": interaction_block, "layer_index": layer_i},
++        )
+
+     # .update also maintains insertion order
+     layers.update(
+diff --git a/nequip/nn/__init__.py b/nequip/nn/__init__.py
+index 6585e69..6c5ff90 100644
+--- a/nequip/nn/__init__.py
++++ b/nequip/nn/__init__.py
+@@ -7,6 +7,8 @@ from ._atomwise import (
+     PerSpeciesScaleShift,
+ )
+ from ._interaction_block import InteractionBlock
++from ._ictc_interaction_block import ICTCInteractionBlock
++from ._chorus import HermitianDensityResidual
+ from ._grad_output import GradientOutput, PartialForceOutput, StressOutput
+ from ._rescale import RescaleOutput
+ from ._convnetlayer import ConvNetLayer
+@@ -23,6 +25,8 @@ __all__ = [
+     AtomwiseLinear,
+     PerSpeciesScaleShift,
+     InteractionBlock,
++    ICTCInteractionBlock,
++    HermitianDensityResidual,
+     GradientOutput,
+     PartialForceOutput,
+     StressOutput,
+diff --git a/nequip/nn/_chorus.py b/nequip/nn/_chorus.py
+new file mode 100644
+index 0000000..816ccaa
+--- /dev/null
++++ b/nequip/nn/_chorus.py
+@@ -0,0 +1,308 @@
++"""CHORUS channelwise Hermitian-density residuals."""
++
++from typing import Dict, Optional
++
++import math
++import torch
++from e3nn import o3
++from torch_runstats.scatter import scatter
++
++
++def _natural_parity(l_value: int) -> int:
++    return 1 if int(l_value) % 2 == 0 else -1
++
++
++def _validate_natural_layout(irreps: o3.Irreps) -> Dict[int, int]:
++    """Return one multiplicity per l for a natural-parity layout."""
++    multiplicities: Dict[int, int] = {}
++    for mul, ir in irreps:
++        if ir.p != _natural_parity(ir.l):
++            raise ValueError(
++                "CHORUS channelwise density requires natural-parity irreps; "
++                f"got {mul}x{ir}"
++            )
++        if int(ir.l) in multiplicities:
++            raise ValueError(
++                "CHORUS channelwise density requires one block per angular "
++                f"degree; repeated l={ir.l} in {irreps}"
++            )
++        multiplicities[int(ir.l)] = int(mul)
++    if not multiplicities or 0 not in multiplicities:
++        raise ValueError("CHORUS channelwise density requires an l=0 block")
++    expected = set(range(max(multiplicities) + 1))
++    if set(multiplicities) != expected:
++        raise ValueError(
++            "CHORUS channelwise density requires contiguous angular degrees "
++            f"0..lmax; got {sorted(multiplicities)}"
++        )
++    return multiplicities
++
++
++def _split_by_l(tensor: torch.Tensor, irreps: o3.Irreps) -> Dict[int, torch.Tensor]:
++    blocks: Dict[int, torch.Tensor] = {}
++    for (mul, ir), component_slice in zip(irreps, irreps.slices()):
++        blocks[int(ir.l)] = tensor[..., component_slice].reshape(
++            *tensor.shape[:-1], int(mul), int(ir.dim)
++        )
++    return blocks
++
++
++def _merge_by_l(blocks: Dict[int, torch.Tensor], irreps: o3.Irreps) -> torch.Tensor:
++    pieces = []
++    for mul, ir in irreps:
++        block = blocks[int(ir.l)]
++        pieces.append(block.reshape(*block.shape[:-2], int(mul) * int(ir.dim)))
++    return torch.cat(pieces, dim=-1)
++
++
++class HermitianDensityResidual(torch.nn.Module):
++    r"""Map a charged atomic environment to a neutral channelwise density.
++
++    A shared equivariant projection reduces each angular block from its message
++    multiplicity to ``rank`` latent orbitals.  Fixed Clebsch--Gordan tensors
++    then contract only equal latent ranks,
++
++    .. math::
++
++        \rho^{LM}_{r} =
++        \sum_{m_1m_2} C^{LM}_{l_1m_1,l_2m_2}
++        z^{l_1}_{rm_1} z^{l_2*}_{rm_2}.
++
++    There is deliberately no learned ``r1 x r2`` tensor product.  Learnable
++    output weights mix the resulting ``(path, rank)`` axis back to the original
++    message multiplicities.  This is the same low-rank/channelwise structure as
++    the MACE CHORUS operator.
++    """
++
++    def __init__(
++        self,
++        irreps_message,
++        irreps_node,
++        edge_invariant_dim: int,
++        num_elements: int,
++        rank: int = 8,
++        hidden_channels: int = 32,
++        avg_num_neighbors: Optional[float] = None,
++        scale_init: float = 0.0,
++    ) -> None:
++        super().__init__()
++        self.irreps_message = o3.Irreps(irreps_message).simplify()
++        self.irreps_node = o3.Irreps(irreps_node).simplify()
++        self.rank = int(rank)
++        self.num_elements = int(num_elements)
++        self.avg_num_neighbors = avg_num_neighbors
++        if self.rank <= 0:
++            raise ValueError("CHORUS rank must be positive")
++        if self.num_elements <= 0:
++            raise ValueError("CHORUS num_elements must be positive")
++        if int(edge_invariant_dim) <= 0:
++            raise ValueError("edge_invariant_dim must be positive")
++
++        message_multiplicities = _validate_natural_layout(self.irreps_message)
++        self.lmax = max(message_multiplicities)
++        self.irreps_charged = o3.Irreps(
++            [(self.rank, (l_value, _natural_parity(l_value)))
++             for l_value in range(self.lmax + 1)]
++        )
++
++        # One C_l -> R projection for every angular block.  The same projected
++        # orbital is used by the real and imaginary components because phase is
++        # an invariant scalar and therefore commutes with this map.
++        self.edge_projection = o3.Linear(
++            self.irreps_message,
++            self.irreps_charged,
++            internal_weights=True,
++            shared_weights=True,
++        )
++        self.node_norm = o3.Norm(self.irreps_node, squared=True)
++        phase_in = (
++            int(edge_invariant_dim)
++            + 2 * self.node_norm.irreps_out.num_irreps
++        )
++        self.phase_network = torch.nn.Sequential(
++            torch.nn.Linear(phase_in, int(hidden_channels)),
++            torch.nn.SiLU(),
++            torch.nn.Linear(int(hidden_channels), 2),
++        )
++        torch.nn.init.zeros_(self.phase_network[-1].weight)
++        torch.nn.init.zeros_(self.phase_network[-1].bias)
++
++        # A path is (l1, l2, L, component, cg_buffer_name).  l1 <= l2 avoids
++        # storing both Hermitian-conjugate blocks.  For natural parity, the
++        # antisymmetric component vanishes when l1 == l2.
++        self.paths = []
++        input_multiplicities = {l_value: 0 for l_value in range(self.lmax + 1)}
++        cg_index = 0
++        for l1 in range(self.lmax + 1):
++            for l2 in range(l1, self.lmax + 1):
++                for out_l in range(
++                    abs(l1 - l2), min(l1 + l2, self.lmax) + 1
++                ):
++                    if (l1 + l2 + out_l) % 2:
++                        continue
++                    # Preserve the exact fixed geometry at float64 precision.
++                    # The forward path casts it to the feature dtype; creating
++                    # it at float32 and later calling module.double() cannot
++                    # recover the discarded precision.
++                    cg = o3.wigner_3j(
++                        l1, l2, out_l, dtype=torch.float64
++                    )
++                    cg = cg * (
++                        math.sqrt(float(2 * out_l + 1))
++                        / cg.square().sum().sqrt().clamp_min(1.0e-30)
++                    )
++                    cg_name = f"cg_{cg_index}"
++                    self.register_buffer(cg_name, cg.contiguous(), persistent=False)
++                    self.paths.append((l1, l2, out_l, "real", cg_name))
++                    input_multiplicities[out_l] += self.rank
++                    if l1 < l2:
++                        self.paths.append((l1, l2, out_l, "imag", cg_name))
++                        input_multiplicities[out_l] += self.rank
++                    cg_index += 1
++
++        self.input_multiplicities = tuple(
++            input_multiplicities[l_value]
++            for l_value in range(self.lmax + 1)
++        )
++        self.output_weights = torch.nn.ParameterDict()
++        for out_l, in_mul in enumerate(self.input_multiplicities):
++            out_mul = message_multiplicities[out_l]
++            weight = torch.nn.Parameter(
++                torch.empty(self.num_elements, out_mul, int(in_mul))
++            )
++            torch.nn.init.normal_(
++                weight,
++                mean=0.0,
++                std=1.0 / math.sqrt(float(max(in_mul, 1))),
++            )
++            self.output_weights[str(out_l)] = weight
++        self.residual_scale = torch.nn.Parameter(
++            torch.full(
++                (self.lmax + 1,),
++                float(scale_init),
++                dtype=torch.get_default_dtype(),
++            )
++        )
++
++    def charged_edge_messages(
++        self,
++        edge_messages: torch.Tensor,
++        node_features: torch.Tensor,
++        edge_invariants: torch.Tensor,
++        edge_src: torch.Tensor,
++        edge_dst: torch.Tensor,
++    ) -> tuple[torch.Tensor, torch.Tensor]:
++        node_invariants = self.node_norm(node_features)
++        context = torch.cat(
++            (
++                edge_invariants,
++                node_invariants[edge_src],
++                node_invariants[edge_dst],
++            ),
++            dim=-1,
++        )
++        amplitude_raw, phase_raw = self.phase_network(context).unbind(-1)
++        amplitude = torch.nn.functional.softplus(amplitude_raw) / math.log(2.0)
++        phase = math.pi * torch.tanh(phase_raw)
++        charged = self.edge_projection(edge_messages)
++        return (
++            charged * (amplitude * torch.cos(phase)).unsqueeze(-1),
++            charged * (amplitude * torch.sin(phase)).unsqueeze(-1),
++        )
++
++    @staticmethod
++    def _couple(
++        left: torch.Tensor, right: torch.Tensor, cg: torch.Tensor
++    ) -> torch.Tensor:
++        return torch.einsum("...rm,...rn,mnk->...rk", left, right, cg)
++
++    def density_blocks(
++        self, charged_real: torch.Tensor, charged_imag: torch.Tensor
++    ) -> Dict[int, torch.Tensor]:
++        real_blocks = _split_by_l(charged_real, self.irreps_charged)
++        imag_blocks = _split_by_l(charged_imag, self.irreps_charged)
++        outputs = {l_value: [] for l_value in range(self.lmax + 1)}
++        for l1, l2, out_l, component, cg_name in self.paths:
++            cg = getattr(self, cg_name).to(
++                dtype=charged_real.dtype, device=charged_real.device
++            )
++            if component == "real":
++                value = self._couple(real_blocks[l1], real_blocks[l2], cg)
++                value = value + self._couple(
++                    imag_blocks[l1], imag_blocks[l2], cg
++                )
++            else:
++                value = self._couple(imag_blocks[l1], real_blocks[l2], cg)
++                value = value - self._couple(
++                    real_blocks[l1], imag_blocks[l2], cg
++                )
++            outputs[out_l].append(value)
++        return {
++            out_l: torch.cat(values, dim=-2)
++            for out_l, values in outputs.items()
++        }
++
++    def contract_charged(
++        self,
++        charged_real: torch.Tensor,
++        charged_imag: torch.Tensor,
++        node_attrs: Optional[torch.Tensor] = None,
++    ) -> torch.Tensor:
++        """Contract a real U(1) doublet into neutral real irreps."""
++        density = self.density_blocks(charged_real, charged_imag)
++        output_blocks: Dict[int, torch.Tensor] = {}
++        for out_l, block in density.items():
++            weight = self.output_weights[str(out_l)]
++            if node_attrs is None:
++                effective_weight = weight[0].expand(
++                    block.shape[0], -1, -1
++                )
++            else:
++                effective_weight = torch.einsum(
++                    "ne,eoi->noi",
++                    node_attrs.to(dtype=weight.dtype),
++                    weight,
++                )
++            value = torch.einsum("noi,nim->nom", effective_weight, block)
++            scale = self.residual_scale[out_l].to(
++                dtype=value.dtype, device=value.device
++            )
++            output_blocks[out_l] = scale * value
++        return _merge_by_l(output_blocks, self.irreps_message)
++
++    def forward(
++        self,
++        edge_messages: torch.Tensor,
++        node_features: torch.Tensor,
++        node_attrs: torch.Tensor,
++        edge_invariants: torch.Tensor,
++        edge_src: torch.Tensor,
++        edge_dst: torch.Tensor,
++        num_nodes: int,
++    ) -> torch.Tensor:
++        charged_real, charged_imag = self.charged_edge_messages(
++            edge_messages,
++            node_features,
++            edge_invariants,
++            edge_src,
++            edge_dst,
++        )
++        normalizer = 1.0
++        if self.avg_num_neighbors is not None:
++            normalizer = float(self.avg_num_neighbors) ** 0.5
++        charged_real = scatter(
++            charged_real / normalizer,
++            edge_dst,
++            dim=0,
++            dim_size=num_nodes,
++        )
++        charged_imag = scatter(
++            charged_imag / normalizer,
++            edge_dst,
++            dim=0,
++            dim_size=num_nodes,
++        )
++        neutral = self.contract_charged(
++            charged_real, charged_imag, node_attrs=node_attrs
++        )
++        return neutral / normalizer
+diff --git a/nequip/nn/_convnetlayer.py b/nequip/nn/_convnetlayer.py
+index 6d339ca..6199d44 100644
+--- a/nequip/nn/_convnetlayer.py
++++ b/nequip/nn/_convnetlayer.py
+@@ -37,6 +37,8 @@ class ConvNetLayer(GraphModuleMixin, torch.nn.Module):
+         convolution=InteractionBlock,
+         convolution_kwargs: dict = {},
+         num_layers: int = 3,
++        layer_index: int = 0,
++        chorus_scope: str = "final",
+         resnet: bool = False,
+         nonlinearity_type: str = "gate",
+         nonlinearity_scalars: Dict[int, Callable] = {"e": "silu", "o": "tanh"},
+@@ -135,6 +137,19 @@ class ConvNetLayer(GraphModuleMixin, torch.nn.Module):
+         logging.debug(
+             f" parameters used to initialize {convolution.__name__}={convolution_kwargs}"
+         )
++        chorus_scope = str(chorus_scope).lower()
++        if chorus_scope not in ("final", "all"):
++            raise ValueError(
++                "chorus_scope must be 'final' or 'all', "
++                f"got {chorus_scope!r}"
++            )
++        if (
++            bool(convolution_kwargs.get("chorus_enabled", False))
++            and chorus_scope == "final"
++        ):
++            convolution_kwargs["chorus_enabled"] = (
++                int(layer_index) == int(num_layers) - 1
++            )
+
+         # override defaults for irreps:
+         convolution_kwargs.pop("irreps_in", None)
+diff --git a/nequip/nn/_ictc_interaction_block.py b/nequip/nn/_ictc_interaction_block.py
+new file mode 100644
+index 0000000..396f868
+--- /dev/null
++++ b/nequip/nn/_ictc_interaction_block.py
+@@ -0,0 +1,264 @@
++"""NequIP interaction block using the ICTC Cartesian coupling basis."""
++
++from typing import Callable, Dict, Optional
++
++import torch
++from e3nn import o3
++from e3nn.nn import FullyConnectedNet
++from e3nn.o3 import FullyConnectedTensorProduct, Linear
++from torch_runstats.scatter import scatter
++
++from nequip.data import AtomicDataDict
++from nequip.nn.nonlinearities import ShiftedSoftPlus
++from ._chorus import HermitianDensityResidual
++from ._graph_mixin import GraphModuleMixin
++
++
++def _natural_parity(l_value: int) -> int:
++    return 1 if int(l_value) % 2 == 0 else -1
++
++
++def _validate_natural_irreps(irreps, *, name: str, common_mul: bool) -> int:
++    irreps = o3.Irreps(irreps).simplify()
++    seen = set()
++    multiplicities = set()
++    for mul, ir in irreps:
++        if ir.l in seen:
++            raise ValueError(f"{name} must contain one block per angular degree")
++        seen.add(ir.l)
++        multiplicities.add(mul)
++        if ir.p != _natural_parity(ir.l):
++            raise ValueError(
++                f"{name} must use natural parity (-1)^l; got {mul}x{ir}"
++            )
++    if common_mul and len(multiplicities) != 1:
++        raise ValueError(f"{name} must use one common channel multiplicity")
++    return next(iter(multiplicities))
++
++
++def _split_by_l(tensor: torch.Tensor, irreps) -> Dict[int, torch.Tensor]:
++    irreps = o3.Irreps(irreps).simplify()
++    blocks: Dict[int, torch.Tensor] = {}
++    for (mul, ir), component_slice in zip(irreps, irreps.slices()):
++        blocks[int(ir.l)] = tensor[..., component_slice].reshape(
++            *tensor.shape[:-1], int(mul), int(ir.dim)
++        )
++    return blocks
++
++
++def _merge_by_l(blocks: Dict[int, torch.Tensor], irreps) -> torch.Tensor:
++    irreps = o3.Irreps(irreps).simplify()
++    pieces = []
++    for mul, ir in irreps:
++        block = blocks[int(ir.l)]
++        pieces.append(block.reshape(*block.shape[:-2], int(mul) * int(ir.dim)))
++    return torch.cat(pieces, dim=-1)
++
++
++class ICTCInteractionBlock(GraphModuleMixin, torch.nn.Module):
++    """Path-preserving ICTC replacement for NequIP's e3nn interaction TP.
++
++    The surrounding NequIP architecture, radial network, self connection,
++    nonlinearities, and readout are unchanged.  Only the angular tensor-product
++    projector is replaced.
++    """
++
++    avg_num_neighbors: Optional[float]
++    use_sc: bool
++
++    def __init__(
++        self,
++        irreps_in,
++        irreps_out,
++        invariant_layers=1,
++        invariant_neurons=8,
++        avg_num_neighbors=None,
++        use_sc=True,
++        nonlinearity_scalars: Dict[int, Callable] = {"e": "silu"},
++        chorus_enabled: bool = False,
++        chorus_rank: int = 8,
++        chorus_hidden_channels: int = 32,
++        chorus_scale_init: float = 0.0,
++    ) -> None:
++        super().__init__()
++        self._init_irreps(
++            irreps_in=irreps_in,
++            required_irreps_in=[
++                AtomicDataDict.EDGE_EMBEDDING_KEY,
++                AtomicDataDict.EDGE_ATTRS_KEY,
++                AtomicDataDict.NODE_FEATURES_KEY,
++                AtomicDataDict.NODE_ATTRS_KEY,
++            ],
++            my_irreps_in={
++                AtomicDataDict.EDGE_EMBEDDING_KEY: o3.Irreps(
++                    [
++                        (
++                            irreps_in[
++                                AtomicDataDict.EDGE_EMBEDDING_KEY
++                            ].num_irreps,
++                            (0, 1),
++                        )
++                    ]
++                )
++            },
++            irreps_out={AtomicDataDict.NODE_FEATURES_KEY: irreps_out},
++        )
++
++        self.avg_num_neighbors = avg_num_neighbors
++        self.use_sc = use_sc
++        feature_irreps_in = self.irreps_in[AtomicDataDict.NODE_FEATURES_KEY]
++        feature_irreps_out = self.irreps_out[AtomicDataDict.NODE_FEATURES_KEY]
++        edge_irreps = self.irreps_in[AtomicDataDict.EDGE_ATTRS_KEY]
++        channels = _validate_natural_irreps(
++            feature_irreps_in, name="ICTC node irreps", common_mul=True
++        )
++        _validate_natural_irreps(
++            feature_irreps_out, name="ICTC output irreps", common_mul=False
++        )
++        edge_mul = _validate_natural_irreps(
++            edge_irreps, name="ICTC edge irreps", common_mul=False
++        )
++        if edge_mul != 1 or any(mul != 1 for mul, _ in edge_irreps.simplify()):
++            raise ValueError("ICTC edge attributes require one harmonic per l")
++
++        input_by_l = {ir.l: ir for _, ir in feature_irreps_in.simplify()}
++        edge_by_l = {ir.l: ir for _, ir in edge_irreps.simplify()}
++        output_by_l = {ir.l: ir for _, ir in feature_irreps_out.simplify()}
++        allowed_paths = []
++        for l1, ir1 in input_by_l.items():
++            for l2, ir2 in edge_by_l.items():
++                for l3, ir3 in output_by_l.items():
++                    if ir3 in ir1 * ir2:
++                        allowed_paths.append((int(l1), int(l2), int(l3)))
++        if not allowed_paths:
++            raise ValueError("ICTC interaction has no allowed angular paths")
++        lmax = max(max(path) for path in allowed_paths)
++
++        try:
++            from chorus.mace_basis import orthogonal_Q_blocks
++            from chorus.models.ictd_irreps import (
++                EdgeWeightedPathPreservingTensorProduct,
++            )
++        except ImportError as exc:
++            raise ImportError(
++                "ICTCInteractionBlock requires the MACE-ICTC/CHORUS operator "
++                "package on PYTHONPATH"
++            ) from exc
++
++        self.linear_1 = Linear(
++            feature_irreps_in,
++            feature_irreps_in,
++            internal_weights=True,
++            shared_weights=True,
++        )
++        self.tp = EdgeWeightedPathPreservingTensorProduct(
++            channels=int(channels),
++            lmax=int(lmax),
++            allowed_paths=allowed_paths,
++            internal_compute_dtype=torch.get_default_dtype(),
++        )
++        with torch.no_grad():
++            self.tp.weight.fill_(1.0)
++        self.tp.weight.requires_grad_(False)
++        self.tp.fold_cg_to_e3nn(
++            orthogonal_Q_blocks(lmax, dtype=torch.float64, device="cpu")
++        )
++
++        irreps_mid = o3.Irreps(
++            [
++                (
++                    int(channels) * int(self.tp.path_counts_by_l.get(l_value, 0)),
++                    output_by_l[l_value],
++                )
++                for l_value in sorted(output_by_l)
++                if int(self.tp.path_counts_by_l.get(l_value, 0)) > 0
++            ]
++        ).simplify()
++        self.fc = FullyConnectedNet(
++            [
++                self.irreps_in[
++                    AtomicDataDict.EDGE_EMBEDDING_KEY
++                ].num_irreps,
++            ]
++            + invariant_layers * [invariant_neurons]
++            + [self.tp.num_paths * int(channels)],
++            {
++                "ssp": ShiftedSoftPlus,
++                "silu": torch.nn.functional.silu,
++            }[nonlinearity_scalars["e"]],
++        )
++        self.linear_2 = Linear(
++            irreps_mid,
++            feature_irreps_out,
++            internal_weights=True,
++            shared_weights=True,
++        )
++        self.chorus = None
++        if chorus_enabled:
++            self.chorus = HermitianDensityResidual(
++                irreps_message=irreps_mid,
++                irreps_node=feature_irreps_in,
++                num_elements=self.irreps_in[
++                    AtomicDataDict.NODE_ATTRS_KEY
++                ].num_irreps,
++                edge_invariant_dim=self.irreps_in[
++                    AtomicDataDict.EDGE_EMBEDDING_KEY
++                ].num_irreps,
++                rank=chorus_rank,
++                hidden_channels=chorus_hidden_channels,
++                avg_num_neighbors=avg_num_neighbors,
++                scale_init=chorus_scale_init,
++            )
++
++        self.sc = None
++        if self.use_sc:
++            self.sc = FullyConnectedTensorProduct(
++                feature_irreps_in,
++                self.irreps_in[AtomicDataDict.NODE_ATTRS_KEY],
++                feature_irreps_out,
++            )
++        self._feature_irreps_in = feature_irreps_in.simplify()
++        self._edge_irreps = edge_irreps.simplify()
++        self._irreps_mid = irreps_mid
++
++    def forward(self, data: AtomicDataDict.Type) -> AtomicDataDict.Type:
++        edge_invariants = data[AtomicDataDict.EDGE_EMBEDDING_KEY]
++        gates = self.fc(edge_invariants)
++        x = data[AtomicDataDict.NODE_FEATURES_KEY]
++        edge_src = data[AtomicDataDict.EDGE_INDEX_KEY][1]
++        edge_dst = data[AtomicDataDict.EDGE_INDEX_KEY][0]
++        sc = None
++        if self.sc is not None:
++            sc = self.sc(x, data[AtomicDataDict.NODE_ATTRS_KEY])
++
++        x = self.linear_1(x)
++        node_blocks = _split_by_l(x[edge_src], self._feature_irreps_in)
++        edge_blocks = _split_by_l(
++            data[AtomicDataDict.EDGE_ATTRS_KEY], self._edge_irreps
++        )
++        message_blocks = self.tp(node_blocks, edge_blocks, gates)
++        edge_features = _merge_by_l(message_blocks, self._irreps_mid)
++
++        chorus_residual = None
++        if self.chorus is not None:
++            chorus_residual = self.chorus(
++                edge_messages=edge_features,
++                node_features=x,
++                node_attrs=data[AtomicDataDict.NODE_ATTRS_KEY],
++                edge_invariants=edge_invariants,
++                edge_src=edge_src,
++                edge_dst=edge_dst,
++                num_nodes=len(x),
++            )
++        if self.avg_num_neighbors is not None:
++            edge_features = edge_features.div(
++                float(self.avg_num_neighbors) ** 0.5
++            )
++        x = scatter(edge_features, edge_dst, dim=0, dim_size=len(x))
++        if chorus_residual is not None:
++            x = x + chorus_residual
++        x = self.linear_2(x)
++        if sc is not None:
++            x = x + sc
++        data[AtomicDataDict.NODE_FEATURES_KEY] = x
++        return data
+diff --git a/nequip/nn/_interaction_block.py b/nequip/nn/_interaction_block.py
+index a9dcecd..1e72724 100644
+--- a/nequip/nn/_interaction_block.py
++++ b/nequip/nn/_interaction_block.py
+@@ -13,6 +13,7 @@ from e3nn.o3 import TensorProduct, Linear, FullyConnectedTensorProduct
+ from nequip.data import AtomicDataDict
+ from nequip.nn.nonlinearities import ShiftedSoftPlus
+ from ._graph_mixin import GraphModuleMixin
++from ._chorus import HermitianDensityResidual
+
+
+ class InteractionBlock(GraphModuleMixin, torch.nn.Module):
+@@ -28,6 +29,10 @@ class InteractionBlock(GraphModuleMixin, torch.nn.Module):
+         avg_num_neighbors=None,
+         use_sc=True,
+         nonlinearity_scalars: Dict[int, Callable] = {"e": "silu"},
++        chorus_enabled: bool = False,
++        chorus_rank: int = 8,
++        chorus_hidden_channels: int = 32,
++        chorus_scale_init: float = 0.0,
+     ) -> None:
+         """
+         InteractionBlock.
+@@ -123,6 +128,22 @@ class InteractionBlock(GraphModuleMixin, torch.nn.Module):
+         )
+
+         self.tp = tp
++        self.chorus = None
++        if chorus_enabled:
++            self.chorus = HermitianDensityResidual(
++                irreps_message=irreps_mid.simplify(),
++                irreps_node=feature_irreps_in,
++                num_elements=self.irreps_in[
++                    AtomicDataDict.NODE_ATTRS_KEY
++                ].num_irreps,
++                edge_invariant_dim=self.irreps_in[
++                    AtomicDataDict.EDGE_EMBEDDING_KEY
++                ].num_irreps,
++                rank=chorus_rank,
++                hidden_channels=chorus_hidden_channels,
++                avg_num_neighbors=avg_num_neighbors,
++                scale_init=chorus_scale_init,
++            )
+
+         self.linear_2 = Linear(
+             # irreps_mid has uncoallesed irreps because of the uvu instructions,
+@@ -169,6 +190,17 @@ class InteractionBlock(GraphModuleMixin, torch.nn.Module):
+         edge_features = self.tp(
+             x[edge_src], data[AtomicDataDict.EDGE_ATTRS_KEY], weight
+         )
++        chorus_residual = None
++        if self.chorus is not None:
++            chorus_residual = self.chorus(
++                edge_messages=edge_features,
++                node_features=x,
++                node_attrs=data[AtomicDataDict.NODE_ATTRS_KEY],
++                edge_invariants=data[AtomicDataDict.EDGE_EMBEDDING_KEY],
++                edge_src=edge_src,
++                edge_dst=edge_dst,
++                num_nodes=len(x),
++            )
+         # divide first for numerics, scatter is linear
+         # Necessary to get TorchScript to be able to type infer when its not None
+         avg_num_neigh: Optional[float] = self.avg_num_neighbors
+@@ -176,6 +208,8 @@ class InteractionBlock(GraphModuleMixin, torch.nn.Module):
+             edge_features = edge_features.div(avg_num_neigh**0.5)
+         # now scatter down
+         x = scatter(edge_features, edge_dst, dim=0, dim_size=len(x))
++        if chorus_residual is not None:
++            x = x + chorus_residual
+
+         x = self.linear_2(x)
+
+diff --git a/nequip/scripts/evaluate.py b/nequip/scripts/evaluate.py
+index b40c3a8..9517cce 100644
+--- a/nequip/scripts/evaluate.py
++++ b/nequip/scripts/evaluate.py
+@@ -193,8 +193,13 @@ def main(args=None, running_as_script: bool = True):
+             args.model = args.train_dir / "best_model.pth"
+         if args.test_indexes is None:
+             # Find the remaining indexes that arent train or val
++            # trainer.pth is produced by this trusted training run and contains
++            # metadata beyond plain tensor weights. PyTorch >= 2.6 otherwise
++            # rejects it because weights_only now defaults to True.
+             trainer = torch.load(
+-                str(args.train_dir / "trainer.pth"), map_location="cpu"
++                str(args.train_dir / "trainer.pth"),
++                map_location="cpu",
++                weights_only=False,
+             )
+             train_idcs = set(trainer["train_idcs"].tolist())
+             val_idcs = set(trainer["val_idcs"].tolist())
+diff --git a/scripts/calibrate_t1x_energy.py b/scripts/calibrate_t1x_energy.py
+new file mode 100644
+index 0000000..fecf9b4
+--- /dev/null
++++ b/scripts/calibrate_t1x_energy.py
+@@ -0,0 +1,98 @@
++"""Fit and evaluate a train-only elemental energy residual for Transition1x."""
++
++import argparse
++import json
++from pathlib import Path
++
++import torch
++
++from nequip.data import AtomicData, Collater, dataset_from_config
++from nequip.scripts.train import default_config
++from nequip.train import Trainer
++from nequip.utils import Config
++from nequip.utils._global_options import _set_global_options
++
++
++def predictions(model, dataset, device, num_types, batch_size=50):
++    collater = Collater.for_dataset(dataset, exclude_keys=[])
++    all_counts, all_ref, all_pred, all_atoms = [], [], [], []
++    for start in range(0, len(dataset), batch_size):
++        batch = collater.collate(
++            [dataset[index] for index in range(start, min(len(dataset), start + batch_size))]
++        ).to(device)
++        out = model(AtomicData.to_AtomicDataDict(batch))
++        graph_index = batch.batch.reshape(-1).long()
++        atom_types = batch.atom_types.reshape(-1).long()
++        counts = torch.zeros(
++            batch.num_graphs, num_types, dtype=torch.float64, device=device
++        )
++        counts.index_put_(
++            (graph_index, atom_types),
++            torch.ones_like(graph_index, dtype=torch.float64),
++            accumulate=True,
++        )
++        all_counts.append(counts.cpu())
++        all_ref.append(batch.total_energy.detach().reshape(-1).double().cpu())
++        all_pred.append(out["total_energy"].detach().reshape(-1).double().cpu())
++        all_atoms.append(
++            torch.bincount(graph_index, minlength=batch.num_graphs).double().cpu()
++        )
++    return tuple(map(torch.cat, (all_counts, all_ref, all_pred, all_atoms)))
++
++
++def energy_metrics(counts, ref, pred, atoms, correction):
++    error = (pred + counts @ correction - ref) / atoms
++    return {
++        "energy_mae_mev_per_atom": float(error.abs().mean() * 1000.0),
++        "energy_rmse_mev_per_atom": float(torch.sqrt((error**2).mean()) * 1000.0),
++    }
++
++
++def main() -> None:
++    parser = argparse.ArgumentParser()
++    parser.add_argument("--train-dir", type=Path, required=True)
++    parser.add_argument("--train-config", type=Path, required=True)
++    parser.add_argument("--test-config", type=Path, required=True)
++    parser.add_argument("--output", type=Path, required=True)
++    parser.add_argument("--device", default="cuda")
++    args = parser.parse_args()
++
++    config = Config.from_file(str(args.train_config), defaults=default_config)
++    _set_global_options(config)
++    model, _ = Trainer.load_model_from_training_session(
++        args.train_dir, model_name="best_model.pth", device=args.device
++    )
++    model.eval()
++    device = torch.device(args.device)
++    num_types = len(config["chemical_symbols"])
++
++    train = dataset_from_config(config, prefix="dataset")
++    validation = dataset_from_config(config, prefix="validation_dataset")
++    test_config = Config.from_file(str(args.test_config), defaults=default_config)
++    test = dataset_from_config(test_config, prefix="dataset")
++
++    train_data = predictions(model, train, device, num_types)
++    correction = torch.linalg.lstsq(
++        train_data[0], train_data[1] - train_data[2]
++    ).solution
++    val_data = predictions(model, validation, device, num_types)
++    test_data = predictions(model, test, device, num_types)
++    result = {
++        "selection": "best_model.pth selected by validation Force MAE",
++        "fit_data": "training split only",
++        "chemical_symbols": list(config["chemical_symbols"]),
++        "element_energy_residual_ev": correction.tolist(),
++        "train_raw": energy_metrics(*train_data, torch.zeros_like(correction)),
++        "train_corrected": energy_metrics(*train_data, correction),
++        "validation_raw": energy_metrics(*val_data, torch.zeros_like(correction)),
++        "validation_corrected": energy_metrics(*val_data, correction),
++        "test_raw": energy_metrics(*test_data, torch.zeros_like(correction)),
++        "test_corrected": energy_metrics(*test_data, correction),
++        "forces_unchanged": True,
++    }
++    args.output.parent.mkdir(parents=True, exist_ok=True)
++    args.output.write_text(json.dumps(result, indent=2) + "\n")
++
++
++if __name__ == "__main__":
++    main()
+diff --git a/scripts/run_extended_single.sbatch b/scripts/run_extended_single.sbatch
+new file mode 100755
+index 0000000..1f34275
+--- /dev/null
++++ b/scripts/run_extended_single.sbatch
+@@ -0,0 +1,42 @@
++#!/usr/bin/env bash
++#SBATCH --job-name=nequip_ext_recovery
++#SBATCH --partition=GPU-A100
++#SBATCH --nodes=1
++#SBATCH --ntasks=1
++#SBATCH --cpus-per-task=16
++#SBATCH --gres=gpu:1
++#SBATCH --mem=96G
++#SBATCH --time=1-00:00:00
++#SBATCH --output=/public/home/sps-xia/rxlin/nequip_chorus_runs/extended-recovery-%j.log
++
++set -euo pipefail
++
++REPO="${REPO:-/public/home/sps-xia/rxlin/NequIP-CHORUS}"
++BACKEND="${BACKEND:?set BACKEND=e3nn or ictc}"
++CHORUS="${CHORUS:?set CHORUS=off or on}"
++RUN_ROOT="${RUN_ROOT:?set RUN_ROOT to the existing benchmark root}"
++DATASETS="${DATASETS:?set DATASETS to the datasets to recover}"
++CHANNELS="${CHANNELS:-64}"
++CHORUS_RANK="${CHORUS_RANK:-16}"
++EVAL_BATCH_SIZE="${EVAL_BATCH_SIZE:-8}"
++REUSE_COMPLETED_TRAIN="${REUSE_COMPLETED_TRAIN:-1}"
++
++case "${BACKEND}" in
++  e3nn|ictc) ;;
++  *) echo "unsupported BACKEND=${BACKEND}" >&2; exit 2 ;;
++esac
++case "${CHORUS}" in
++  off|on) ;;
++  *) echo "unsupported CHORUS=${CHORUS}" >&2; exit 2 ;;
++esac
++
++exec env \
++  REPO="${REPO}" \
++  RUN_ROOT="${RUN_ROOT}" \
++  DATASETS="${DATASETS}" \
++  CHANNELS="${CHANNELS}" \
++  CHORUS_RANK="${CHORUS_RANK}" \
++  EVAL_BATCH_SIZE="${EVAL_BATCH_SIZE}" \
++  REUSE_COMPLETED_TRAIN="${REUSE_COMPLETED_TRAIN}" \
++  bash "${REPO}/scripts/run_extended_variant.sh" \
++    "${BACKEND}" "${CHORUS}" "${CUDA_VISIBLE_DEVICES}"
+diff --git a/scripts/run_extended_variant.sh b/scripts/run_extended_variant.sh
+new file mode 100644
+index 0000000..dc87684
+--- /dev/null
++++ b/scripts/run_extended_variant.sh
+@@ -0,0 +1,73 @@
++#!/usr/bin/env bash
++set -euo pipefail
++
++BACKEND="$1"
++CHORUS="$2"
++DEVICE="$3"
++
++REPO="${REPO:-/public/home/sps-xia/rxlin/NequIP-CHORUS}"
++OPERATOR_REPO="${OPERATOR_REPO:-/public/home/sps-xia/rxlin/CHORUS-MLIP-operator}"
++PYTHON="${PYTHON:-/public/home/sps-xia/rxlin/venvs/nequip-chorus-mff/bin/python}"
++DATA_ROOT="${DATA_ROOT:-/public/home/sps-xia/rxlin/nequip_chorus_data/extended_20260728}"
++RUN_ROOT="${RUN_ROOT:-/public/home/sps-xia/rxlin/nequip_chorus_runs/extended_fourway_20260728}"
++DATASETS="${DATASETS:-transition1x xxmd_mal xxmd_sti xxmd_dia md22_buckyball 3bpa}"
++EPOCHS_OVERRIDE="${EPOCHS_OVERRIDE:-}"
++CHANNELS="${CHANNELS:-64}"
++CHORUS_RANK="${CHORUS_RANK:-16}"
++EVAL_BATCH_SIZE="${EVAL_BATCH_SIZE:-50}"
++REUSE_COMPLETED_TRAIN="${REUSE_COMPLETED_TRAIN:-0}"
++
++variant="${BACKEND}_chorus_${CHORUS}"
++export CUDA_VISIBLE_DEVICES="${DEVICE}"
++export PYTHONPATH="${REPO}:${OPERATOR_REPO}:${PYTHONPATH:-}"
++export NVIDIA_TF32_OVERRIDE=0
++export OMP_NUM_THREADS=4
++export NEQUIP_NUM_TASKS=1
++export PYTORCH_CUDA_ALLOC_CONF="${PYTORCH_CUDA_ALLOC_CONF:-expandable_segments:True}"
++cd "${REPO}"
++
++for dataset in ${DATASETS}; do
++  work="${RUN_ROOT}/${dataset}/${variant}"
++  train_dir="${work}/run"
++  mkdir -p "${work}"
++  if [[ -f "${work}/DONE" ]]; then
++    printf 'SKIP %s %s\n' "${dataset}" "${variant}"
++    continue
++  fi
++  config_args=(
++    --dataset "${dataset}" --backend "${BACKEND}" --chorus "${CHORUS}" \
++    --data-root "${DATA_ROOT}" --run-root "${work}" --output-dir "${work}" \
++    --channels "${CHANNELS}" --chorus-rank "${CHORUS_RANK}"
++  )
++  if [[ -n "${EPOCHS_OVERRIDE}" ]]; then
++    config_args+=(--epochs-override "${EPOCHS_OVERRIDE}")
++  fi
++  "${PYTHON}" scripts/write_extended_config.py "${config_args[@]}"
++  printf 'START %s %s %s\n' "${dataset}" "${variant}" "$(date -Is)"
++  if [[ "${REUSE_COMPLETED_TRAIN}" == "1" && -f "${train_dir}/last_model.pth" ]]; then
++    printf 'REUSE_TRAIN %s %s %s\n' "${dataset}" "${variant}" "$(date -Is)"
++  else
++    "${PYTHON}" -m nequip.scripts.train "${work}/train.yaml" \
++      >"${work}/train.log" 2>&1
++  fi
++  for test_config in "${work}"/test_*.yaml; do
++    label="$(basename "${test_config}" .yaml)"
++    "${PYTHON}" -m nequip.scripts.evaluate \
++      --train-dir "${train_dir}" \
++      --dataset-config "${test_config}" \
++      --metrics-config "${test_config}" \
++      --batch-size "${EVAL_BATCH_SIZE}" --device cuda \
++      --log "${work}/${label}.log" \
++      >"${work}/${label}.stdout" 2>&1
++  done
++  if [[ "${dataset}" == "transition1x" ]]; then
++    "${PYTHON}" scripts/calibrate_t1x_energy.py \
++      --train-dir "${train_dir}" \
++      --train-config "${work}/train.yaml" \
++      --test-config "${work}/test_test.yaml" \
++      --output "${work}/train_only_energy_calibration.json" \
++      >"${work}/calibration.stdout" 2>&1
++  fi
++  touch "${work}/DONE"
++  printf 'DONE %s %s %s\n' "${dataset}" "${variant}" "$(date -Is)"
++done
+diff --git a/scripts/run_rmd17_variant.sh b/scripts/run_rmd17_variant.sh
+new file mode 100644
+index 0000000..03e12bf
+--- /dev/null
++++ b/scripts/run_rmd17_variant.sh
+@@ -0,0 +1,52 @@
++#!/usr/bin/env bash
++set -euo pipefail
++
++BACKEND="$1"
++CHORUS="$2"
++DEVICE="$3"
++
++REPO="${REPO:-/public/home/sps-xia/rxlin/NequIP-CHORUS}"
++OPERATOR_REPO="${OPERATOR_REPO:-/public/home/sps-xia/rxlin/CHORUS-MLIP-operator}"
++PYTHON="${PYTHON:-/public/home/sps-xia/rxlin/venvs/nequip-chorus-mff/bin/python}"
++DATA_ROOT="${DATA_ROOT:-/public/home/sps-xia/rxlin/nequip_chorus_data/rmd17_seed20260616}"
++RUN_ROOT="${RUN_ROOT:-/public/home/sps-xia/rxlin/nequip_chorus_runs/rmd17_fourway_20260728}"
++EPOCHS="${EPOCHS:-180}"
++MOLECULES="${MOLECULES:-revised_aspirin revised_ethanol revised_benzene}"
++CHANNELS="${CHANNELS:-64}"
++
++variant="${BACKEND}_chorus_${CHORUS}"
++export CUDA_VISIBLE_DEVICES="${DEVICE}"
++export PYTHONPATH="${REPO}:${OPERATOR_REPO}:${PYTHONPATH:-}"
++export NVIDIA_TF32_OVERRIDE=0
++export OMP_NUM_THREADS=4
++# The Slurm launcher prebuilds shared graph caches. Avoid creating a fallback
++# multiprocessing pool if a cache is unexpectedly missing.
++export NEQUIP_NUM_TASKS=1
++cd "${REPO}"
++
++for molecule in ${MOLECULES}; do
++  work="${RUN_ROOT}/${molecule}/${variant}"
++  train_dir="${work}/run"
++  mkdir -p "${work}"
++  if [[ -f "${work}/DONE" ]]; then
++    printf 'SKIP %s %s\n' "${molecule}" "${variant}"
++    continue
++  fi
++  "${PYTHON}" scripts/write_rmd17_config.py \
++    --molecule "${molecule}" --backend "${BACKEND}" --chorus "${CHORUS}" \
++    --data-root "${DATA_ROOT}" --run-root "${work}" \
++    --output "${work}/train.yaml" --test-output "${work}/test.yaml" \
++    --epochs "${EPOCHS}" --channels "${CHANNELS}"
++  printf 'START %s %s %s\n' "${molecule}" "${variant}" "$(date -Is)"
++  "${PYTHON}" -m nequip.scripts.train "${work}/train.yaml" \
++    >"${work}/train.log" 2>&1
++  "${PYTHON}" -m nequip.scripts.evaluate \
++    --train-dir "${train_dir}" \
++    --dataset-config "${work}/test.yaml" \
++    --metrics-config "${work}/test.yaml" \
++    --batch-size 50 --device cuda \
++    --log "${work}/test.log" \
++    >"${work}/test.stdout" 2>&1
++  touch "${work}/DONE"
++  printf 'DONE %s %s %s\n' "${molecule}" "${variant}" "$(date -Is)"
++done
+diff --git a/scripts/slurm/run_extended_backend.sbatch b/scripts/slurm/run_extended_backend.sbatch
+new file mode 100755
+index 0000000..bb510ee
+--- /dev/null
++++ b/scripts/slurm/run_extended_backend.sbatch
+@@ -0,0 +1,45 @@
++#!/usr/bin/env bash
++#SBATCH --job-name=nequip_chorus_ext_one
++#SBATCH --partition=GPU-A100
++#SBATCH --nodes=1
++#SBATCH --ntasks=1
++#SBATCH --cpus-per-task=16
++#SBATCH --gres=gpu:1
++#SBATCH --mem=96G
++#SBATCH --time=1-00:00:00
++#SBATCH --output=/public/home/sps-xia/rxlin/nequip_chorus_runs/extended-backend-%j.log
++
++set -euo pipefail
++
++REPO=/public/home/sps-xia/rxlin/NequIP-CHORUS
++BACKEND="${BACKEND:?set BACKEND=e3nn or ictc}"
++RUN_ROOT="${RUN_ROOT:-/public/home/sps-xia/rxlin/nequip_chorus_runs/extended_c128_r16_20260729}"
++DATASETS="${DATASETS:-transition1x xxmd_mal xxmd_sti xxmd_dia md22_buckyball 3bpa}"
++EPOCHS_OVERRIDE="${EPOCHS_OVERRIDE:-}"
++CHANNELS="${CHANNELS:-64}"
++CHORUS_RANK="${CHORUS_RANK:-16}"
++mkdir -p "${RUN_ROOT}"
++
++case "${BACKEND}" in
++  e3nn|ictc) ;;
++  *) echo "unsupported BACKEND=${BACKEND}" >&2; exit 2 ;;
++esac
++
++device="${CUDA_VISIBLE_DEVICES}"
++launch() {
++  local chorus="$1"
++  env REPO="${REPO}" RUN_ROOT="${RUN_ROOT}" DATASETS="${DATASETS}" \
++    EPOCHS_OVERRIDE="${EPOCHS_OVERRIDE}" \
++    CHANNELS="${CHANNELS}" CHORUS_RANK="${CHORUS_RANK}" \
++    bash "${REPO}/scripts/run_extended_variant.sh" \
++      "${BACKEND}" "${chorus}" "${device}" \
++      >"${RUN_ROOT}/${BACKEND}_chorus_${chorus}.driver.log" 2>&1 &
++}
++
++launch off; pid_off=$!
++launch on; pid_on=$!
++status=0
++if ! wait "${pid_off}"; then status=1; fi
++if ! wait "${pid_on}"; then status=1; fi
++if (( status == 0 )); then touch "${RUN_ROOT}/${BACKEND}_ALL_DONE"; fi
++exit "${status}"
+diff --git a/scripts/slurm/run_extended_backends_same_gpu.sbatch b/scripts/slurm/run_extended_backends_same_gpu.sbatch
+new file mode 100644
+index 0000000..09e7ceb
+--- /dev/null
++++ b/scripts/slurm/run_extended_backends_same_gpu.sbatch
+@@ -0,0 +1,37 @@
++#!/usr/bin/env bash
++# Run two backend controls concurrently inside one A100 allocation.
++# The shared-GPU wall time is for scheduling only, not throughput reporting.
++#SBATCH --job-name=nequip_c72_same_gpu
++#SBATCH --partition=GPU-A100
++#SBATCH --nodes=1
++#SBATCH --ntasks=1
++#SBATCH --cpus-per-task=16
++#SBATCH --gres=gpu:1
++#SBATCH --mem=96G
++#SBATCH --time=1-00:00:00
++#SBATCH --output=/public/home/sps-xia/rxlin/nequip_chorus_runs/c72-same-gpu-%j.log
++
++set -euo pipefail
++
++REPO=/public/home/sps-xia/rxlin/NequIP-CHORUS
++BACKENDS="${BACKENDS:-e3nn ictc}"
++DATASETS="${DATASETS:-transition1x xxmd_mal xxmd_sti xxmd_dia md22_buckyball 3bpa}"
++RUN_ROOT="${RUN_ROOT:-/public/home/sps-xia/rxlin/nequip_chorus_runs/extended_c72_r16_samegpu_20260729}"
++CHANNELS="${CHANNELS:-72}"
++CHORUS_RANK="${CHORUS_RANK:-16}"
++device="${CUDA_VISIBLE_DEVICES}"
++
++mkdir -p "${RUN_ROOT}"
++status=0
++for backend in ${BACKENDS}; do
++  env REPO="${REPO}" RUN_ROOT="${RUN_ROOT}" DATASETS="${DATASETS}" \
++    CHANNELS="${CHANNELS}" CHORUS_RANK="${CHORUS_RANK}" \
++    bash "${REPO}/scripts/run_extended_variant.sh" \
++      "${backend}" off "${device}" \
++      >"${RUN_ROOT}/${backend}_off.driver.log" 2>&1 &
++done
++for pid in $(jobs -p); do
++  if ! wait "${pid}"; then status=1; fi
++done
++if (( status == 0 )); then touch "${RUN_ROOT}/ALL_DONE"; fi
++exit "${status}"
+diff --git a/scripts/slurm/run_extended_fourway.sbatch b/scripts/slurm/run_extended_fourway.sbatch
+new file mode 100644
+index 0000000..0dc12c9
+--- /dev/null
++++ b/scripts/slurm/run_extended_fourway.sbatch
+@@ -0,0 +1,46 @@
++#!/usr/bin/env bash
++#SBATCH --job-name=nequip_chorus_extended
++#SBATCH --partition=GPU-A100
++#SBATCH --nodes=1
++#SBATCH --ntasks=1
++#SBATCH --cpus-per-task=32
++#SBATCH --gres=gpu:2
++#SBATCH --mem=96G
++#SBATCH --time=1-00:00:00
++#SBATCH --output=/public/home/sps-xia/rxlin/nequip_chorus_runs/extended-fourway-%j.log
++
++set -euo pipefail
++
++REPO=/public/home/sps-xia/rxlin/NequIP-CHORUS
++RUN_ROOT="${RUN_ROOT:-/public/home/sps-xia/rxlin/nequip_chorus_runs/extended_fourway_20260728}"
++DATASETS="${DATASETS:-transition1x xxmd_mal xxmd_sti xxmd_dia md22_buckyball 3bpa}"
++EPOCHS_OVERRIDE="${EPOCHS_OVERRIDE:-}"
++mkdir -p "${RUN_ROOT}"
++
++IFS=',' read -r -a allocated_devices <<<"${CUDA_VISIBLE_DEVICES}"
++if (( ${#allocated_devices[@]} != 2 )); then
++  echo "expected exactly two allocated GPUs, got ${CUDA_VISIBLE_DEVICES}" >&2
++  exit 2
++fi
++
++launch() {
++  local backend="$1" chorus="$2" device="$3"
++  local name="${backend}_chorus_${chorus}"
++  env REPO="${REPO}" RUN_ROOT="${RUN_ROOT}" DATASETS="${DATASETS}" \
++    EPOCHS_OVERRIDE="${EPOCHS_OVERRIDE}" \
++    bash "${REPO}/scripts/run_extended_variant.sh" \
++      "${backend}" "${chorus}" "${device}" \
++      >"${RUN_ROOT}/${name}.driver.log" 2>&1 &
++}
++
++launch e3nn off "${allocated_devices[0]}"; pid_a=$!
++launch e3nn on "${allocated_devices[0]}"; pid_b=$!
++launch ictc off "${allocated_devices[1]}"; pid_c=$!
++launch ictc on "${allocated_devices[1]}"; pid_d=$!
++
++status=0
++for pid in "${pid_a}" "${pid_b}" "${pid_c}" "${pid_d}"; do
++  if ! wait "${pid}"; then status=1; fi
++done
++if (( status == 0 )); then touch "${RUN_ROOT}/ALL_DONE"; fi
++exit "${status}"
+diff --git a/scripts/slurm/run_rmd17_backend.sbatch b/scripts/slurm/run_rmd17_backend.sbatch
+new file mode 100755
+index 0000000..947d9fd
+--- /dev/null
++++ b/scripts/slurm/run_rmd17_backend.sbatch
+@@ -0,0 +1,44 @@
++#!/usr/bin/env bash
++#SBATCH --job-name=nequip_chorus_rmd17_one
++#SBATCH --partition=GPU-A100
++#SBATCH --nodes=1
++#SBATCH --ntasks=1
++#SBATCH --cpus-per-task=16
++#SBATCH --gres=gpu:1
++#SBATCH --mem=96G
++#SBATCH --time=1-00:00:00
++#SBATCH --output=/public/home/sps-xia/rxlin/nequip_chorus_runs/rmd17-backend-%j.log
++
++set -euo pipefail
++
++REPO=/public/home/sps-xia/rxlin/NequIP-CHORUS
++BACKEND="${BACKEND:?set BACKEND=e3nn or ictc}"
++RUN_ROOT="${RUN_ROOT:-/public/home/sps-xia/rxlin/nequip_chorus_runs/rmd17_c128_r16_20260729}"
++EPOCHS="${EPOCHS:-180}"
++MOLECULES="${MOLECULES:-revised_aspirin revised_ethanol revised_benzene}"
++mkdir -p "${RUN_ROOT}"
++
++case "${BACKEND}" in
++  e3nn|ictc) ;;
++  *) echo "unsupported BACKEND=${BACKEND}" >&2; exit 2 ;;
++esac
++
++device="${CUDA_VISIBLE_DEVICES}"
++launch() {
++  local chorus="$1"
++  env REPO="${REPO}" RUN_ROOT="${RUN_ROOT}" EPOCHS="${EPOCHS}" \
++    MOLECULES="${MOLECULES}" \
++    bash "${REPO}/scripts/run_rmd17_variant.sh" \
++      "${BACKEND}" "${chorus}" "${device}" \
++      >"${RUN_ROOT}/${BACKEND}_chorus_${chorus}.driver.log" 2>&1 &
++}
++
++# Matched off/on variants share one allocation, as in the original two-GPU
++# launcher.  Accuracy is comparable; contended wall time is not a speed result.
++launch off; pid_off=$!
++launch on; pid_on=$!
++status=0
++if ! wait "${pid_off}"; then status=1; fi
++if ! wait "${pid_on}"; then status=1; fi
++if (( status == 0 )); then touch "${RUN_ROOT}/${BACKEND}_ALL_DONE"; fi
++exit "${status}"
+diff --git a/scripts/slurm/run_rmd17_fourway.sbatch b/scripts/slurm/run_rmd17_fourway.sbatch
+new file mode 100644
+index 0000000..df8bdd3
+--- /dev/null
++++ b/scripts/slurm/run_rmd17_fourway.sbatch
+@@ -0,0 +1,64 @@
++#!/usr/bin/env bash
++#SBATCH --job-name=nequip_chorus_rmd17
++#SBATCH --partition=GPU-A100
++#SBATCH --nodes=1
++#SBATCH --ntasks=1
++#SBATCH --cpus-per-task=32
++#SBATCH --gres=gpu:2
++#SBATCH --mem=96G
++#SBATCH --time=1-00:00:00
++#SBATCH --output=/public/home/sps-xia/rxlin/nequip_chorus_runs/rmd17-fourway-%j.log
++
++set -euo pipefail
++
++REPO=/public/home/sps-xia/rxlin/NequIP-CHORUS
++RUN_ROOT="${RUN_ROOT:-/public/home/sps-xia/rxlin/nequip_chorus_runs/rmd17_fourway_20260728}"
++EPOCHS="${EPOCHS:-180}"
++MOLECULES="${MOLECULES:-revised_aspirin revised_ethanol revised_benzene}"
++mkdir -p "${RUN_ROOT}"
++
++# Preserve Slurm's physical GPU allocation before assigning devices.  Formal
++# runs request two GPUs and place one matched pair on each.  Capacity smokes may
++# override the request to one GPU; in that case run the four variants
++# sequentially so a free card can be used without multiplying peak memory.
++IFS=',' read -r -a allocated_devices <<<"${CUDA_VISIBLE_DEVICES}"
++if (( ${#allocated_devices[@]} < 1 || ${#allocated_devices[@]} > 2 )); then
++  echo "expected one or two allocated GPUs, got ${CUDA_VISIBLE_DEVICES}" >&2
++  exit 2
++fi
++
++launch() {
++  local backend="$1"
++  local chorus="$2"
++  local device="$3"
++  local name="${backend}_chorus_${chorus}"
++  env REPO="${REPO}" RUN_ROOT="${RUN_ROOT}" EPOCHS="${EPOCHS}" \
++    MOLECULES="${MOLECULES}" \
++    bash "${REPO}/scripts/run_rmd17_variant.sh" \
++      "${backend}" "${chorus}" "${device}" \
++      >"${RUN_ROOT}/${name}.driver.log" 2>&1 &
++}
++
++status=0
++if (( ${#allocated_devices[@]} == 1 )); then
++  for backend in e3nn ictc; do
++    for chorus in off on; do
++      launch "${backend}" "${chorus}" "${allocated_devices[0]}"
++      if ! wait "$!"; then status=1; fi
++    done
++  done
++else
++  # One A100 is dedicated to the two spherical NequIP variants; the other A100
++  # is dedicated to the two ICTC variants.
++  launch e3nn off "${allocated_devices[0]}"; pid_e3nn=$!
++  launch e3nn on "${allocated_devices[0]}"; pid_e3nn_chorus=$!
++  launch ictc off "${allocated_devices[1]}"; pid_ictc=$!
++  launch ictc on "${allocated_devices[1]}"; pid_ictc_chorus=$!
++  for pid in "${pid_e3nn}" "${pid_e3nn_chorus}" "${pid_ictc}" "${pid_ictc_chorus}"; do
++    if ! wait "${pid}"; then status=1; fi
++  done
++fi
++if (( status == 0 )); then
++  touch "${RUN_ROOT}/ALL_DONE"
++fi
++exit "${status}"
+diff --git a/scripts/slurm/run_rmd17_width_matched.sbatch b/scripts/slurm/run_rmd17_width_matched.sbatch
+new file mode 100644
+index 0000000..e9f3636
+--- /dev/null
++++ b/scripts/slurm/run_rmd17_width_matched.sbatch
+@@ -0,0 +1,59 @@
++#!/usr/bin/env bash
++#SBATCH --job-name=nequip_width_match
++#SBATCH --partition=GPU-A100
++#SBATCH --nodes=1
++#SBATCH --ntasks=1
++#SBATCH --cpus-per-task=16
++#SBATCH --gres=gpu:1
++#SBATCH --mem=96G
++#SBATCH --time=1-00:00:00
++#SBATCH --output=/public/home/sps-xia/rxlin/nequip_chorus_runs/width-matched-%j.log
++
++set -euo pipefail
++
++REPO=/public/home/sps-xia/rxlin/NequIP-CHORUS
++RUN_ROOT="${RUN_ROOT:-/public/home/sps-xia/rxlin/nequip_chorus_runs/rmd17_c72_width_matched_20260729}"
++CHANNELS=72
++EPOCHS=180
++MOLECULES="revised_aspirin revised_ethanol revised_benzene"
++device="${CUDA_VISIBLE_DEVICES}"
++
++mkdir -p "${RUN_ROOT}"
++cat >"${RUN_ROOT}/protocol.json" <<'EOF'
++{
++  "purpose": "parameter-matched capacity control for C64/R16 CHORUS",
++  "channels": 72,
++  "chorus": false,
++  "backends": ["e3nn", "ictc"],
++  "trainable_parameters": 768356,
++  "reference_chorus_trainable_parameters": 757325,
++  "relative_parameter_difference": 0.014566,
++  "seed": 20260616,
++  "epochs": 180,
++  "selection_metric": "validation_f_mae",
++  "tf32": false,
++  "ema": false
++}
++EOF
++
++launch() {
++  local backend="$1"
++  env REPO="${REPO}" RUN_ROOT="${RUN_ROOT}" CHANNELS="${CHANNELS}" \
++    EPOCHS="${EPOCHS}" MOLECULES="${MOLECULES}" \
++    bash "${REPO}/scripts/run_rmd17_variant.sh" \
++      "${backend}" off "${device}" \
++      >"${RUN_ROOT}/${backend}_c72.driver.log" 2>&1 &
++}
++
++launch e3nn
++pid_e3nn=$!
++launch ictc
++pid_ictc=$!
++
++status=0
++if ! wait "${pid_e3nn}"; then status=1; fi
++if ! wait "${pid_ictc}"; then status=1; fi
++if (( status == 0 )); then
++  touch "${RUN_ROOT}/ALL_DONE"
++fi
++exit "${status}"
+diff --git a/scripts/slurm/setup_mff_env.sbatch b/scripts/slurm/setup_mff_env.sbatch
+new file mode 100644
+index 0000000..19ef03c
+--- /dev/null
++++ b/scripts/slurm/setup_mff_env.sbatch
+@@ -0,0 +1,38 @@
++#!/usr/bin/env bash
++#SBATCH --job-name=nequip_chorus_setup
++#SBATCH --partition=CPU-INT
++#SBATCH --nodes=1
++#SBATCH --ntasks=1
++#SBATCH --cpus-per-task=8
++#SBATCH --mem=8G
++#SBATCH --time=00:30:00
++#SBATCH --output=/public/home/sps-xia/rxlin/nequip_chorus_runs/setup-%j.log
++
++set -euo pipefail
++
++BASE=/public/home/sps-xia/rxlin/.conda/envs/mff
++REPO=/public/home/sps-xia/rxlin/NequIP-CHORUS
++VENV=/public/home/sps-xia/rxlin/venvs/nequip-chorus-mff
++
++mkdir -p /public/home/sps-xia/rxlin/nequip_chorus_runs
++if [[ ! -x "${VENV}/bin/python" ]]; then
++  "${BASE}/bin/python" -m venv --system-site-packages "${VENV}"
++fi
++"${VENV}/bin/python" -m pip install --upgrade pip
++"${VENV}/bin/python" -m pip install \
++  "torch-runstats>=0.2.0" "torch-ema>=0.3.0" pytest
++"${VENV}/bin/python" -m pip install --no-deps --editable "${REPO}"
++
++"${VENV}/bin/python" - <<'PY'
++import e3nn
++import nequip
++import torch
++import torch_ema
++import torch_runstats
++
++print("torch", torch.__version__)
++print("e3nn", e3nn.__version__)
++print("nequip", nequip.__version__)
++print("torch_runstats", torch_runstats.__file__)
++print("torch_ema", torch_ema.__file__)
++PY
+diff --git a/scripts/slurm/smoke_four_variants.sbatch b/scripts/slurm/smoke_four_variants.sbatch
+new file mode 100644
+index 0000000..735156e
+--- /dev/null
++++ b/scripts/slurm/smoke_four_variants.sbatch
+@@ -0,0 +1,50 @@
++#!/usr/bin/env bash
++#SBATCH --job-name=nequip_chorus_smoke
++#SBATCH --partition=GPU-A100
++#SBATCH --nodes=1
++#SBATCH --ntasks=1
++#SBATCH --cpus-per-task=16
++#SBATCH --gres=gpu:2
++#SBATCH --mem=64G
++#SBATCH --time=00:30:00
++#SBATCH --output=/public/home/sps-xia/rxlin/nequip_chorus_runs/smoke-%j.log
++
++set -euo pipefail
++
++REPO=/public/home/sps-xia/rxlin/NequIP-CHORUS
++OPERATOR_REPO=/public/home/sps-xia/rxlin/CHORUS-MLIP-operator
++PYTHON=/public/home/sps-xia/rxlin/venvs/nequip-chorus-mff/bin/python
++
++export PYTHONPATH="${REPO}:${OPERATOR_REPO}:${PYTHONPATH:-}"
++export NVIDIA_TF32_OVERRIDE=0
++export OMP_NUM_THREADS=4
++cd "${REPO}"
++
++"${PYTHON}" -m pytest tests/unit/nn/test_chorus.py -q
++
++run_variant() {
++  local device="$1"
++  local backend="$2"
++  local chorus="$3"
++  CUDA_VISIBLE_DEVICES="${device}" "${PYTHON}" scripts/smoke_variant.py \
++    --backend "${backend}" --chorus "${chorus}" \
++    >"/public/home/sps-xia/rxlin/nequip_chorus_runs/smoke-${SLURM_JOB_ID}-${backend}-${chorus}.log" 2>&1
++}
++
++# Match the intended formal layout: two processes share each A100.
++run_variant 0 e3nn off &
++pid_e3nn=$!
++run_variant 0 e3nn on &
++pid_e3nn_chorus=$!
++run_variant 1 ictc off &
++pid_ictc=$!
++run_variant 1 ictc on &
++pid_ictc_chorus=$!
++
++status=0
++for pid in "${pid_e3nn}" "${pid_e3nn_chorus}" "${pid_ictc}" "${pid_ictc_chorus}"; do
++  if ! wait "${pid}"; then
++    status=1
++  fi
++done
++exit "${status}"
+diff --git a/scripts/smoke_variant.py b/scripts/smoke_variant.py
+new file mode 100644
+index 0000000..8057507
+--- /dev/null
++++ b/scripts/smoke_variant.py
+@@ -0,0 +1,98 @@
++"""GPU forward/backward smoke for one NequIP/ICTC × CHORUS variant."""
++
++import argparse
++
++import torch
++
++from nequip.data import AtomicDataDict
++from nequip.model import model_from_config
++
++
++def main() -> None:
++    parser = argparse.ArgumentParser()
++    parser.add_argument("--backend", choices=("e3nn", "ictc"), required=True)
++    parser.add_argument("--chorus", choices=("on", "off"), required=True)
++    args = parser.parse_args()
++
++    torch.manual_seed(20260728)
++    device = torch.device("cuda")
++    config = {
++        "model_builders": ["EnergyModel", "ForceOutput"],
++        "num_types": 2,
++        "chemical_symbol_to_type": {"H": 0, "C": 1},
++        "chemical_embedding_irreps_out": "8x0e",
++        "irreps_edge_sh": "0e + 1o + 2e",
++        "feature_irreps_hidden": "8x0e + 8x1o + 8x2e",
++        "conv_to_output_hidden_irreps_out": "4x0e",
++        "r_max": 4.0,
++        "num_layers": 2,
++        "num_basis": 4,
++        "PolynomialCutoff_p": 6,
++        "nonlinearity_type": "gate",
++        "avg_num_neighbors": 4.0,
++        "use_sc": True,
++        "invariant_layers": 1,
++        "invariant_neurons": 16,
++        "interaction_backend": args.backend,
++        "chorus_enabled": args.chorus == "on",
++        "chorus_scope": "final",
++        "chorus_rank": 4,
++        "chorus_hidden_channels": 16,
++        "chorus_scale_init": 0.05,
++        "model_dtype": "float32",
++    }
++    model = model_from_config(config=config, initialize=True).to(device)
++    positions = torch.randn(6, 3, device=device, requires_grad=True)
++    edge_src = []
++    edge_dst = []
++    for dst in range(6):
++        for src in range(6):
++            if src != dst:
++                edge_src.append(src)
++                edge_dst.append(dst)
++    edge_index = torch.tensor(
++        [edge_dst, edge_src], dtype=torch.long, device=device
++    )
++    data = {
++        AtomicDataDict.POSITIONS_KEY: positions,
++        AtomicDataDict.EDGE_INDEX_KEY: edge_index,
++        AtomicDataDict.EDGE_CELL_SHIFT_KEY: torch.zeros(
++            edge_index.shape[1], 3, device=device
++        ),
++        AtomicDataDict.CELL_KEY: torch.zeros(3, 3, device=device),
++        AtomicDataDict.PBC_KEY: torch.zeros(3, dtype=torch.bool, device=device),
++        AtomicDataDict.ATOM_TYPE_KEY: torch.tensor(
++            [0, 1, 0, 1, 0, 1], dtype=torch.long, device=device
++        ),
++        AtomicDataDict.BATCH_KEY: torch.zeros(6, dtype=torch.long, device=device),
++        AtomicDataDict.BATCH_PTR_KEY: torch.tensor(
++            [0, 6], dtype=torch.long, device=device
++        ),
++    }
++    output = model(data)
++    energy = output[AtomicDataDict.TOTAL_ENERGY_KEY]
++    forces = output[AtomicDataDict.FORCE_KEY]
++    loss = energy.square().mean() + forces.square().mean()
++    loss.backward()
++    assert torch.isfinite(energy).all()
++    assert torch.isfinite(forces).all()
++    grads = [
++        parameter.grad
++        for parameter in model.parameters()
++        if parameter.requires_grad and parameter.grad is not None
++    ]
++    assert grads and all(torch.isfinite(grad).all() for grad in grads)
++    print(
++        {
++            "backend": args.backend,
++            "chorus": args.chorus,
++            "parameters": sum(p.numel() for p in model.parameters()),
++            "energy": float(energy.detach().sum()),
++            "force_rms": float(forces.detach().square().mean().sqrt()),
++            "max_memory_mb": torch.cuda.max_memory_allocated() / 2**20,
++        }
++    )
++
++
++if __name__ == "__main__":
++    main()
+diff --git a/scripts/write_extended_config.py b/scripts/write_extended_config.py
+new file mode 100644
+index 0000000..1b08b3d
+--- /dev/null
++++ b/scripts/write_extended_config.py
+@@ -0,0 +1,225 @@
++"""Write auditable NequIP configs for the extended CHORUS benchmark."""
++
++import argparse
++import math
++from pathlib import Path
++
++import yaml
++
++
++SPECS = {
++    "xxmd_mal": {
++        "relative": "xxmd/processed_dft_temporal_r5/mal",
++        "elements": ["H", "C", "O"],
++        "n_train": 14000,
++        "n_val": 6963,
++        "batch": 16,
++        "steps": 45000,
++        "tests": {"test": "processed_test.h5"},
++    },
++    "xxmd_sti": {
++        "relative": "xxmd/processed_dft_temporal_r5/sti",
++        "elements": ["H", "C"],
++        "n_train": 12800,
++        "n_val": 6364,
++        "batch": 16,
++        "steps": 45000,
++        "tests": {"test": "processed_test.h5"},
++    },
++    "xxmd_dia": {
++        "relative": "xxmd/processed_dft_temporal_r5/dia",
++        "elements": ["H", "C", "S"],
++        "n_train": 12400,
++        "n_val": 6169,
++        "batch": 16,
++        "steps": 45000,
++        "tests": {"test": "processed_test.h5"},
++    },
++    "transition1x": {
++        "relative": "transition1x/chorus_reaction_id_50k_seed20260616",
++        "elements": ["H", "C", "N", "O"],
++        "n_train": 50000,
++        "n_val": 10000,
++        "batch": 16,
++        "steps": 100000,
++        "tests": {"test": "processed_test.h5"},
++        "e0": [
++            -13.62222753701504,
++            -1029.4130839658328,
++            -1484.8710358098756,
++            -2041.8396277138045,
++        ],
++    },
++    "md22_buckyball": {
++        "relative": "md22/chorus_lowdata600_20260720/processed",
++        "elements": ["H", "C"],
++        "n_train": 600,
++        "n_val": 600,
++        "batch": 4,
++        "steps": 45000,
++        "tests": {"test": "processed_test.h5"},
++    },
++    "3bpa": {
++        "relative": "3bpa/standard_450_50_seed20260616_r5",
++        "elements": ["H", "C", "N", "O"],
++        "n_train": 450,
++        "n_val": 50,
++        "batch": 4,
++        "steps": 45000,
++        "tests": {
++            "300K": "processed_test_300K.h5",
++            "600K": "processed_test_600K.h5",
++            "1200K": "processed_test_1200K.h5",
++        },
++    },
++}
++
++
++def main() -> None:
++    parser = argparse.ArgumentParser()
++    parser.add_argument("--dataset", choices=tuple(SPECS), required=True)
++    parser.add_argument("--backend", choices=("e3nn", "ictc"), required=True)
++    parser.add_argument("--chorus", choices=("on", "off"), required=True)
++    parser.add_argument("--data-root", type=Path, required=True)
++    parser.add_argument("--run-root", type=Path, required=True)
++    parser.add_argument("--output-dir", type=Path, required=True)
++    parser.add_argument("--epochs-override", type=int)
++    parser.add_argument("--channels", type=int, default=64)
++    parser.add_argument("--chorus-rank", type=int, default=16)
++    args = parser.parse_args()
++
++    spec = SPECS[args.dataset]
++    data = args.data_root / spec["relative"]
++    batches_per_epoch = math.ceil(spec["n_train"] / spec["batch"])
++    epochs = (
++        int(args.epochs_override)
++        if args.epochs_override is not None
++        else math.ceil(spec["steps"] / batches_per_epoch)
++    )
++    common_metrics = [
++        ["forces", "mae"],
++        ["forces", "rmse"],
++        ["total_energy", "mae", {"PerAtom": True}],
++        ["total_energy", "rmse", {"PerAtom": True}],
++    ]
++    channels = int(args.channels)
++    if channels <= 0:
++        raise ValueError("--channels must be positive")
++    if int(args.chorus_rank) <= 0:
++        raise ValueError("--chorus-rank must be positive")
++    config = {
++        "root": str(args.run_root),
++        "run_name": "run",
++        "seed": 20260616,
++        "dataset_seed": 20260616,
++        "append": True,
++        "default_dtype": "float32",
++        "model_dtype": "float32",
++        "allow_tf32": False,
++        "model_builders": [
++            "EnergyModel",
++            "PerSpeciesRescale",
++            "ForceOutput",
++            "RescaleEnergyEtc",
++        ],
++        "chemical_embedding_irreps_out": f"{channels}x0e",
++        "irreps_edge_sh": "0e + 1o + 2e",
++        "feature_irreps_hidden": (
++            f"{channels}x0e + {channels}x1o + {channels}x2e"
++        ),
++        "conv_to_output_hidden_irreps_out": f"{max(1, channels // 2)}x0e",
++        "interaction_backend": args.backend,
++        "chorus_enabled": args.chorus == "on",
++        "chorus_scope": "final",
++        "chorus_rank": int(args.chorus_rank),
++        "chorus_hidden_channels": 32,
++        "chorus_scale_init": 0.05,
++        "r_max": 5.0,
++        "num_layers": 3,
++        "num_basis": 8,
++        "BesselBasis_trainable": True,
++        "PolynomialCutoff_p": 6,
++        "nonlinearity_type": "gate",
++        "nonlinearity_scalars": {"e": "silu", "o": "tanh"},
++        "nonlinearity_gates": {"e": "silu", "o": "tanh"},
++        "invariant_layers": 2,
++        "invariant_neurons": 2 * channels,
++        "avg_num_neighbors": "auto",
++        "use_sc": True,
++        "dataset": "MACEGraphHDF5Dataset",
++        "dataset_root": str(data),
++        "dataset_file_name": str(data / "processed_train.h5"),
++        "validation_dataset": "MACEGraphHDF5Dataset",
++        "validation_dataset_root": str(data),
++        "validation_dataset_file_name": str(data / "processed_val.h5"),
++        "chemical_symbols": spec["elements"],
++        "n_train": spec["n_train"],
++        "n_val": spec["n_val"],
++        "batch_size": spec["batch"],
++        "validation_batch_size": 25,
++        "dataloader_num_workers": 0,
++        "max_epochs": epochs,
++        "train_val_split": "sequential",
++        "shuffle": True,
++        "loss_coeffs": {
++            "forces": 100.0,
++            "total_energy": [1.0, "PerAtomMSELoss"],
++        },
++        "metrics_components": common_metrics,
++        "metrics_key": "validation_f_mae",
++        "optimizer_name": "Adam",
++        "optimizer_amsgrad": True,
++        "learning_rate": 0.003,
++        "lr_scheduler_name": "ReduceLROnPlateau",
++        "lr_scheduler_patience": max(5, epochs // 6),
++        "lr_scheduler_factor": 0.5,
++        "early_stopping_patiences": {"validation_loss": epochs + 1},
++        "early_stopping_lower_bounds": {"LR": 1.0e-6},
++        "early_stopping_upper_bounds": {"validation_loss": 1.0e8},
++        "use_ema": False,
++        "report_init_validation": True,
++        "log_batch_freq": 200,
++        "log_epoch_freq": 1,
++        "save_checkpoint_freq": 1,
++        "save_ema_checkpoint_freq": -1,
++        "wandb": False,
++        "verbose": "info",
++        "per_species_rescale_shifts": spec.get(
++            "e0", "dataset_per_atom_total_energy_mean"
++        ),
++        "per_species_rescale_scales": None,
++    }
++    args.output_dir.mkdir(parents=True, exist_ok=True)
++    (args.output_dir / "train.yaml").write_text(
++        yaml.safe_dump(config, sort_keys=False)
++    )
++    for label, filename in spec["tests"].items():
++        test = {
++            "r_max": 5.0,
++            "dataset": "MACEGraphHDF5Dataset",
++            "dataset_root": str(data),
++            "dataset_file_name": str(data / filename),
++            "chemical_symbols": spec["elements"],
++            "metrics_components": common_metrics,
++            "default_dtype": "float32",
++            "model_dtype": "float32",
++            "allow_tf32": False,
++        }
++        (args.output_dir / f"test_{label}.yaml").write_text(
++            yaml.safe_dump(test, sort_keys=False)
++        )
++    metadata = {
++        "dataset": args.dataset,
++        "target_steps": spec["steps"],
++        "batches_per_epoch": batches_per_epoch,
++        "epochs": epochs,
++        "actual_step_budget": epochs * batches_per_epoch,
++        "checkpoint_selection": "validation Force MAE",
++    }
++    (args.output_dir / "protocol.yaml").write_text(
++        yaml.safe_dump(metadata, sort_keys=False)
++    )
++
++
++if __name__ == "__main__":
++    main()
+diff --git a/scripts/write_rmd17_config.py b/scripts/write_rmd17_config.py
+new file mode 100644
+index 0000000..a8cfb23
+--- /dev/null
++++ b/scripts/write_rmd17_config.py
+@@ -0,0 +1,141 @@
++"""Write one auditable NequIP-v0.6 rMD17 training/test configuration."""
++
++import argparse
++from pathlib import Path
++
++import yaml
++
++
++ELEMENTS = {
++    "revised_aspirin": ["H", "C", "O"],
++    "revised_ethanol": ["H", "C", "O"],
++    "revised_benzene": ["H", "C"],
++}
++
++
++def main() -> None:
++    parser = argparse.ArgumentParser()
++    parser.add_argument("--molecule", choices=tuple(ELEMENTS), required=True)
++    parser.add_argument("--backend", choices=("e3nn", "ictc"), required=True)
++    parser.add_argument("--chorus", choices=("on", "off"), required=True)
++    parser.add_argument("--data-root", type=Path, required=True)
++    parser.add_argument("--run-root", type=Path, required=True)
++    parser.add_argument("--output", type=Path, required=True)
++    parser.add_argument("--test-output", type=Path, required=True)
++    parser.add_argument("--epochs", type=int, default=180)
++    parser.add_argument("--channels", type=int, default=64)
++    parser.add_argument("--chorus-rank", type=int, default=16)
++    args = parser.parse_args()
++
++    data = args.data_root / args.molecule
++    channels = int(args.channels)
++    if channels <= 0:
++        raise ValueError("--channels must be positive")
++    if int(args.chorus_rank) <= 0:
++        raise ValueError("--chorus-rank must be positive")
++    config = {
++        "root": str(args.run_root),
++        "run_name": "run",
++        "seed": 20260616,
++        "dataset_seed": 20260616,
++        "append": True,
++        "default_dtype": "float32",
++        "model_dtype": "float32",
++        "allow_tf32": False,
++        "model_builders": [
++            "EnergyModel",
++            "PerSpeciesRescale",
++            "ForceOutput",
++            "RescaleEnergyEtc",
++        ],
++        "chemical_embedding_irreps_out": f"{channels}x0e",
++        "irreps_edge_sh": "0e + 1o + 2e",
++        "feature_irreps_hidden": (
++            f"{channels}x0e + {channels}x1o + {channels}x2e"
++        ),
++        "conv_to_output_hidden_irreps_out": f"{max(1, channels // 2)}x0e",
++        "interaction_backend": args.backend,
++        "chorus_enabled": args.chorus == "on",
++        "chorus_scope": "final",
++        "chorus_rank": int(args.chorus_rank),
++        "chorus_hidden_channels": 32,
++        "chorus_scale_init": 0.05,
++        "r_max": 4.5,
++        "num_layers": 3,
++        "num_basis": 8,
++        "BesselBasis_trainable": True,
++        "PolynomialCutoff_p": 6,
++        "nonlinearity_type": "gate",
++        "nonlinearity_scalars": {"e": "silu", "o": "tanh"},
++        "nonlinearity_gates": {"e": "silu", "o": "tanh"},
++        "invariant_layers": 2,
++        "invariant_neurons": 2 * channels,
++        "avg_num_neighbors": "auto",
++        "use_sc": True,
++        "dataset": "MACEGraphHDF5Dataset",
++        "dataset_root": str(data),
++        "dataset_file_name": str(data / "processed_train.h5"),
++        "validation_dataset": "MACEGraphHDF5Dataset",
++        "validation_dataset_root": str(data),
++        "validation_dataset_file_name": str(data / "processed_val.h5"),
++        "chemical_symbols": ELEMENTS[args.molecule],
++        "n_train": 1000,
++        "n_val": 1000,
++        "batch_size": 4,
++        "validation_batch_size": 25,
++        # Four trainers share one Slurm allocation. Forkserver workers from all
++        # four processes can race on SemLock cleanup on this cluster, while
++        # these 9--21 atom frames are cheap to collate in the trainer process.
++        "dataloader_num_workers": 0,
++        "max_epochs": int(args.epochs),
++        "train_val_split": "sequential",
++        "shuffle": True,
++        "loss_coeffs": {
++            "forces": 100.0,
++            "total_energy": [1.0, "PerAtomMSELoss"],
++        },
++        "metrics_components": [
++            ["forces", "mae"],
++            ["forces", "rmse"],
++            ["total_energy", "mae", {"PerAtom": True}],
++            ["total_energy", "rmse", {"PerAtom": True}],
++        ],
++        "metrics_key": "validation_f_mae",
++        "optimizer_name": "Adam",
++        "optimizer_amsgrad": True,
++        "learning_rate": 0.003,
++        "lr_scheduler_name": "ReduceLROnPlateau",
++        "lr_scheduler_patience": 30,
++        "lr_scheduler_factor": 0.5,
++        "early_stopping_patiences": {"validation_loss": 1000},
++        "early_stopping_lower_bounds": {"LR": 1.0e-6},
++        "early_stopping_upper_bounds": {"validation_loss": 1.0e6},
++        "use_ema": False,
++        "report_init_validation": True,
++        "log_batch_freq": 100,
++        "log_epoch_freq": 1,
++        "save_checkpoint_freq": 5,
++        "save_ema_checkpoint_freq": -1,
++        "wandb": False,
++        "verbose": "info",
++        "per_species_rescale_shifts": "dataset_per_atom_total_energy_mean",
++        "per_species_rescale_scales": "dataset_forces_rms",
++    }
++    test_config = {
++        "r_max": 4.5,
++        "dataset": "MACEGraphHDF5Dataset",
++        "dataset_root": str(data),
++        "dataset_file_name": str(data / "processed_test.h5"),
++        "chemical_symbols": ELEMENTS[args.molecule],
++        "metrics_components": config["metrics_components"],
++        "default_dtype": "float32",
++        "model_dtype": "float32",
++        "allow_tf32": False,
++    }
++    args.output.parent.mkdir(parents=True, exist_ok=True)
++    args.output.write_text(yaml.safe_dump(config, sort_keys=False))
++    args.test_output.write_text(yaml.safe_dump(test_config, sort_keys=False))
++
++
++if __name__ == "__main__":
++    main()
+diff --git a/tests/unit/nn/test_chorus.py b/tests/unit/nn/test_chorus.py
+new file mode 100644
+index 0000000..37be742
+--- /dev/null
++++ b/tests/unit/nn/test_chorus.py
+@@ -0,0 +1,249 @@
++import math
++
++import pytest
++import torch
++from e3nn import o3
++
++from nequip.model import model_from_config
++from nequip.nn import HermitianDensityResidual, ICTCInteractionBlock, InteractionBlock
++
++
++NATURAL_CONFIG = {
++    "model_builders": ["EnergyModel"],
++    "num_types": 2,
++    "chemical_symbol_to_type": {"H": 0, "C": 1},
++    "chemical_embedding_irreps_out": "4x0e",
++    "irreps_edge_sh": "0e + 1o + 2e",
++    "feature_irreps_hidden": "4x0e + 4x1o + 4x2e",
++    "conv_to_output_hidden_irreps_out": "2x0e",
++    "r_max": 4.0,
++    "num_layers": 2,
++    "num_basis": 4,
++    "PolynomialCutoff_p": 6,
++    "nonlinearity_type": "gate",
++    "avg_num_neighbors": 4.0,
++    "use_sc": True,
++    "invariant_layers": 1,
++    "invariant_neurons": 8,
++}
++
++
++def test_hermitian_contraction_is_u1_invariant():
++    torch.manual_seed(11)
++    module = HermitianDensityResidual(
++        irreps_message="3x0e + 2x1o + 1x2e",
++        irreps_node="4x0e + 4x1o + 4x2e",
++        edge_invariant_dim=4,
++        num_elements=2,
++        rank=2,
++        scale_init=1.0,
++    ).double()
++    real = torch.randn(5, module.irreps_charged.dim, dtype=torch.float64)
++    imag = torch.randn_like(real)
++    angle = 0.731
++    rotated_real = math.cos(angle) * real - math.sin(angle) * imag
++    rotated_imag = math.sin(angle) * real + math.cos(angle) * imag
++    torch.testing.assert_close(
++        module.contract_charged(real, imag),
++        module.contract_charged(rotated_real, rotated_imag),
++        atol=2.0e-11,
++        rtol=2.0e-11,
++    )
++
++
++@pytest.mark.parametrize(
++    ("backend", "expected_type"),
++    (("e3nn", InteractionBlock), ("ictc", ICTCInteractionBlock)),
++)
++@pytest.mark.parametrize("chorus_enabled", (False, True))
++def test_four_model_variants_build(backend, expected_type, chorus_enabled):
++    config = dict(NATURAL_CONFIG)
++    config.update(
++        interaction_backend=backend,
++        chorus_enabled=chorus_enabled,
++        chorus_rank=2,
++        chorus_hidden_channels=8,
++        chorus_scale_init=0.0,
++    )
++    model = model_from_config(config=config, initialize=True)
++    first = model.model.layer0_convnet.conv
++    last = model.model.layer1_convnet.conv
++    assert isinstance(first, expected_type)
++    assert first.chorus is None
++    assert (last.chorus is not None) is chorus_enabled
++
++
++@pytest.mark.parametrize(
++    ("backend", "expected_type"),
++    (("e3nn", InteractionBlock), ("ictc", ICTCInteractionBlock)),
++)
++def test_chorus_all_scope_builds_every_layer(backend, expected_type):
++    config = dict(NATURAL_CONFIG)
++    config.update(
++        interaction_backend=backend,
++        chorus_enabled=True,
++        chorus_scope="all",
++        chorus_rank=2,
++        chorus_hidden_channels=8,
++        chorus_scale_init=0.0,
++    )
++    model = model_from_config(config=config, initialize=True)
++    for layer_index in range(config["num_layers"]):
++        conv = getattr(model.model, f"layer{layer_index}_convnet").conv
++        assert isinstance(conv, expected_type)
++        assert conv.chorus is not None
++
++
++def test_channelwise_density_is_o3_equivariant():
++    torch.manual_seed(12)
++    module = HermitianDensityResidual(
++        irreps_message="3x0e + 2x1o + 1x2e",
++        irreps_node="4x0e + 4x1o + 4x2e",
++        edge_invariant_dim=4,
++        num_elements=2,
++        rank=2,
++        scale_init=1.0,
++    ).double()
++    real = torch.randn(5, module.irreps_charged.dim, dtype=torch.float64)
++    imag = torch.randn_like(real)
++    node_attrs = torch.nn.functional.one_hot(
++        torch.tensor([0, 1, 1, 0, 1]), num_classes=2
++    ).double()
++    rotation = o3.rand_matrix(dtype=torch.float64)
++    charged_d = module.irreps_charged.D_from_matrix(rotation)
++    message_d = module.irreps_message.D_from_matrix(rotation)
++    expected = module.contract_charged(real, imag, node_attrs) @ message_d.T
++    actual = module.contract_charged(
++        real @ charged_d.T,
++        imag @ charged_d.T,
++        node_attrs,
++    )
++    # e3nn's float32-default Wigner-D construction retains approximately
++    # single-precision rotation constants even when this probe module is cast
++    # to double, so the appropriate equivariance tolerance is around 1e-6.
++    torch.testing.assert_close(actual, expected, atol=2.0e-6, rtol=2.0e-6)
++
++
++def test_channelwise_chorus_backward_is_finite():
++    torch.manual_seed(13)
++    module = HermitianDensityResidual(
++        irreps_message="6x0e + 4x1o + 3x2e",
++        irreps_node="4x0e + 4x1o + 4x2e",
++        edge_invariant_dim=4,
++        num_elements=2,
++        rank=2,
++        hidden_channels=8,
++        avg_num_neighbors=3.0,
++        scale_init=0.05,
++    )
++    edge_messages = torch.randn(
++        9, module.irreps_message.dim, requires_grad=True
++    )
++    node_features = torch.randn(4, module.irreps_node.dim, requires_grad=True)
++    edge_invariants = torch.randn(9, 4, requires_grad=True)
++    edge_src = torch.tensor([0, 1, 2, 3, 0, 2, 1, 3, 0])
++    edge_dst = torch.tensor([1, 2, 3, 0, 2, 0, 3, 1, 3])
++    node_attrs = torch.nn.functional.one_hot(
++        torch.tensor([0, 1, 0, 1]), num_classes=2
++    ).to(dtype=edge_messages.dtype)
++    output = module(
++        edge_messages=edge_messages,
++        node_features=node_features,
++        node_attrs=node_attrs,
++        edge_invariants=edge_invariants,
++        edge_src=edge_src,
++        edge_dst=edge_dst,
++        num_nodes=4,
++    )
++    output.square().mean().backward()
++    for parameter in module.parameters():
++        assert parameter.grad is not None
++        assert torch.isfinite(parameter.grad).all()
++    assert torch.isfinite(edge_messages.grad).all()
++    assert torch.isfinite(node_features.grad).all()
++    assert torch.isfinite(edge_invariants.grad).all()
++
++
++def test_density_has_no_cross_rank_terms():
++    torch.manual_seed(14)
++    module = HermitianDensityResidual(
++        irreps_message="3x0e + 2x1o + 1x2e",
++        irreps_node="4x0e + 4x1o + 4x2e",
++        edge_invariant_dim=4,
++        num_elements=2,
++        rank=2,
++        scale_init=1.0,
++    ).double()
++    real = torch.randn(3, module.irreps_charged.dim, dtype=torch.float64)
++    imag = torch.randn_like(real)
++    rank_zero_real = torch.zeros_like(real)
++    rank_zero_imag = torch.zeros_like(imag)
++    rank_one_real = torch.zeros_like(real)
++    rank_one_imag = torch.zeros_like(imag)
++    for (_, ir), component_slice in zip(
++        module.irreps_charged, module.irreps_charged.slices()
++    ):
++        source_real = real[:, component_slice].reshape(3, 2, ir.dim)
++        source_imag = imag[:, component_slice].reshape(3, 2, ir.dim)
++        rank_zero_real[:, component_slice] = torch.stack(
++            (source_real[:, 0], torch.zeros_like(source_real[:, 1])), dim=1
++        ).reshape(3, -1)
++        rank_zero_imag[:, component_slice] = torch.stack(
++            (source_imag[:, 0], torch.zeros_like(source_imag[:, 1])), dim=1
++        ).reshape(3, -1)
++        rank_one_real[:, component_slice] = torch.stack(
++            (torch.zeros_like(source_real[:, 0]), source_real[:, 1]), dim=1
++        ).reshape(3, -1)
++        rank_one_imag[:, component_slice] = torch.stack(
++            (torch.zeros_like(source_imag[:, 0]), source_imag[:, 1]), dim=1
++        ).reshape(3, -1)
++    full = module.density_blocks(real, imag)
++    rank_zero = module.density_blocks(rank_zero_real, rank_zero_imag)
++    rank_one = module.density_blocks(rank_one_real, rank_one_imag)
++    for out_l in full:
++        torch.testing.assert_close(
++            full[out_l], rank_zero[out_l] + rank_one[out_l]
++        )
++
++
++def test_realistic_channelwise_parameter_budget():
++    base_config = dict(NATURAL_CONFIG)
++    base_config.update(
++        chemical_embedding_irreps_out="32x0e",
++        feature_irreps_hidden="32x0e + 32x1o + 32x2e",
++        conv_to_output_hidden_irreps_out="16x0e",
++        num_layers=3,
++        invariant_layers=2,
++        invariant_neurons=64,
++    )
++    baseline = model_from_config(config=base_config, initialize=True)
++    chorus_config = dict(base_config)
++    chorus_config.update(
++        chorus_enabled=True,
++        chorus_rank=8,
++        chorus_hidden_channels=32,
++        chorus_scale_init=0.0,
++    )
++    chorus = model_from_config(config=chorus_config, initialize=True)
++    baseline_parameters = sum(p.numel() for p in baseline.parameters())
++    chorus_parameters = sum(p.numel() for p in chorus.parameters())
++    assert chorus_parameters - baseline_parameters < 50_000
++    assert chorus_parameters < 1.3 * baseline_parameters
++    final_chorus = chorus.model.layer2_convnet.conv.chorus
++    assert final_chorus is not None
++    assert not any(
++        isinstance(module, o3.FullyConnectedTensorProduct)
++        for module in final_chorus.modules()
++    )
++
++
++def test_ictc_filters_unsupported_unnatural_parity_features():
++    config = dict(NATURAL_CONFIG)
++    config.update(
++        interaction_backend="ictc",
++        feature_irreps_hidden="4x0e + 4x1e",
++    )
++    model = model_from_config(config=config, initialize=True)
++    first = model.model.layer0_convnet.conv
++    for _, ir in first.irreps_out["node_features"]:
++        assert ir.p == (1 if ir.l % 2 == 0 else -1)

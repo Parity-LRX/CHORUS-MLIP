@@ -1,0 +1,178 @@
+{
+  "benchmark": "CHORUS-Final versus CHORUS-Persistent scope expansion",
+  "checkpoint_rule": "minimum validation total loss",
+  "metric_pairing": "Energy and force metrics are taken from the same selected checkpoint",
+  "seed": 20260616,
+  "units": {
+    "energy": "meV/atom",
+    "force": "meV/Angstrom"
+  },
+  "energy_calibration": "none; train-only residual calibration is reserved for Transition1x",
+  "systems": {
+    "rMD17 aspirin": {
+      "report_split": "validation",
+      "final": {
+        "epoch": 293,
+        "step": 18522,
+        "loss": 0.059814,
+        "energy_mae": 0.545,
+        "energy_rmse": 0.652,
+        "force_mae": 16.519,
+        "force_rmse": 24.457
+      },
+      "persistent": {
+        "epoch": 289,
+        "step": 18270,
+        "loss": 0.054098,
+        "energy_mae": 0.661,
+        "energy_rmse": 0.762,
+        "force_mae": 15.330,
+        "force_rmse": 23.259
+      }
+    },
+    "rMD17 benzene": {
+      "report_split": "validation",
+      "final": {
+        "epoch": 282,
+        "step": 17829,
+        "loss": 0.001128,
+        "energy_mae": 0.066,
+        "energy_rmse": 0.080,
+        "force_mae": 1.947,
+        "force_rmse": 3.358
+      },
+      "persistent": {
+        "epoch": 285,
+        "step": 18018,
+        "loss": 0.000620,
+        "energy_mae": 0.433,
+        "energy_rmse": 0.435,
+        "force_mae": 1.687,
+        "force_rmse": 2.490
+      }
+    },
+    "MD22 Buckyball Catcher": {
+      "report_split": "held-out test after validation selection",
+      "final": {
+        "validation_selection": {
+          "epoch": 298,
+          "step": 44850,
+          "loss": 0.024804,
+          "energy_mae": 0.269,
+          "energy_rmse": 0.327,
+          "force_mae": 11.516,
+          "force_rmse": 15.749
+        },
+        "test": {
+          "loss": 0.024557,
+          "energy_mae": 0.249,
+          "energy_rmse": 0.310,
+          "force_mae": 11.501,
+          "force_rmse": 15.671
+        }
+      },
+      "persistent": {
+        "validation_selection": {
+          "epoch": 296,
+          "step": 44550,
+          "loss": 0.018987,
+          "energy_mae": 0.237,
+          "energy_rmse": 0.290,
+          "force_mae": 10.106,
+          "force_rmse": 13.779
+        },
+        "test": {
+          "loss": 0.018883,
+          "energy_mae": 0.229,
+          "energy_rmse": 0.287,
+          "force_mae": 10.082,
+          "force_rmse": 13.742
+        }
+      }
+    },
+    "MD22 Ac-Ala3-NHMe": {
+      "report_split": "held-out test after validation selection",
+      "final": {
+        "validation_selection": {
+          "epoch": 286,
+          "step": 43050,
+          "loss": 0.089233,
+          "energy_mae": 0.562,
+          "energy_rmse": 0.688,
+          "force_mae": 20.637,
+          "force_rmse": 29.872
+        },
+        "test": {
+          "loss": 0.089801,
+          "energy_mae": 0.568,
+          "energy_rmse": 0.694,
+          "force_mae": 20.664,
+          "force_rmse": 29.967
+        }
+      },
+      "persistent": {
+        "validation_selection": {
+          "epoch": 286,
+          "step": 43050,
+          "loss": 0.082758,
+          "energy_mae": 0.458,
+          "energy_rmse": 0.575,
+          "force_mae": 19.694,
+          "force_rmse": 28.768
+        },
+        "test": {
+          "loss": 0.082013,
+          "energy_mae": 0.478,
+          "energy_rmse": 0.591,
+          "force_mae": 19.692,
+          "force_rmse": 28.638
+        }
+      }
+    },
+    "MD22 DHA": {
+      "report_split": "held-out test after validation selection",
+      "final": {
+        "validation_selection": {
+          "epoch": 293,
+          "step": 44100,
+          "loss": 0.056554,
+          "energy_mae": 0.610,
+          "energy_rmse": 0.770,
+          "force_mae": 16.659,
+          "force_rmse": 23.781
+        },
+        "test": {
+          "loss": 0.058519,
+          "energy_mae": 0.616,
+          "energy_rmse": 0.773,
+          "force_mae": 16.860,
+          "force_rmse": 24.191
+        }
+      },
+      "persistent": {
+        "validation_selection": {
+          "epoch": 298,
+          "step": 44850,
+          "loss": 0.051479,
+          "energy_mae": 0.597,
+          "energy_rmse": 0.741,
+          "force_mae": 15.751,
+          "force_rmse": 22.689
+        },
+        "test": {
+          "loss": 0.052003,
+          "energy_mae": 0.589,
+          "energy_rmse": 0.731,
+          "force_mae": 15.922,
+          "force_rmse": 22.804
+        }
+      }
+    }
+  },
+  "evidence_boundary": [
+    "All new scope-expansion results use one seed.",
+    "The two revised-MD17 entries report checkpoint-aligned validation metrics, matching the manuscript mechanism protocol.",
+    "The three MD22 entries report one held-out test evaluation after validation-loss checkpoint selection.",
+    "No independently optimized energy and force checkpoints are combined."
+  ]
+}

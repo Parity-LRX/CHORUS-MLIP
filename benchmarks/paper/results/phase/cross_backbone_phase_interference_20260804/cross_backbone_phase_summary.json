@@ -1,0 +1,98 @@
+{
+  "histograms": "validation frames; MACE complete split and NequIP at most 256 evenly spaced frames",
+  "interpretation": "Relative phase controls coherent cross-neighbour coupling. Negative cosine terms are one regime, not a requirement: non-uniform constructive phase organization is also causally identified by zero-phase and within-atom permutation interventions.",
+  "interventions": "same checkpoint; leading validation batches; test data not used",
+  "selection": "validation Force-MAE-selected checkpoint",
+  "settings": {
+    "MACE-ICTC Final": {
+      "largest_destructive_kernel_fraction_range": [
+        0.0,
+        2.5635114667510054e-10
+      ],
+      "maximum_common_shift_force_change_mev_per_angstrom": 0.0002522622202098949,
+      "phase_permutation_force_mae_ratio_range": [
+        1.0054064172732058,
+        5.685810074259835
+      ],
+      "zero_phase_force_mae_ratio_range": [
+        1.0514546505799096,
+        3.704669182308569
+      ]
+    },
+    "MACE-ICTC Persistent": {
+      "largest_destructive_kernel_fraction_range": [
+        0.0,
+        0.4792319230030122
+      ],
+      "maximum_common_shift_force_change_mev_per_angstrom": 0.0002457340495491915,
+      "phase_permutation_force_mae_ratio_range": [
+        1.0000339454579954,
+        62.406242883048535
+      ],
+      "zero_phase_force_mae_ratio_range": [
+        1.1034823864964352,
+        57.10416238208172
+      ]
+    },
+    "NequIP-SH 2L Final": {
+      "largest_destructive_kernel_fraction_range": [
+        0.0,
+        0.0
+      ],
+      "maximum_common_shift_force_change_mev_per_angstrom": 0.0003851185021016686,
+      "phase_permutation_force_mae_ratio_range": [
+        0.9999998476027283,
+        1.0000002463502824
+      ],
+      "zero_phase_force_mae_ratio_range": [
+        0.9999997840744462,
+        1.000000435355531
+      ]
+    },
+    "NequIP-SH 2L Persistent": {
+      "largest_destructive_kernel_fraction_range": [
+        0.0,
+        8.906587563430169e-07
+      ],
+      "maximum_common_shift_force_change_mev_per_angstrom": 0.00040219883614169314,
+      "phase_permutation_force_mae_ratio_range": [
+        1.2646326443145575,
+        10.691591650075168
+      ],
+      "zero_phase_force_mae_ratio_range": [
+        1.2664775473899688,
+        4.500823809591623
+      ]
+    },
+    "NequIP-SH 3L Final": {
+      "largest_destructive_kernel_fraction_range": [
+        0.0,
+        0.0
+      ],
+      "maximum_common_shift_force_change_mev_per_angstrom": 0.00038329877118916647,
+      "phase_permutation_force_mae_ratio_range": [
+        0.9999995830377546,
+        1.0000006712360519
+      ],
+      "zero_phase_force_mae_ratio_range": [
+        0.999999069133103,
+        1.0000000928584387
+      ]
+    },
+    "NequIP-SH 3L Persistent": {
+      "largest_destructive_kernel_fraction_range": [
+        2.4521226743101918e-09,
+        0.006174349461924846
+      ],
+      "maximum_common_shift_force_change_mev_per_angstrom": 0.000373045851410715,
+      "phase_permutation_force_mae_ratio_range": [
+        1.5260895036292945,
+        12.592423144885172
+      ],
+      "zero_phase_force_mae_ratio_range": [
+        1.4686394755851846,
+        5.2121860307590735
+      ]
+    }
+  }
+}

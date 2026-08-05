@@ -1,0 +1,40 @@
+{
+  "description": "Task-level force MAEs reproduced from manuscript Table 5 for the accuracy-cost-parameter synthesis figure.",
+  "selection_rule": "one checkpoint per model selected on validation Force MAE; test never selects",
+  "units": {
+    "force_mae": "meV/Angstrom",
+    "parameters": "trainable parameters"
+  },
+  "aggregation": {
+    "endpoint_weighting": "equal weight across the seven reported test endpoints",
+    "normalization": "divide each model's Force MAE by the lowest observed Force MAE on that endpoint",
+    "summary": "geometric mean of the seven normalized Force MAEs"
+  },
+  "endpoints": [
+    "T1X-50k",
+    "xxMD MAL",
+    "xxMD STI",
+    "MD22 Buckyball",
+    "3BPA 300 K",
+    "3BPA 600 K",
+    "3BPA 1200 K"
+  ],
+  "models": {
+    "MACE-SH": [120.901, 228.300, 169.600, 22.282, 23.403, 50.211, 173.362],
+    "MACE-ICTC": [91.888, 166.928, 168.271, 7.355, 9.455, 25.192, 119.038],
+    "CHORUS-Final R16": [82.513, 159.062, 147.830, 6.724, 9.096, 24.216, 119.618],
+    "CHORUS-Persistent R16": [82.342, 156.332, 146.185, 6.297, 8.457, 21.982, 120.166],
+    "NequIP-SH": [140.259, 288.188, 199.049, 24.654, 27.836, 49.499, 103.320],
+    "NequIP-CHORUS-Final": [113.859, 220.775, 166.486, 12.318, 15.327, 29.425, 65.667],
+    "NequIP-CHORUS-Persistent": [96.125, 187.644, 157.413, 9.952, 12.811, 24.932, 58.761],
+    "DPA-4 C32": [88.696, 225.660, 144.155, 5.915, 15.963, 39.236, 130.431],
+    "TECE C36": [94.744, 216.259, 161.573, 12.079, 12.799, 26.515, 68.464],
+    "DPA-4 C48": [80.148, 162.248, 129.724, 4.972, 14.032, 38.678, 150.605],
+    "TECE C48": [88.289, 210.597, 169.212, 11.315, 11.868, 24.487, 62.040]
+  },
+  "provenance": [
+    "benchmarks/paper/results/phase/compact_architecture_table_20260728/table3_complete_20260730.json",
+    "benchmarks/paper/results/phase/large_persistent_c128_r16_20260730/README.md",
+    "paper_chorus.tex:tab:external-main"
+  ]
+}

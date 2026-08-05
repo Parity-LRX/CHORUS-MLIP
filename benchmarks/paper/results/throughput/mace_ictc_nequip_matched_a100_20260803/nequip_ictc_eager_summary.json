@@ -1,0 +1,44 @@
+{
+  "final/inference": {
+    "median_atoms_per_second": 6961.366472346399,
+    "median_iterations_per_second": 48.34282272462777,
+    "median_ms": 20.685593923553824,
+    "parameters": 811091,
+    "peak_memory_mib": 168.01513671875
+  },
+  "final/training": {
+    "median_atoms_per_second": 3054.867621503746,
+    "median_iterations_per_second": 21.2143584826649,
+    "median_ms": 47.13788544759154,
+    "parameters": 811091,
+    "peak_memory_mib": 249.98193359375
+  },
+  "off/inference": {
+    "median_atoms_per_second": 13086.190563274022,
+    "median_iterations_per_second": 90.8763233560696,
+    "median_ms": 11.003966303542256,
+    "parameters": 614510,
+    "peak_memory_mib": 118.91943359375
+  },
+  "off/training": {
+    "median_atoms_per_second": 5356.246325078503,
+    "median_iterations_per_second": 37.19615503526739,
+    "median_ms": 26.884499192237854,
+    "parameters": 614510,
+    "peak_memory_mib": 179.1796875
+  },
+  "persistent/inference": {
+    "median_atoms_per_second": 4514.024681991481,
+    "median_iterations_per_second": 31.34739362494084,
+    "median_ms": 31.90057878382504,
+    "parameters": 866747,
+    "peak_memory_mib": 186.38037109375
+  },
+  "persistent/training": {
+    "median_atoms_per_second": 1993.3757905497928,
+    "median_iterations_per_second": 13.842887434373562,
+    "median_ms": 72.23926400765777,
+    "parameters": 866747,
+    "peak_memory_mib": 279.1328125
+  }
+}

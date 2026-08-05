@@ -1,0 +1,8 @@
+include README.md
+include LICENSE
+recursive-include chorus/models/_ictd_cache *.pt
+recursive-include chorus/csrc *.cpp *.cu
+recursive-include lammps_user_mfftorch *.cpp *.h *.cmake *.md
+recursive-include lammps_user_mfftorch/examples *
+recursive-include lammps_user_mfftorch/docs *
+global-exclude __pycache__ *.pyc *.pyo

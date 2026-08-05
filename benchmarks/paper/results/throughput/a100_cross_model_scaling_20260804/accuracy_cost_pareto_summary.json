@@ -1,0 +1,241 @@
+{
+  "accuracy_metric": "geometric mean of endpoint-wise Force MAE / best endpoint Force MAE",
+  "combined_models": {
+    "CHORUS-Final R16": {
+      "inference_latency_ms": 85.29068529605865,
+      "parameters": 792198.0,
+      "score": 1.2143326708721585,
+      "training_latency_ms": 230.20579889416692
+    },
+    "CHORUS-Persistent R16": {
+      "inference_latency_ms": 90.48773301765323,
+      "parameters": 1029967.0,
+      "score": 1.1698480554737625,
+      "training_latency_ms": 247.87452965974808
+    },
+    "DPA-4 C32": {
+      "inference_latency_ms": 53.02087217569351,
+      "parameters": 650428.0,
+      "score": 1.4832294619266917,
+      "training_latency_ms": 105.35097867250443
+    },
+    "DPA-4 C48": {
+      "inference_latency_ms": 82.62131735682487,
+      "parameters": 1296800.0,
+      "score": 1.3401975472303223,
+      "training_latency_ms": 155.23624140769243
+    },
+    "MACE-ICTC": {
+      "inference_latency_ms": 63.60496301203966,
+      "parameters": 652736.0,
+      "score": 1.294674860937189,
+      "training_latency_ms": 165.35180807113647
+    },
+    "MACE-SH": {
+      "inference_latency_ms": 18.4852029196918,
+      "parameters": 650944.0,
+      "score": 2.1888236422573097,
+      "training_latency_ms": 46.933962590992444
+    },
+    "NequIP-CHORUS-Final": {
+      "inference_latency_ms": 40.547908283770084,
+      "parameters": 921551.0,
+      "score": 1.5025938481851024,
+      "training_latency_ms": 110.88289692997932
+    },
+    "NequIP-CHORUS-Persistent": {
+      "inference_latency_ms": 48.55912085622548,
+      "parameters": 991991.0,
+      "score": 1.2919358248662125,
+      "training_latency_ms": 131.96446746587753
+    },
+    "NequIP-SH": {
+      "inference_latency_ms": 19.66778887435794,
+      "parameters": 669866.0,
+      "score": 2.279574803749405,
+      "training_latency_ms": 57.81576503068209
+    },
+    "TECE C36": {
+      "inference_latency_ms": 128.11814341694117,
+      "parameters": 824541.0,
+      "score": 1.399675202573946,
+      "training_latency_ms": 324.9303260818124
+    },
+    "TECE C48": {
+      "inference_latency_ms": 162.1956811286509,
+      "parameters": 1435065.0,
+      "score": 1.3276410330118054,
+      "training_latency_ms": 410.1785551756621
+    }
+  },
+  "endpoint_best_force_mae_mev_per_angstrom": [
+    80.148,
+    156.332,
+    129.724,
+    4.972,
+    8.457,
+    21.982,
+    58.761
+  ],
+  "natoms": 2048,
+  "pareto_force_inference_training_parameters": [
+    "MACE-SH",
+    "MACE-ICTC",
+    "CHORUS-Final R16",
+    "CHORUS-Persistent R16",
+    "NequIP-CHORUS-Final",
+    "NequIP-CHORUS-Persistent",
+    "DPA-4 C32"
+  ],
+  "tasks": {
+    "inference": {
+      "models": {
+        "CHORUS-Final R16": {
+          "parameters": 792198.0,
+          "score": 1.2143326708721585,
+          "throughput": 24012.000758242702
+        },
+        "CHORUS-Persistent R16": {
+          "parameters": 1029967.0,
+          "score": 1.1698480554737625,
+          "throughput": 22632.90207083049
+        },
+        "DPA-4 C32": {
+          "parameters": 650428.0,
+          "score": 1.4832294619266917,
+          "throughput": 38626.29783255187
+        },
+        "DPA-4 C48": {
+          "parameters": 1296800.0,
+          "score": 1.3401975472303223,
+          "throughput": 24787.791644075332
+        },
+        "MACE-ICTC": {
+          "parameters": 652736.0,
+          "score": 1.294674860937189,
+          "throughput": 32198.74523961814
+        },
+        "MACE-SH": {
+          "parameters": 650944.0,
+          "score": 2.1888236422573097,
+          "throughput": 110791.31827210398
+        },
+        "NequIP-CHORUS-Final": {
+          "parameters": 921551.0,
+          "score": 1.5025938481851024,
+          "throughput": 50508.154099276755
+        },
+        "NequIP-CHORUS-Persistent": {
+          "parameters": 991991.0,
+          "score": 1.2919358248662125,
+          "throughput": 42175.39287961466
+        },
+        "NequIP-SH": {
+          "parameters": 669866.0,
+          "score": 2.279574803749405,
+          "throughput": 104129.6514358103
+        },
+        "TECE C36": {
+          "parameters": 824541.0,
+          "score": 1.399675202573946,
+          "throughput": 15985.245691042313
+        },
+        "TECE C48": {
+          "parameters": 1435065.0,
+          "score": 1.3276410330118054,
+          "throughput": 12626.723385905452
+        }
+      },
+      "pareto_accuracy_throughput": [
+        "MACE-SH",
+        "CHORUS-Final R16",
+        "CHORUS-Persistent R16",
+        "NequIP-CHORUS-Final",
+        "NequIP-CHORUS-Persistent"
+      ],
+      "pareto_accuracy_throughput_parameters": [
+        "MACE-SH",
+        "MACE-ICTC",
+        "CHORUS-Final R16",
+        "CHORUS-Persistent R16",
+        "NequIP-CHORUS-Final",
+        "NequIP-CHORUS-Persistent",
+        "DPA-4 C32"
+      ]
+    },
+    "train": {
+      "models": {
+        "CHORUS-Final R16": {
+          "parameters": 792198.0,
+          "score": 1.2143326708721585,
+          "throughput": 8896.387536013079
+        },
+        "CHORUS-Persistent R16": {
+          "parameters": 1029967.0,
+          "score": 1.1698480554737625,
+          "throughput": 8262.244623565175
+        },
+        "DPA-4 C32": {
+          "parameters": 650428.0,
+          "score": 1.4832294619266917,
+          "throughput": 19439.781441105
+        },
+        "DPA-4 C48": {
+          "parameters": 1296800.0,
+          "score": 1.3401975472303223,
+          "throughput": 13192.795583225938
+        },
+        "MACE-ICTC": {
+          "parameters": 652736.0,
+          "score": 1.294674860937189,
+          "throughput": 12385.712765347713
+        },
+        "MACE-SH": {
+          "parameters": 650944.0,
+          "score": 2.1888236422573097,
+          "throughput": 43635.778590598944
+        },
+        "NequIP-CHORUS-Final": {
+          "parameters": 921551.0,
+          "score": 1.5025938481851024,
+          "throughput": 18469.9359116968
+        },
+        "NequIP-CHORUS-Persistent": {
+          "parameters": 991991.0,
+          "score": 1.2919358248662125,
+          "throughput": 15519.329099172532
+        },
+        "NequIP-SH": {
+          "parameters": 669866.0,
+          "score": 2.279574803749405,
+          "throughput": 35422.864315868734
+        },
+        "TECE C36": {
+          "parameters": 824541.0,
+          "score": 1.399675202573946,
+          "throughput": 6302.889683138857
+        },
+        "TECE C48": {
+          "parameters": 1435065.0,
+          "score": 1.3276410330118054,
+          "throughput": 4992.947520435164
+        }
+      },
+      "pareto_accuracy_throughput": [
+        "MACE-SH",
+        "CHORUS-Final R16",
+        "CHORUS-Persistent R16",
+        "NequIP-CHORUS-Persistent",
+        "DPA-4 C32"
+      ],
+      "pareto_accuracy_throughput_parameters": [
+        "MACE-SH",
+        "MACE-ICTC",
+        "CHORUS-Final R16",
+        "CHORUS-Persistent R16",
+        "NequIP-CHORUS-Persistent",
+        "DPA-4 C32"
+      ]
+    }
+  }
+}

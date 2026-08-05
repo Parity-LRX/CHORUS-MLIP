@@ -1,0 +1,142 @@
+{
+  "status": "complete_and_strictly_reloaded",
+  "date": "2026-07-25",
+  "dataset": {
+    "name": "Transition1x reaction-disjoint",
+    "train_structures": 50000,
+    "validation_structures": 10000,
+    "test_structures": 10000,
+    "split_seed": 20260616,
+    "reaction_id_overlap": 0,
+    "configuration_hash_overlap": 0
+  },
+  "protocol": {
+    "checkpoint_selection": "minimum validation Force MAE",
+    "validation_checkpoints_retained_per_model": 32,
+    "optimizer_steps": 100000,
+    "batch_size": 16,
+    "cutoff_angstrom": 5.0,
+    "energy_force_weights": "1:100",
+    "ema": false,
+    "tf32": false,
+    "makefx": true,
+    "energy_calibration": "closed-form one-constant-per-element residual fitted on the 50000-structure training split only",
+    "energy_calibration_elements": [1, 6, 7, 8],
+    "test_used_for_selection_or_calibration": false
+  },
+  "models": {
+    "phase_off_mace_ictc": {
+      "configuration": "channels=128, lmax=2, max_ell=2, correlation=3, interactions=2",
+      "parameters_raw": 652736,
+      "parameters_calibrated": 652740,
+      "selected_epoch": 19,
+      "selected_step": 62480,
+      "selected_checkpoint": "/home/ylzhang/chorus_runs/large_scale_main_20260724/t1x/ictc_c128_l2_corr3_phaseoff/checkpoints/t1x_c128_l2_corr3_phaseoff_ictc_bridge_u_makefx_seed20260616_epochs32.e19s62480.pth",
+      "train_only_energy_correction_eV_H_C_N_O": [
+        0.28225070238113403,
+        -1.0523258447647095,
+        0.34872862696647644,
+        0.6973889470100403
+      ],
+      "raw": {
+        "validation": {
+          "energy_mae_meV_per_atom": 35.747,
+          "energy_rmse_meV_per_atom": 51.642,
+          "force_mae_meV_per_angstrom": 92.232,
+          "force_rmse_meV_per_angstrom": 203.104
+        },
+        "test": {
+          "energy_mae_meV_per_atom": 34.855,
+          "energy_rmse_meV_per_atom": 46.130,
+          "force_mae_meV_per_angstrom": 91.888,
+          "force_rmse_meV_per_angstrom": 171.595
+        }
+      },
+      "train_only_calibrated": {
+        "validation": {
+          "energy_mae_meV_per_atom": 24.560,
+          "energy_rmse_meV_per_atom": 39.400,
+          "force_mae_meV_per_angstrom": 92.232,
+          "force_rmse_meV_per_angstrom": 203.104
+        },
+        "test": {
+          "energy_mae_meV_per_atom": 24.066,
+          "energy_rmse_meV_per_atom": 32.355,
+          "force_mae_meV_per_angstrom": 91.888,
+          "force_rmse_meV_per_angstrom": 171.595
+        }
+      },
+      "audit": {
+        "zero_correction_source_sha256": "06fe1a3e85dee16cf105bdfd752b92dc2399e19f17734243556a93df30ffba52",
+        "calibrated_checkpoint_sha256": "b9bec4e1afaac639ba988dc1f87a96d0a3cbb9b05d27ee1ca124ba7c6b8170b8",
+        "model_state_keys_changed_by_calibration": ["element_energy_correction"]
+      }
+    },
+    "chorus": {
+      "configuration": "channels=128, lmax=2, max_ell=2, correlation=3, interactions=2, rank=16 full-nonlinear Hermitian residual",
+      "parameters_raw": 792198,
+      "parameters_calibrated": 792202,
+      "selected_epoch": 26,
+      "selected_step": 84348,
+      "selected_checkpoint": "/home/ylzhang/chorus_runs/large_scale_main_20260724/t1x/chorus_c128_l2_corr3_rank16_mae_ckpts_rerun/checkpoints/t1x_c128_l2_corr3_rank16_mae_ictc_phase_full_l_nonlinear_makefx_seed20260616_epochs32.e26s84348.pth",
+      "train_only_energy_correction_eV_H_C_N_O": [
+        0.15163180232048035,
+        -0.6174153089523315,
+        0.2093963474035263,
+        0.43040481209754944
+      ],
+      "raw": {
+        "validation": {
+          "energy_mae_meV_per_atom": 26.589,
+          "energy_rmse_meV_per_atom": 37.752,
+          "force_mae_meV_per_angstrom": 85.542,
+          "force_rmse_meV_per_angstrom": 196.441
+        },
+        "test": {
+          "energy_mae_meV_per_atom": 26.206,
+          "energy_rmse_meV_per_atom": 34.523,
+          "force_mae_meV_per_angstrom": 82.513,
+          "force_rmse_meV_per_angstrom": 164.296
+        }
+      },
+      "train_only_calibrated": {
+        "validation": {
+          "energy_mae_meV_per_atom": 19.904,
+          "energy_rmse_meV_per_atom": 31.070,
+          "force_mae_meV_per_angstrom": 85.542,
+          "force_rmse_meV_per_angstrom": 196.440
+        },
+        "test": {
+          "energy_mae_meV_per_atom": 20.540,
+          "energy_rmse_meV_per_atom": 28.498,
+          "force_mae_meV_per_angstrom": 82.513,
+          "force_rmse_meV_per_angstrom": 164.296
+        }
+      },
+      "audit": {
+        "zero_correction_source_sha256": "83cec167b834995fcf6b386d68608758518c4c24fc826fed0069370090169d86",
+        "calibrated_checkpoint_sha256": "14e6ee2c2c9ebb6c51aa02031dd12f9b68a4709771b3b16c4621e00957cf0455",
+        "model_state_keys_changed_by_calibration": ["element_energy_correction"]
+      }
+    }
+  },
+  "chorus_reduction_relative_to_phase_off_percent": {
+    "validation": {
+      "calibrated_energy_mae": 18.9577,
+      "calibrated_energy_rmse": 21.1421,
+      "force_mae": 7.2534,
+      "force_rmse": 3.2811
+    },
+    "test": {
+      "calibrated_energy_mae": 14.6514,
+      "calibrated_energy_rmse": 11.9209,
+      "force_mae": 10.2026,
+      "force_rmse": 4.2536
+    }
+  },
+  "limitations": [
+    "Single training seed.",
+    "CHORUS has 21.4% more raw parameters than the phase-off model.",
+    "The Force-MAE checkpoint rule was fixed after inspecting an earlier validation trajectory, then applied symmetrically to both reruns before test evaluation."
+  ]
+}

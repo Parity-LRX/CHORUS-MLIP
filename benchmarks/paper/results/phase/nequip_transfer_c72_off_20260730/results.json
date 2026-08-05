@@ -1,0 +1,48 @@
+{
+  "status": "verified_remote_test_metrics",
+  "remote_root": "/public/home/sps-xia/rxlin/nequip_chorus_runs/extended_c72_r16_samegpu_20260729",
+  "purpose": "width-matched CHORUS-off controls for the C64 rank-16 CHORUS models",
+  "selection_rule": "validation_f_mae",
+  "test_used_for_selection": false,
+  "units": {
+    "force_mae": "eV/Angstrom",
+    "energy_mae": "eV/atom",
+    "trainable_parameters": "count"
+  },
+  "models": [
+    {
+      "carrier": "spherical-e3nn",
+      "chorus": false,
+      "width": 72,
+      "results": {
+        "Transition1x": {"params": 835820, "force_mae": 0.112194, "energy_mae": 0.026130},
+        "xxMD MAL": {"params": 768356, "force_mae": 0.237726, "energy_mae": 0.026811},
+        "xxMD STI": {"params": 700892, "force_mae": 0.175355, "energy_mae": 0.012315},
+        "MD22 Buckyball": {"params": 700892, "force_mae": 0.013145, "energy_mae": 0.002190},
+        "3BPA": {
+          "params": 835820,
+          "force_mae_300K": 0.015663,
+          "force_mae_600K": 0.030499,
+          "force_mae_1200K": 0.068812
+        }
+      }
+    },
+    {
+      "carrier": "ICTC",
+      "chorus": false,
+      "width": 72,
+      "results": {
+        "Transition1x": {"params": 835820, "force_mae": 0.114433, "energy_mae": 0.031431},
+        "xxMD MAL": {"params": 768356, "force_mae": 0.242704, "energy_mae": 0.027651},
+        "xxMD STI": {"params": 700892, "force_mae": 0.165022, "energy_mae": 0.009700},
+        "MD22 Buckyball": {"params": 700892, "force_mae": 0.012927, "energy_mae": 0.001602},
+        "3BPA": {
+          "params": 835820,
+          "force_mae_300K": 0.016663,
+          "force_mae_600K": 0.031726,
+          "force_mae_1200K": 0.072760
+        }
+      }
+    }
+  ]
+}

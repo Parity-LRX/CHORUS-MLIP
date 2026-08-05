@@ -1,0 +1,163 @@
+{
+  "schema_version": 1,
+  "result_family": "CHORUS-Persistent formal large-model benchmark",
+  "collected_at": "2026-07-30T20:10:00+08:00",
+  "configuration": {
+    "channels": 128,
+    "hidden_lmax": 2,
+    "max_ell": 2,
+    "interactions": 2,
+    "correlation": 3,
+    "phase_density_rank": 16,
+    "phase_scope": "persistent",
+    "phase_gate": "full-nonlinear",
+    "cutoff_angstrom": 5.0,
+    "energy_force_weight_ratio": "1:100",
+    "seed": 20260616,
+    "dtype": "float32",
+    "tf32": false,
+    "ema": false,
+    "execution_engine": "MakeFX"
+  },
+  "selection": {
+    "rule": "minimum validation Force MAE; earliest step breaks ties",
+    "test_used_for_selection": false,
+    "energy_and_force_checkpoint_metrics_spliced": false
+  },
+  "systems": {
+    "transition1x": {
+      "source_host": "ylzhang@10.10.3.21:18022",
+      "selected_epoch": 26,
+      "selected_step": 84348,
+      "validation_checkpoint_count": 32,
+      "validation_raw": {
+        "energy_mae_ev_per_atom": 0.02609,
+        "energy_rmse_ev_per_atom": 0.037495,
+        "force_mae_ev_per_angstrom": 0.081433,
+        "force_rmse_ev_per_angstrom": 0.183968
+      },
+      "test_raw": {
+        "energy_mae_ev_per_atom": 0.02697,
+        "energy_rmse_ev_per_atom": 0.035973,
+        "force_mae_ev_per_angstrom": 0.082342,
+        "force_rmse_ev_per_angstrom": 0.162255
+      },
+      "train_only_energy_calibration": {
+        "fit_split": "train",
+        "num_train_structures": 50000,
+        "normal_matrix_rank": 4,
+        "forces_changed": false,
+        "validation_calibrated": {
+          "energy_mae_ev_per_atom": 0.020858,
+          "energy_rmse_ev_per_atom": 0.032482,
+          "force_mae_ev_per_angstrom": 0.081433,
+          "force_rmse_ev_per_angstrom": 0.183968
+        },
+        "test_calibrated": {
+          "energy_mae_ev_per_atom": 0.021559,
+          "energy_rmse_ev_per_atom": 0.030529,
+          "force_mae_ev_per_angstrom": 0.082342,
+          "force_rmse_ev_per_angstrom": 0.162255
+        },
+        "source_checkpoint_sha256": "3503955b1495a9175d83dcaa3e0dbfc6c983c790b6a8eef3b042737d047caa1e",
+        "zero_correction_augmented_checkpoint_sha256": "9a9bf52538f7e212b026565256dc4a860e5e48e9ab32a27346492e5ac24afa8a"
+      }
+    },
+    "xxmd_mal": {
+      "source_host": "rxlin@10.10.3.20:18022",
+      "selected_epoch": 45,
+      "selected_step": 40250,
+      "validation_checkpoint_count": 52,
+      "validation": {
+        "energy_mae_ev_per_atom": 0.008054,
+        "energy_rmse_ev_per_atom": 0.017043,
+        "force_mae_ev_per_angstrom": 0.129754,
+        "force_rmse_ev_per_angstrom": 0.399936
+      },
+      "test": {
+        "energy_mae_ev_per_atom": 0.013409,
+        "energy_rmse_ev_per_atom": 0.026303,
+        "force_mae_ev_per_angstrom": 0.156332,
+        "force_rmse_ev_per_angstrom": 0.465487
+      }
+    },
+    "xxmd_sti": {
+      "source_host": "rxlin@10.10.3.20:18022",
+      "selected_epoch": 17,
+      "selected_step": 14400,
+      "validation_checkpoint_count": 57,
+      "validation": {
+        "energy_mae_ev_per_atom": 0.019585,
+        "energy_rmse_ev_per_atom": 0.026273,
+        "force_mae_ev_per_angstrom": 0.107576,
+        "force_rmse_ev_per_angstrom": 0.436491
+      },
+      "test": {
+        "energy_mae_ev_per_atom": 0.024364,
+        "energy_rmse_ev_per_atom": 0.037676,
+        "force_mae_ev_per_angstrom": 0.146185,
+        "force_rmse_ev_per_angstrom": 0.500757
+      }
+    },
+    "md22_buckyball": {
+      "source_host": "rxlin@10.10.3.20:18022",
+      "selected_epoch": 295,
+      "selected_step": 44400,
+      "validation_checkpoint_count": 300,
+      "validation": {
+        "energy_mae_ev_per_atom": 0.000183,
+        "energy_rmse_ev_per_atom": 0.00023,
+        "force_mae_ev_per_angstrom": 0.006333,
+        "force_rmse_ev_per_angstrom": 0.008578
+      },
+      "test": {
+        "energy_mae_ev_per_atom": 0.000184,
+        "energy_rmse_ev_per_atom": 0.000233,
+        "force_mae_ev_per_angstrom": 0.006297,
+        "force_rmse_ev_per_angstrom": 0.008525
+      }
+    },
+    "3bpa": {
+      "source_host": "rxlin@10.10.3.20:18022",
+      "selection_rule": "minimum 300 K validation Force MAE; earliest step breaks ties",
+      "selected_epoch": 1407,
+      "selected_step": 39424,
+      "validation_checkpoint_count": 1600,
+      "validation_300K": {
+        "energy_mae_ev_per_atom": 0.000138,
+        "energy_rmse_ev_per_atom": 0.000177,
+        "force_mae_ev_per_angstrom": 0.008093,
+        "force_rmse_ev_per_angstrom": 0.012378
+      },
+      "tests": {
+        "300K": {
+          "energy_mae_ev_per_atom": 0.000153,
+          "energy_rmse_ev_per_atom": 0.000197,
+          "force_mae_ev_per_angstrom": 0.008457,
+          "force_rmse_ev_per_angstrom": 0.013055
+        },
+        "600K": {
+          "energy_mae_ev_per_atom": 0.000344,
+          "energy_rmse_ev_per_atom": 0.000494,
+          "force_mae_ev_per_angstrom": 0.021982,
+          "force_rmse_ev_per_angstrom": 0.045389
+        },
+        "1200K": {
+          "energy_mae_ev_per_atom": 0.003174,
+          "energy_rmse_ev_per_atom": 0.004582,
+          "force_mae_ev_per_angstrom": 0.120166,
+          "force_rmse_ev_per_angstrom": 0.262343
+        }
+      }
+    }
+  },
+  "provenance": {
+    "transition1x_root": "/home/ylzhang/chorus_runs/large_persistent_c128_l2_corr3_rank16_20260730/t1x",
+    "a100_root": "/public/home/sps-xia/rxlin/chorus_persistent_runs/large_c128_r16_20260730",
+    "slurm_jobs": {
+      "54040": "COMPLETED",
+      "54041": "COMPLETED"
+    },
+    "parallel_walltime_or_throughput_eligible_for_speed_table": false
+  }
+}

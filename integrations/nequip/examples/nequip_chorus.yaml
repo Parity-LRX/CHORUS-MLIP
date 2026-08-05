@@ -1,0 +1,7 @@
+# Merge this fragment into a standard NequIP v0.6.2 configuration.
+interaction_backend: e3nn
+chorus_enabled: true
+chorus_scope: final
+chorus_rank: 16
+chorus_hidden_channels: 32
+chorus_scale_init: 0.05

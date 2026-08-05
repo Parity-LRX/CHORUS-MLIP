@@ -1,0 +1,19 @@
+{
+  "parsed_runs": 91,
+  "complete_runs": 87,
+  "incomplete_runs": 4,
+  "systems": [
+    "cheng_water",
+    "revised_aspirin",
+    "revised_benzene",
+    "revised_ethanol"
+  ],
+  "campaigns": [
+    "density_attention_final_cosine500_20260720",
+    "mechanism_confirmatory_multisystem_3seed_20260719",
+    "mechanism_confirmatory_water_3seed_20260719",
+    "mechanism_controls_aspirin_seed16_formal_20260719",
+    "mechanism_main4_makefx_cosine500_20260720"
+  ],
+  "selection_rule": "minimum validation loss; all reported MAEs from the same epoch"
+}

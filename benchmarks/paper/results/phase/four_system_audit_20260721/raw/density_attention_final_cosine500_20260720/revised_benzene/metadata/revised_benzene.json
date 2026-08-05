@@ -1,0 +1,13 @@
+{
+  "composition": {
+    "1": 6,
+    "6": 6
+  },
+  "data": "/tmp/mace_ictd_public_md17/revised_benzene",
+  "mean_train_energy": -6306.496802705478,
+  "minimum_norm_e0": {
+    "1": -525.5414002254565,
+    "6": -525.5414002254565
+  },
+  "n_train": 1000
+}

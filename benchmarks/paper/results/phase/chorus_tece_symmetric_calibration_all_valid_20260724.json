@@ -1,0 +1,137 @@
+{
+  "status": "verified_single_checkpoint_validation_comparison",
+  "date": "2026-07-24",
+  "hardware": "NVIDIA RTX 4090",
+  "protocol": {
+    "checkpoint_selection": "the canonical saved best validation-loss checkpoint for each model and dataset",
+    "calibration_fit_split": "train only",
+    "calibration_objective": "least-squares per-atom energy error on elemental fractions",
+    "same_calibration_applied_to_both_models": true,
+    "forces_changed": false,
+    "units": {
+      "energy": "meV/atom",
+      "force": "meV/angstrom"
+    }
+  },
+  "datasets": {
+    "buckyball": {
+      "train_structures": 600,
+      "validation_structures": 600,
+      "composition": "C120H28",
+      "composition_rank": 1,
+      "chorus": {
+        "raw_energy_mae": 0.25117891167004324,
+        "raw_energy_rmse": 0.30827431344136155,
+        "calibrated_energy_mae": 0.2522135397399931,
+        "calibrated_energy_rmse": 0.3088839414929615,
+        "force_mae": 11.515708972068855,
+        "force_rmse": 15.749107249152253
+      },
+      "tece": {
+        "raw_energy_mae": 0.5190858968691484,
+        "raw_energy_rmse": 0.5962618546991538,
+        "calibrated_energy_mae": 0.2473302677188602,
+        "calibrated_energy_rmse": 0.3082978375832439,
+        "force_mae": 14.523020390427927,
+        "force_rmse": 19.494663733108184
+      }
+    },
+    "sti": {
+      "train_structures": 12800,
+      "validation_structures": 6364,
+      "composition": "C14H12",
+      "composition_rank": 1,
+      "chorus": {
+        "raw_energy_mae": 17.060097850495334,
+        "raw_energy_rmse": 20.66933307714721,
+        "calibrated_energy_mae": 5.684283473686972,
+        "calibrated_energy_rmse": 18.144367179446324,
+        "force_mae": 118.8208334753423,
+        "force_rmse": 400.1339405046926
+      },
+      "tece": {
+        "raw_energy_mae": 7.811908985082642,
+        "raw_energy_rmse": 28.35023989536339,
+        "calibrated_energy_mae": 7.819691274784742,
+        "calibrated_energy_rmse": 28.419562692157133,
+        "force_mae": 114.43464407442101,
+        "force_rmse": 438.45948679680646
+      }
+    },
+    "dia": {
+      "train_structures": 12400,
+      "validation_structures": 6169,
+      "composition": "C10H8S2",
+      "composition_rank": 1,
+      "chorus": {
+        "raw_energy_mae": 2.872588114730098,
+        "raw_energy_rmse": 3.65094089280912,
+        "calibrated_energy_mae": 1.2418489167732463,
+        "calibrated_energy_rmse": 2.5563602047001064,
+        "force_mae": 39.3538114711541,
+        "force_rmse": 99.52293677195667
+      },
+      "tece": {
+        "raw_energy_mae": 1.0880435351683661,
+        "raw_energy_rmse": 2.0237572096814095,
+        "calibrated_energy_mae": 1.0778451229892872,
+        "calibrated_energy_rmse": 2.0194964355023876,
+        "force_mae": 39.91584998759928,
+        "force_rmse": 95.25927094826944
+      }
+    },
+    "mal": {
+      "train_structures": 14000,
+      "validation_structures": 6963,
+      "composition": "C3H4O2",
+      "composition_rank": 1,
+      "chorus": {
+        "raw_energy_mae": 9.42008733435421,
+        "raw_energy_rmse": 18.86612285101452,
+        "calibrated_energy_mae": 8.635990871979894,
+        "calibrated_energy_rmse": 18.229168554902024,
+        "force_mae": 141.75016667855617,
+        "force_rmse": 406.5374449010145
+      },
+      "tece": {
+        "raw_energy_mae": 10.822094852399575,
+        "raw_energy_rmse": 24.705397451104175,
+        "calibrated_energy_mae": 10.82287940401074,
+        "calibrated_energy_rmse": 24.620526982013464,
+        "force_mae": 148.47893574465026,
+        "force_rmse": 404.20432777837534
+      }
+    },
+    "transition1x": {
+      "source": "transition1x_chorus_tece_verified_20260724.json",
+      "train_structures": 50000,
+      "validation_structures": 10000,
+      "composition_rank": 4,
+      "chorus": {
+        "calibrated_energy_mae": 18.939,
+        "calibrated_energy_rmse": 30.168,
+        "force_mae": 91.948,
+        "force_rmse": 207.754
+      },
+      "tece": {
+        "calibrated_energy_mae": 20.42351012711028,
+        "calibrated_energy_rmse": 32.28508463016933,
+        "force_mae": 98.58288284258198,
+        "force_rmse": 227.9230962386618
+      }
+    }
+  },
+  "aggregate_calibrated_single_checkpoint_wins": {
+    "chorus_energy_mae": "3/5",
+    "chorus_energy_rmse": "3/5",
+    "chorus_force_mae": "4/5",
+    "chorus_force_rmse": "3/5",
+    "chorus_all_metric_cells": "13/20"
+  },
+  "interpretation_limits": [
+    "Buckyball, STI, DIA, and MAL each contain one fixed molecular formula, so their rank-one fit is only an identifiable global per-atom offset.",
+    "The rank-one per-element coefficients are not individually identifiable and must not be given element-specific physical meaning.",
+    "Calibration can worsen validation error when the train and temporally separated validation energy biases differ, as observed for STI TECE and slightly for Buckyball CHORUS.",
+    "These are canonical single-checkpoint metrics and must not be mixed with historical per-metric envelopes selected from different epochs."
+  ]
+}

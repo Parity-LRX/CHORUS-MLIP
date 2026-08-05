@@ -1,0 +1,233 @@
+{
+  "num_layers": 2,
+  "chorus_rank": 16,
+  "widths": [
+    64,
+    68,
+    72,
+    76,
+    80,
+    84,
+    88,
+    92,
+    96
+  ],
+  "records": [
+    {
+      "width": 64,
+      "mode": "off",
+      "two_species": 323752,
+      "four_species": 389416,
+      "minimum": 323752,
+      "maximum": 389416
+    },
+    {
+      "width": 64,
+      "mode": "final",
+      "two_species": 431629,
+      "four_species": 581261,
+      "minimum": 431629,
+      "maximum": 581261
+    },
+    {
+      "width": 64,
+      "mode": "persistent",
+      "two_species": 463221,
+      "four_species": 635381,
+      "minimum": 463221,
+      "maximum": 635381
+    },
+    {
+      "width": 68,
+      "mode": "off",
+      "two_species": 365338,
+      "four_species": 439458,
+      "minimum": 365338,
+      "maximum": 439458
+    },
+    {
+      "width": 68,
+      "mode": "final",
+      "two_species": 479935,
+      "four_species": 643271,
+      "minimum": 479935,
+      "maximum": 643271
+    },
+    {
+      "width": 68,
+      "mode": "persistent",
+      "two_species": 513383,
+      "four_species": 700655,
+      "minimum": 513383,
+      "maximum": 700655
+    },
+    {
+      "width": 72,
+      "mode": "off",
+      "two_species": 409436,
+      "four_species": 492524,
+      "minimum": 409436,
+      "maximum": 492524
+    },
+    {
+      "width": 72,
+      "mode": "final",
+      "two_species": 530753,
+      "four_species": 708305,
+      "minimum": 530753,
+      "maximum": 708305
+    },
+    {
+      "width": 72,
+      "mode": "persistent",
+      "two_species": 566057,
+      "four_species": 768953,
+      "minimum": 566057,
+      "maximum": 768953
+    },
+    {
+      "width": 76,
+      "mode": "off",
+      "two_species": 456046,
+      "four_species": 548614,
+      "minimum": 456046,
+      "maximum": 548614
+    },
+    {
+      "width": 76,
+      "mode": "final",
+      "two_species": 584083,
+      "four_species": 776363,
+      "minimum": 584083,
+      "maximum": 776363
+    },
+    {
+      "width": 76,
+      "mode": "persistent",
+      "two_species": 621243,
+      "four_species": 840275,
+      "minimum": 621243,
+      "maximum": 840275
+    },
+    {
+      "width": 80,
+      "mode": "off",
+      "two_species": 505168,
+      "four_species": 607728,
+      "minimum": 505168,
+      "maximum": 607728
+    },
+    {
+      "width": 80,
+      "mode": "final",
+      "two_species": 639925,
+      "four_species": 847445,
+      "minimum": 639925,
+      "maximum": 847445
+    },
+    {
+      "width": 80,
+      "mode": "persistent",
+      "two_species": 678941,
+      "four_species": 914621,
+      "minimum": 678941,
+      "maximum": 914621
+    },
+    {
+      "width": 84,
+      "mode": "off",
+      "two_species": 556802,
+      "four_species": 669866,
+      "minimum": 556802,
+      "maximum": 669866
+    },
+    {
+      "width": 84,
+      "mode": "final",
+      "two_species": 698279,
+      "four_species": 921551,
+      "minimum": 698279,
+      "maximum": 921551
+    },
+    {
+      "width": 84,
+      "mode": "persistent",
+      "two_species": 739151,
+      "four_species": 991991,
+      "minimum": 739151,
+      "maximum": 991991
+    },
+    {
+      "width": 88,
+      "mode": "off",
+      "two_species": 610948,
+      "four_species": 735028,
+      "minimum": 610948,
+      "maximum": 735028
+    },
+    {
+      "width": 88,
+      "mode": "final",
+      "two_species": 759145,
+      "four_species": 998681,
+      "minimum": 759145,
+      "maximum": 998681
+    },
+    {
+      "width": 88,
+      "mode": "persistent",
+      "two_species": 801873,
+      "four_species": 1072385,
+      "minimum": 801873,
+      "maximum": 1072385
+    },
+    {
+      "width": 92,
+      "mode": "off",
+      "two_species": 667606,
+      "four_species": 803214,
+      "minimum": 667606,
+      "maximum": 803214
+    },
+    {
+      "width": 92,
+      "mode": "final",
+      "two_species": 822523,
+      "four_species": 1078835,
+      "minimum": 822523,
+      "maximum": 1078835
+    },
+    {
+      "width": 92,
+      "mode": "persistent",
+      "two_species": 867107,
+      "four_species": 1155803,
+      "minimum": 867107,
+      "maximum": 1155803
+    },
+    {
+      "width": 96,
+      "mode": "off",
+      "two_species": 726776,
+      "four_species": 874424,
+      "minimum": 726776,
+      "maximum": 874424
+    },
+    {
+      "width": 96,
+      "mode": "final",
+      "two_species": 888413,
+      "four_species": 1162013,
+      "minimum": 888413,
+      "maximum": 1162013
+    },
+    {
+      "width": 96,
+      "mode": "persistent",
+      "two_species": 934853,
+      "four_species": 1242245,
+      "minimum": 934853,
+      "maximum": 1242245
+    }
+  ]
+}

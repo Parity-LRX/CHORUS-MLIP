@@ -1,0 +1,239 @@
+{
+  "protocol": "same checkpoint and compiled DPA-4 model; AMP is the only variable",
+  "c32": {
+    "inference": [
+      {
+        "natoms": 32,
+        "bf16_amp_atoms_per_second": 1000.8594864141903,
+        "strict_fp32_atoms_per_second": 1003.8050920533673,
+        "bf16_over_fp32_speedup": 0.9970655601744842,
+        "bf16_amp_peak_memory_gib": 0.07009553909301758,
+        "strict_fp32_peak_memory_gib": 0.07009553909301758
+      },
+      {
+        "natoms": 64,
+        "bf16_amp_atoms_per_second": 1978.0819464106116,
+        "strict_fp32_atoms_per_second": 1979.7799528121964,
+        "bf16_over_fp32_speedup": 0.999142325691715,
+        "bf16_amp_peak_memory_gib": 0.12572622299194336,
+        "strict_fp32_peak_memory_gib": 0.12572622299194336
+      },
+      {
+        "natoms": 128,
+        "bf16_amp_atoms_per_second": 3977.389176950831,
+        "strict_fp32_atoms_per_second": 3969.899976245121,
+        "bf16_over_fp32_speedup": 1.0018864960705618,
+        "bf16_amp_peak_memory_gib": 0.21972131729125977,
+        "strict_fp32_peak_memory_gib": 0.21972131729125977
+      },
+      {
+        "natoms": 256,
+        "bf16_amp_atoms_per_second": 7966.638720152991,
+        "strict_fp32_atoms_per_second": 7949.016334820855,
+        "bf16_over_fp32_speedup": 1.0022169265466143,
+        "bf16_amp_peak_memory_gib": 0.40459585189819336,
+        "strict_fp32_peak_memory_gib": 0.40459585189819336
+      },
+      {
+        "natoms": 512,
+        "bf16_amp_atoms_per_second": 15934.901244019295,
+        "strict_fp32_atoms_per_second": 15932.134141151855,
+        "bf16_over_fp32_speedup": 1.0001736806157244,
+        "bf16_amp_peak_memory_gib": 0.7729306221008301,
+        "strict_fp32_peak_memory_gib": 0.7729306221008301
+      },
+      {
+        "natoms": 1024,
+        "bf16_amp_atoms_per_second": 29789.4518380507,
+        "strict_fp32_atoms_per_second": 29763.24751726521,
+        "bf16_over_fp32_speedup": 1.0008804254566068,
+        "bf16_amp_peak_memory_gib": 1.4967079162597656,
+        "strict_fp32_peak_memory_gib": 1.4967079162597656
+      },
+      {
+        "natoms": 2048,
+        "bf16_amp_atoms_per_second": 37566.01667414676,
+        "strict_fp32_atoms_per_second": 37522.77715221139,
+        "bf16_over_fp32_speedup": 1.001152353989151,
+        "bf16_amp_peak_memory_gib": 2.935025691986084,
+        "strict_fp32_peak_memory_gib": 2.935025691986084
+      }
+    ],
+    "train": [
+      {
+        "natoms": 32,
+        "bf16_amp_atoms_per_second": 1377.8902578246395,
+        "strict_fp32_atoms_per_second": 1482.362699121741,
+        "bf16_over_fp32_speedup": 0.9295230233741052,
+        "bf16_amp_peak_memory_gib": 0.0940713882446289,
+        "strict_fp32_peak_memory_gib": 0.19507884979248047
+      },
+      {
+        "natoms": 64,
+        "bf16_amp_atoms_per_second": 2741.8888125296653,
+        "strict_fp32_atoms_per_second": 2951.506986689427,
+        "bf16_over_fp32_speedup": 0.9289792722480116,
+        "bf16_amp_peak_memory_gib": 0.15927362442016602,
+        "strict_fp32_peak_memory_gib": 0.23055410385131836
+      },
+      {
+        "natoms": 128,
+        "bf16_amp_atoms_per_second": 5492.85010719612,
+        "strict_fp32_atoms_per_second": 5924.169427708117,
+        "bf16_over_fp32_speedup": 0.9271932840923388,
+        "bf16_amp_peak_memory_gib": 0.2917923927307129,
+        "strict_fp32_peak_memory_gib": 0.43335485458374023
+      },
+      {
+        "natoms": 256,
+        "bf16_amp_atoms_per_second": 11016.309895389146,
+        "strict_fp32_atoms_per_second": 11902.462927234903,
+        "bf16_over_fp32_speedup": 0.9255487677413315,
+        "bf16_amp_peak_memory_gib": 0.553807258605957,
+        "strict_fp32_peak_memory_gib": 0.8437533378601074
+      },
+      {
+        "natoms": 512,
+        "bf16_amp_atoms_per_second": 22177.56019678539,
+        "strict_fp32_atoms_per_second": 19312.462320036804,
+        "bf16_over_fp32_speedup": 1.1483548720649686,
+        "bf16_amp_peak_memory_gib": 1.0740966796875,
+        "strict_fp32_peak_memory_gib": 1.6247739791870117
+      },
+      {
+        "natoms": 1024,
+        "bf16_amp_atoms_per_second": 32166.859239897694,
+        "strict_fp32_atoms_per_second": 21715.923953238358,
+        "bf16_over_fp32_speedup": 1.4812567638919574,
+        "bf16_amp_peak_memory_gib": 2.076911449432373,
+        "strict_fp32_peak_memory_gib": 3.2122249603271484
+      },
+      {
+        "natoms": 2048,
+        "bf16_amp_atoms_per_second": 33813.19873032243,
+        "strict_fp32_atoms_per_second": 21728.503174244823,
+        "bf16_over_fp32_speedup": 1.5561678804641181,
+        "bf16_amp_peak_memory_gib": 4.090652942657471,
+        "strict_fp32_peak_memory_gib": 6.298783302307129
+      }
+    ]
+  },
+  "c48": {
+    "inference": [
+      {
+        "natoms": 32,
+        "bf16_amp_atoms_per_second": 990.5755751493947,
+        "strict_fp32_atoms_per_second": 1003.2350889691769,
+        "bf16_over_fp32_speedup": 0.9873813087690245,
+        "bf16_amp_peak_memory_gib": 0.09882450103759766,
+        "strict_fp32_peak_memory_gib": 0.09882450103759766
+      },
+      {
+        "natoms": 64,
+        "bf16_amp_atoms_per_second": 1948.696176669823,
+        "strict_fp32_atoms_per_second": 1981.3672996249213,
+        "bf16_over_fp32_speedup": 0.983510819543008,
+        "bf16_amp_peak_memory_gib": 0.18018484115600586,
+        "strict_fp32_peak_memory_gib": 0.18018484115600586
+      },
+      {
+        "natoms": 128,
+        "bf16_amp_atoms_per_second": 3916.4055749249655,
+        "strict_fp32_atoms_per_second": 3973.028339956447,
+        "bf16_over_fp32_speedup": 0.9857482101343124,
+        "bf16_amp_peak_memory_gib": 0.31185483932495117,
+        "strict_fp32_peak_memory_gib": 0.3113846778869629
+      },
+      {
+        "natoms": 256,
+        "bf16_amp_atoms_per_second": 7821.222778278368,
+        "strict_fp32_atoms_per_second": 7923.014819563263,
+        "bf16_over_fp32_speedup": 0.9871523601049499,
+        "bf16_amp_peak_memory_gib": 0.568415641784668,
+        "strict_fp32_peak_memory_gib": 0.568415641784668
+      },
+      {
+        "natoms": 512,
+        "bf16_amp_atoms_per_second": 15691.680054893897,
+        "strict_fp32_atoms_per_second": 15911.562513907094,
+        "bf16_over_fp32_speedup": 0.9861809637600949,
+        "bf16_amp_peak_memory_gib": 1.0858092308044434,
+        "strict_fp32_peak_memory_gib": 1.0858092308044434
+      },
+      {
+        "natoms": 1024,
+        "bf16_amp_atoms_per_second": 25339.628736213268,
+        "strict_fp32_atoms_per_second": 25500.046750194302,
+        "bf16_over_fp32_speedup": 0.9937091090242879,
+        "bf16_amp_peak_memory_gib": 2.0914063453674316,
+        "strict_fp32_peak_memory_gib": 2.0914063453674316
+      },
+      {
+        "natoms": 2048,
+        "bf16_amp_atoms_per_second": 27387.16613793431,
+        "strict_fp32_atoms_per_second": 27506.696046592824,
+        "bf16_over_fp32_speedup": 0.9956545159601848,
+        "bf16_amp_peak_memory_gib": 4.134929656982422,
+        "strict_fp32_peak_memory_gib": 4.134929656982422
+      }
+    ],
+    "train": [
+      {
+        "natoms": 32,
+        "bf16_amp_atoms_per_second": 1352.1046861251596,
+        "strict_fp32_atoms_per_second": 1499.0602604126584,
+        "bf16_over_fp32_speedup": 0.9019682009000457,
+        "bf16_amp_peak_memory_gib": 0.1591815948486328,
+        "strict_fp32_peak_memory_gib": 0.2514529228210449
+      },
+      {
+        "natoms": 64,
+        "bf16_amp_atoms_per_second": 2729.2615740715,
+        "strict_fp32_atoms_per_second": 2977.7901931505103,
+        "bf16_over_fp32_speedup": 0.9165392445543431,
+        "bf16_amp_peak_memory_gib": 0.22733354568481445,
+        "strict_fp32_peak_memory_gib": 0.33298730850219727
+      },
+      {
+        "natoms": 128,
+        "bf16_amp_atoms_per_second": 5487.391977007716,
+        "strict_fp32_atoms_per_second": 5992.817000893174,
+        "bf16_over_fp32_speedup": 0.9156615288252372,
+        "bf16_amp_peak_memory_gib": 0.41640615463256836,
+        "strict_fp32_peak_memory_gib": 0.6216011047363281
+      },
+      {
+        "natoms": 256,
+        "bf16_amp_atoms_per_second": 10972.959677579032,
+        "strict_fp32_atoms_per_second": 10943.489272766796,
+        "bf16_over_fp32_speedup": 1.0026929623703817,
+        "bf16_amp_peak_memory_gib": 0.7668437957763672,
+        "strict_fp32_peak_memory_gib": 1.1920228004455566
+      },
+      {
+        "natoms": 512,
+        "bf16_amp_atoms_per_second": 19780.68281180287,
+        "strict_fp32_atoms_per_second": 15139.35310849284,
+        "bf16_over_fp32_speedup": 1.3065738456622924,
+        "bf16_amp_peak_memory_gib": 1.4851188659667969,
+        "strict_fp32_peak_memory_gib": 2.335240364074707
+      },
+      {
+        "natoms": 1024,
+        "bf16_amp_atoms_per_second": 23643.51580105578,
+        "strict_fp32_atoms_per_second": 15948.753039383879,
+        "bf16_over_fp32_speedup": 1.482467986222524,
+        "bf16_amp_peak_memory_gib": 2.915775775909424,
+        "strict_fp32_peak_memory_gib": 4.56585693359375
+      },
+      {
+        "natoms": 2048,
+        "bf16_amp_atoms_per_second": 24208.47017068035,
+        "strict_fp32_atoms_per_second": 16071.479510227755,
+        "bf16_over_fp32_speedup": 1.5063000363640624,
+        "bf16_amp_peak_memory_gib": 5.741341590881348,
+        "strict_fp32_peak_memory_gib": 9.046026706695557
+      }
+    ]
+  }
+}

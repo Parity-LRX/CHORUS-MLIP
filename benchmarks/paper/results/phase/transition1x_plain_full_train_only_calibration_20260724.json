@@ -1,0 +1,57 @@
+{
+  "status": "verified_current_loader_train_only_calibration",
+  "date": "2026-07-24",
+  "dataset": {
+    "name": "Transition1x reaction-disjoint 50k/10k/10k",
+    "seed": 20260616,
+    "calibration_fit_split": "train only",
+    "evaluation_split": "validation"
+  },
+  "model": {
+    "phase_density_pairs": "full",
+    "phase_mode": "final-full-l-residual",
+    "phase_placement": "pre-product-full-l",
+    "channels": 64,
+    "lmax": 1,
+    "max_ell": 2,
+    "num_interaction": 2,
+    "correlation": 2,
+    "phase_density_rank": 8,
+    "checkpoint_selected_step": 34364,
+    "parameters_before_calibration": 194308,
+    "parameters_with_element_correction": 194312
+  },
+  "train_only_element_calibration": {
+    "num_structures": 49984,
+    "normal_matrix_rank": 4,
+    "elements": [1, 6, 7, 8],
+    "delta_eV_per_atom": [
+      0.7767622574215884,
+      -2.0750473691420073,
+      0.5470968178256211,
+      0.6846586398175716
+    ]
+  },
+  "validation_meV": {
+    "raw_current_strict_reload": {
+      "energy_mae_per_atom": 50.640,
+      "energy_rmse_per_atom": 62.738,
+      "force_mae_per_angstrom": 106.213,
+      "force_rmse_per_angstrom": 207.651,
+      "total_loss_eV_units": 4.315845
+    },
+    "train_only_calibrated": {
+      "energy_mae_per_atom": 28.360,
+      "energy_rmse_per_atom": 43.842,
+      "force_mae_per_angstrom": 106.213,
+      "force_rmse_per_angstrom": 207.651,
+      "total_loss_eV_units": 4.313831
+    }
+  },
+  "comparison_note": "Use the current strict checkpoint reload values above. The older official-test log predates the reduced-CG checkpoint restoration fix and is not the matched pre-calibration reference for this audit.",
+  "remote_artifacts": {
+    "calibrated_checkpoint": "/home/ylzhang/chorus_runs/plain_full_t1x_train_only_calibration_20260724/transition1x_plain_full_train_calibrated.pth",
+    "calibration_log": "/home/ylzhang/chorus_runs/plain_full_t1x_train_only_calibration_20260724/run.log",
+    "raw_reload_log": "/home/ylzhang/chorus_runs/plain_full_t1x_train_only_calibration_20260724/eval_raw.log"
+  }
+}

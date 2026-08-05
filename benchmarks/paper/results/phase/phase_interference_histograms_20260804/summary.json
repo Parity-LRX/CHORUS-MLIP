@@ -1,0 +1,62 @@
+{
+  "datasets": {
+    "3bpa": {
+      "destructive_kernel_fraction_max": 0.4792319230030122,
+      "destructive_kernel_fraction_min": 0.0,
+      "global_shift_force_prediction_change_mev_per_angstrom": 0.00017088688450095095,
+      "intervention_batches": 4,
+      "label": "3BPA 300 K",
+      "permuted_phase_force_mae_change_percent": 6140.6242883048535,
+      "relative_phase_pair_count_per_channel": 189197,
+      "validation_batches": 4,
+      "zero_phase_force_mae_change_percent": 5610.416238208172
+    },
+    "buckyball": {
+      "destructive_kernel_fraction_max": 0.049059143491841546,
+      "destructive_kernel_fraction_min": 0.0,
+      "global_shift_force_prediction_change_mev_per_angstrom": 0.0002457340495491915,
+      "intervention_batches": 16,
+      "label": "MD22 Buckyball",
+      "permuted_phase_force_mae_change_percent": 58.06322980914871,
+      "relative_phase_pair_count_per_channel": 43170961,
+      "validation_batches": 38,
+      "zero_phase_force_mae_change_percent": 522.2024237605749
+    },
+    "mal": {
+      "destructive_kernel_fraction_max": 0.0,
+      "destructive_kernel_fraction_min": 0.0,
+      "global_shift_force_prediction_change_mev_per_angstrom": 0.0002046055871889823,
+      "intervention_batches": 16,
+      "label": "xxMD MAL",
+      "permuted_phase_force_mae_change_percent": 0.3306133373166542,
+      "relative_phase_pair_count_per_channel": 1738182,
+      "validation_batches": 436,
+      "zero_phase_force_mae_change_percent": 12.679812822392233
+    },
+    "sti": {
+      "destructive_kernel_fraction_max": 0.0,
+      "destructive_kernel_fraction_min": 0.0,
+      "global_shift_force_prediction_change_mev_per_angstrom": 0.0001892012733151205,
+      "intervention_batches": 16,
+      "label": "xxMD STI",
+      "permuted_phase_force_mae_change_percent": 0.0033945457995399053,
+      "relative_phase_pair_count_per_channel": 24373325,
+      "validation_batches": 398,
+      "zero_phase_force_mae_change_percent": 228.49639087883182
+    },
+    "t1x": {
+      "destructive_kernel_fraction_max": 0.0,
+      "destructive_kernel_fraction_min": 0.0,
+      "global_shift_force_prediction_change_mev_per_angstrom": 0.00017138524475567428,
+      "intervention_batches": 16,
+      "label": "Transition1x subset",
+      "permuted_phase_force_mae_change_percent": 17.002850038948083,
+      "relative_phase_pair_count_per_channel": 6433698,
+      "validation_batches": 625,
+      "zero_phase_force_mae_change_percent": 10.348238649643516
+    }
+  },
+  "histogram_scope": "complete validation split",
+  "intervention_scope": "leading validation batches; test data are not used",
+  "selection": "validation Force-MAE-selected checkpoint for each dataset"
+}

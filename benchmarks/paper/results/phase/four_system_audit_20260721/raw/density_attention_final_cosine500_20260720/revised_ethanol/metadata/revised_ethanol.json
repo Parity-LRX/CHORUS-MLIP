@@ -1,0 +1,15 @@
+{
+  "composition": {
+    "1": 6,
+    "6": 2,
+    "8": 1
+  },
+  "data": "/tmp/mace_ictd_public_md17/revised_ethanol",
+  "mean_train_energy": -4209.616940208086,
+  "minimum_norm_e0": {
+    "1": -616.0415034450858,
+    "6": -205.34716781502857,
+    "8": -102.67358390751428
+  },
+  "n_train": 1000
+}

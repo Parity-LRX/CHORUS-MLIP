@@ -1,0 +1,88 @@
+{
+  "status": "verified_same_validation_split_and_symmetric_train_only_calibration",
+  "date": "2026-07-24",
+  "hardware": "NVIDIA RTX 4090",
+  "dataset": {
+    "name": "Transition1x reaction-disjoint 50k/10k/10k",
+    "split_seed": 20260616,
+    "train_structures": 50000,
+    "validation_structures": 10000,
+    "batch_size": 16,
+    "energy_force_weights": "1:100",
+    "optimizer_steps": 100000
+  },
+  "chorus": {
+    "configuration": "C48 L2, 2 interactions, correlation 2, full-L Hermitian rank 8, final scope",
+    "parameters": 168634,
+    "validation": {
+      "energy_mae_meV_per_atom": 18.939,
+      "energy_rmse_meV_per_atom": 30.168,
+      "force_mae_meV_per_angstrom": 91.948,
+      "force_rmse_meV_per_angstrom": 207.754
+    },
+    "training_throughput_steps_per_second": {
+      "steady_state_median": 49.66613672496025,
+      "end_to_end_including_compile": 35.190079212868305
+    },
+    "final_train_only_element_calibration": {
+      "fit_split": "train",
+      "normal_matrix_rank": 4,
+      "delta_eV_H_C_N_O": [
+        0.16762324616626553,
+        -0.6405595120561716,
+        0.1957089506496566,
+        0.43878251933842083
+      ],
+      "forces_changed": false,
+      "inference_graph_changed": false
+    }
+  },
+  "tece": {
+    "configuration": "2 layers, channels 24, lmax=Lmax=mmax=2, EMA",
+    "parameters": 263361,
+    "validation": {
+      "energy_mae_meV_per_atom": 22.56941165765938,
+      "energy_rmse_meV_per_atom": 34.28715651134946,
+      "force_mae_meV_per_angstrom": 98.58288284258198,
+      "force_rmse_meV_per_angstrom": 227.9230962386618
+    },
+    "symmetric_train_only_element_calibration": {
+      "delta_eV_H_C_N_O": [
+        0.08609438701555598,
+        -0.32248362144575243,
+        0.09921775137111528,
+        0.21886156685159378
+      ],
+      "energy_mae_meV_per_atom": 20.42351012711028,
+      "energy_rmse_meV_per_atom": 32.28508463016933,
+      "forces_changed": false
+    },
+    "training_throughput_steps_per_second": 8.52
+  },
+  "chorus_relative_to_raw_tece": {
+    "energy_mae_reduction_percent": 16.0855,
+    "energy_rmse_reduction_percent": 12.0137,
+    "force_mae_reduction_percent": 6.73026,
+    "force_rmse_reduction_percent": 8.84908,
+    "steady_state_training_speedup": 5.82936,
+    "end_to_end_training_speedup": 4.13029
+  },
+  "chorus_relative_to_symmetrically_calibrated_tece": {
+    "energy_mae_reduction_percent": 7.26863,
+    "energy_rmse_reduction_percent": 6.55747,
+    "force_mae_reduction_percent": 6.73026,
+    "force_rmse_reduction_percent": 8.84908,
+    "steady_state_training_speedup": 5.82936
+  },
+  "verification": {
+    "phase_tests": "60 passed in 35.85s on RTX 4090/FSCETP",
+    "calibrated_checkpoint_strict_reload": true,
+    "calibrated_checkpoint_reload_metrics_match": true,
+    "only_changed_model_state_tensor": "element_energy_correction",
+    "tece_received_identical_train_only_element_calibration_audit": true,
+    "code_commits": [
+      "b664fb2",
+      "e8579a6"
+    ]
+  }
+}

@@ -1,0 +1,85 @@
+{
+  "status": "verified_remote_test_metrics",
+  "remote_root": "/public/home/sps-xia/rxlin/nequip_chorus_runs/extended_c64_r16_20260729",
+  "selection_rule": "validation_f_mae",
+  "test_used_for_selection": false,
+  "units": {
+    "force_mae": "eV/Angstrom",
+    "energy_mae": "eV/atom",
+    "trainable_parameters": "count"
+  },
+  "models": [
+    {
+      "carrier": "spherical-e3nn",
+      "chorus": false,
+      "width": 64,
+      "rank": null,
+      "results": {
+        "Transition1x": {"params": 660776, "force_mae": 0.113737, "energy_mae": 0.026785},
+        "xxMD MAL": {"params": 607464, "force_mae": 0.248747, "energy_mae": 0.026683},
+        "xxMD STI": {"params": 554152, "force_mae": 0.170090, "energy_mae": 0.013222},
+        "MD22 Buckyball": {"params": 554152, "force_mae": 0.012839, "energy_mae": 0.002205},
+        "3BPA": {
+          "params": 660776,
+          "force_mae_300K": 0.016554,
+          "force_mae_600K": 0.031814,
+          "force_mae_1200K": 0.074001
+        }
+      }
+    },
+    {
+      "carrier": "spherical-e3nn",
+      "chorus": true,
+      "width": 64,
+      "rank": 16,
+      "results": {
+        "Transition1x": {"params": 852621, "force_mae": 0.102118, "energy_mae": 0.024823},
+        "xxMD MAL": {"params": 757325, "force_mae": 0.203072, "energy_mae": 0.020697},
+        "xxMD STI": {"params": 662029, "force_mae": 0.153280, "energy_mae": 0.016747},
+        "MD22 Buckyball": {"params": 662029, "force_mae": 0.009022, "energy_mae": 0.000482},
+        "3BPA": {
+          "params": 852621,
+          "force_mae_300K": 0.012480,
+          "force_mae_600K": 0.024635,
+          "force_mae_1200K": 0.056322
+        }
+      }
+    },
+    {
+      "carrier": "ICTC",
+      "chorus": false,
+      "width": 64,
+      "rank": null,
+      "results": {
+        "Transition1x": {"params": 660776, "force_mae": 0.110832, "energy_mae": 0.028657},
+        "xxMD MAL": {"params": 607464, "force_mae": 0.243640, "energy_mae": 0.027138},
+        "xxMD STI": {"params": 554152, "force_mae": 0.174466, "energy_mae": 0.013670},
+        "MD22 Buckyball": {"params": 554152, "force_mae": 0.013246, "energy_mae": 0.001163},
+        "3BPA": {
+          "params": 660776,
+          "force_mae_300K": 0.016319,
+          "force_mae_600K": 0.030788,
+          "force_mae_1200K": 0.069482
+        }
+      }
+    },
+    {
+      "carrier": "ICTC",
+      "chorus": true,
+      "width": 64,
+      "rank": 16,
+      "results": {
+        "Transition1x": {"params": 852621, "force_mae": 0.100478, "energy_mae": 0.023912},
+        "xxMD MAL": {"params": 757325, "force_mae": 0.197240, "energy_mae": 0.021310},
+        "xxMD STI": {"params": 662029, "force_mae": 0.151793, "energy_mae": 0.020389},
+        "MD22 Buckyball": {"params": 662029, "force_mae": 0.009389, "energy_mae": 0.000338},
+        "3BPA": {
+          "params": 852621,
+          "force_mae_300K": 0.012824,
+          "force_mae_600K": 0.024949,
+          "force_mae_1200K": 0.057825
+        }
+      }
+    }
+  ]
+}

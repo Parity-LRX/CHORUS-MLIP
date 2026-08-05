@@ -1,0 +1,30 @@
+{
+  "protocol": {
+    "device": "NVIDIA A100-SXM4-40GB",
+    "dtype": "float32",
+    "tf32": false,
+    "batch_size": 16,
+    "atoms": 144,
+    "directed_edges": 1152,
+    "iterations": 20,
+    "repeats": 3,
+    "aggregation": "median",
+    "compile_time_included": false,
+    "optimizer_step_included": false
+  },
+  "mace_ictc": {
+    "off": {"parameters": 652736, "inference_ms": 4.022754868492484, "training_ms": 9.309466788545251},
+    "final_r16": {"parameters": 792198, "inference_ms": 5.030728317797184, "training_ms": 12.739218585193157},
+    "persistent_r16": {"parameters": 947407, "inference_ms": 6.334084551781416, "training_ms": 20.2279235702008}
+  },
+  "nequip_ictc_makefx": {
+    "off": {"parameters": 614510, "inference_ms": 3.120881412178278, "training_ms": 6.455183122307062},
+    "final_r16": {"parameters": 811091, "inference_ms": 5.187708837911487, "training_ms": 11.034722812473774},
+    "persistent_r16": {"parameters": 866747, "inference_ms": 7.254256401211023, "training_ms": 15.87374652735889}
+  },
+  "nequip_oeq": {
+    "off": {"parameters": 613334, "inference_ms": 7.3983244597911835, "training_ms": 18.67088838480413},
+    "final_r16": {"parameters": 809915, "inference_ms": 10.441945353522897, "training_ms": 26.35289872996509},
+    "persistent_r16": {"parameters": 865571, "inference_ms": 13.962965179234743, "training_ms": 35.9031077940017}
+  }
+}

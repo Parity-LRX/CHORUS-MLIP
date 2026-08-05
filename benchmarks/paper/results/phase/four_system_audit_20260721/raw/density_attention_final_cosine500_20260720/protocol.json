@@ -1,0 +1,23 @@
+{
+  "protocol": "density_preserving_final_attention_cosine500",
+  "operator": {
+    "attention_heads": 4,
+    "attention_mode": "density-preserving",
+    "attention_scope": "final",
+    "phase_mode": "none"
+  },
+  "dataset_order": [
+    "revised_aspirin",
+    "revised_benzene",
+    "revised_ethanol",
+    "cheng_water"
+  ],
+  "seeds": "20260616,20260617,20260618",
+  "epochs": 500,
+  "initial_learning_rate": 0.001,
+  "minimum_learning_rate": 1e-6,
+  "scheduler": "optimizer-step cosine",
+  "execution": "required make_fx compilation, strictly serial",
+  "checkpoint_selection": "minimum validation loss",
+  "primary_reporting": "energy and force MAE from the same selected checkpoint"
+}
