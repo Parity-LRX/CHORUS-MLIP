@@ -11,6 +11,7 @@ CHANNELS="${CHANNELS:-64}"
 RANK="${RANK:-16}"
 NUM_INTERACTIONS="${NUM_INTERACTIONS:-2}"
 MODE="${MODE:-chorus}"
+PHASE_CONTEXT="${PHASE_CONTEXT:-content}"
 SYSTEMS="${SYSTEMS:-t1x,mal,sti,bucky,3bpa}"
 T1X_DATA_DIR="${T1X_DATA_DIR:-/home/ylzhang/lrx/transition1x/chorus_reaction_id_50k_seed20260616}"
 MAL_DATA_DIR="${MAL_DATA_DIR:-/home/ylzhang/lrx/xxmd/processed_dft_temporal_r5/mal}"
@@ -39,7 +40,7 @@ case "${MODE}" in
     PHASE_ARGS=(
       --phase-mode final-full-l-residual
       --phase-amplitude softplus --phase-coefficient polar
-      --phase-context content --phase-density-pairs full-nonlinear
+      --phase-context "${PHASE_CONTEXT}" --phase-density-pairs full-nonlinear
       --phase-normalization avg-neighbors
       --phase-placement pre-product-full-l --phase-scope final
     )
@@ -50,7 +51,7 @@ case "${MODE}" in
     PHASE_ARGS=(
       --phase-mode final-full-l-residual
       --phase-amplitude softplus --phase-coefficient polar
-      --phase-context content --phase-density-pairs full-nonlinear
+      --phase-context "${PHASE_CONTEXT}" --phase-density-pairs full-nonlinear
       --phase-normalization avg-neighbors
       --phase-placement pre-product-full-l --phase-scope persistent
     )
@@ -248,6 +249,7 @@ run_system() {
         DATA_DIR="${data_dir}" ROOT="${out}" \
         OUT="${out}/train_only_energy_calibration" \
         CHANNELS="${CHANNELS}" PHASE_DENSITY_RANK="${RANK}" \
+        PHASE_CONTEXT="${PHASE_CONTEXT}" \
         NUM_INTERACTIONS="${NUM_INTERACTIONS}" \
         RUN_BASELINE=1 RUN_CHORUS=0 BASELINE_NAME="phaseoff_c${CHANNELS}" \
         BASELINE_SOURCE="${selected}" \
@@ -257,6 +259,7 @@ run_system() {
         DATA_DIR="${data_dir}" ROOT="${out}" \
         OUT="${out}/train_only_energy_calibration" \
         CHANNELS="${CHANNELS}" PHASE_DENSITY_RANK="${RANK}" \
+        PHASE_CONTEXT="${PHASE_CONTEXT}" \
         NUM_INTERACTIONS="${NUM_INTERACTIONS}" \
         CHORUS_SCOPE="${PHASE_SCOPE}" \
         RUN_BASELINE=0 RUN_CHORUS=1 CHORUS_NAME="chorus_c${CHANNELS}_rank${RANK}" \

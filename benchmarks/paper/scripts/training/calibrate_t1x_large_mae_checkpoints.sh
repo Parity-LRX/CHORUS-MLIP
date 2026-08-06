@@ -18,6 +18,7 @@ ATOMIC_ENERGY_KEYS="${ATOMIC_ENERGY_KEYS:-1,6,7,8}"
 ATOMIC_ENERGY_VALUES="${ATOMIC_ENERGY_VALUES:--13.62222753701504,-1029.4130839658328,-1484.8710358098756,-2041.8396277138045}"
 PHASE_DENSITY_RANK="${PHASE_DENSITY_RANK:-16}"
 PHASE_DENSITY_PAIRS="${PHASE_DENSITY_PAIRS:-full-nonlinear}"
+PHASE_CONTEXT="${PHASE_CONTEXT:-content}"
 RUN_BASELINE="${RUN_BASELINE:-1}"
 RUN_CHORUS="${RUN_CHORUS:-1}"
 BASELINE_NAME="${BASELINE_NAME:-baseline}"
@@ -59,7 +60,7 @@ baseline_phase=(--phase-mode none)
 chorus_phase=(
   --phase-mode final-full-l-residual
   --phase-amplitude softplus --phase-coefficient polar
-  --phase-context content --phase-density-pairs "${PHASE_DENSITY_PAIRS}"
+  --phase-context "${PHASE_CONTEXT}" --phase-density-pairs "${PHASE_DENSITY_PAIRS}"
   --phase-normalization avg-neighbors
   --phase-placement pre-product-full-l --phase-scope "${CHORUS_SCOPE}"
 )
