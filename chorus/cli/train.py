@@ -660,8 +660,12 @@ def build_arg_parser() -> argparse.ArgumentParser:
     ap.add_argument(
         "--phase-context",
         default="content",
-        choices=["content", "radial"],
-        help="Predict the coefficient from node-content plus radial features, or radial features only.",
+        choices=["content", "radial", "irrep-norm", "content-irrep-norm"],
+        help=(
+            "Predict the coefficient from signed l=0 node content, radial features "
+            "only, squared norms of all node irreps, or signed l=0 content plus "
+            "squared l>0 irrep norms."
+        ),
     )
     ap.add_argument(
         "--phase-placement",

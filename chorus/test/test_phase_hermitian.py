@@ -970,6 +970,8 @@ def test_full_l_phase_model_rotation_force_covariance_and_gradients(
         ("signed", "content", "full"),
         ("cartesian", "content", "full"),
         ("polar", "radial", "full"),
+        ("polar", "irrep-norm", "full"),
+        ("polar", "content-irrep-norm", "full"),
         ("polar", "content", "diagonal"),
     ],
 )

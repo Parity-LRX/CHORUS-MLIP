@@ -3004,9 +3004,15 @@ class ICTDResidualInteractionBlock(nn.Module):
                 "phase_coefficient must be 'polar', 'positive', 'signed', or "
                 f"'cartesian', got {self.phase_coefficient!r}"
             )
-        if self.phase_context not in {"content", "radial"}:
+        if self.phase_context not in {
+            "content",
+            "radial",
+            "irrep-norm",
+            "content-irrep-norm",
+        }:
             raise ValueError(
-                f"phase_context must be 'content' or 'radial', got {self.phase_context!r}"
+                "phase_context must be 'content', 'radial', 'irrep-norm', or "
+                f"'content-irrep-norm', got {self.phase_context!r}"
             )
         if self.phase_normalization not in {"avg-neighbors", "local-effective"}:
             raise ValueError(
@@ -3028,12 +3034,22 @@ class ICTDResidualInteractionBlock(nn.Module):
                 "neighbor attention; legacy-softmax changes the baseline density scale"
             )
         if self.phase_enabled:
-            # Only l=0 node features and radial edge features enter this network,
-            # therefore theta is an E(3)-invariant edge scalar.  One scalar is
-            # shared across all channels, l blocks, and tensor-product paths.
-            self.phase_node_norm = nn.LayerNorm(self.channels)
+            # Every supported node context is O(3)-invariant.  ``content`` uses
+            # signed l=0 channels.  ``irrep-norm`` mirrors the NequIP adapter by
+            # using the squared norm of every (l, channel) block, while
+            # ``content-irrep-norm`` retains signed l=0 content and appends the
+            # squared norms for l>0.  No m component enters the phase MLP
+            # directly.
+            if self.phase_context in {"irrep-norm", "content-irrep-norm"}:
+                phase_node_channels = self.channels * (self.input_lmax + 1)
+            else:
+                phase_node_channels = self.channels
+            self.phase_node_norm = nn.LayerNorm(phase_node_channels)
             self.phase_trunk = nn.Sequential(
-                nn.Linear(2 * self.channels + self.number_of_basis, self.phase_hidden_channels),
+                nn.Linear(
+                    2 * phase_node_channels + self.number_of_basis,
+                    self.phase_hidden_channels,
+                ),
                 _Normalize2MomSiLU(),
                 nn.Linear(self.phase_hidden_channels, self.phase_hidden_channels),
                 _Normalize2MomSiLU(),
@@ -3411,15 +3427,28 @@ class ICTDResidualInteractionBlock(nn.Module):
         phase_sin: torch.Tensor | None = None
         if self.phase_enabled:
             scalar_nodes = x1[0].squeeze(-1)
-            normalized_scalar_nodes = self.phase_node_norm(scalar_nodes)
+            if self.phase_context == "irrep-norm":
+                node_context = torch.cat(
+                    [x1[l].square().sum(dim=-1) for l in range(self.input_lmax + 1)],
+                    dim=-1,
+                )
+            elif self.phase_context == "content-irrep-norm":
+                node_context = torch.cat(
+                    [scalar_nodes]
+                    + [x1[l].square().sum(dim=-1) for l in range(1, self.input_lmax + 1)],
+                    dim=-1,
+                )
+            else:
+                node_context = scalar_nodes
+            normalized_node_context = self.phase_node_norm(node_context)
             if self.phase_context == "radial":
                 # Preserve the exact trunk shape and nominal parameter budget while
                 # removing all chemical-content information from the coefficient.
-                normalized_scalar_nodes = torch.zeros_like(normalized_scalar_nodes)
+                normalized_node_context = torch.zeros_like(normalized_node_context)
             phase_context = torch.cat(
                 (
-                    normalized_scalar_nodes[edge_dst],
-                    normalized_scalar_nodes[edge_src],
+                    normalized_node_context[edge_dst],
+                    normalized_node_context[edge_src],
                     edge_feats,
                 ),
                 dim=-1,
@@ -4150,9 +4179,15 @@ class PureCartesianICTDFix(nn.Module):
                 "ictd_fix_phase_coefficient must be 'polar', 'positive', 'signed', "
                 f"or 'cartesian', got {self.ictd_fix_phase_coefficient!r}"
             )
-        if self.ictd_fix_phase_context not in {"content", "radial"}:
+        if self.ictd_fix_phase_context not in {
+            "content",
+            "radial",
+            "irrep-norm",
+            "content-irrep-norm",
+        }:
             raise ValueError(
-                "ictd_fix_phase_context must be 'content' or 'radial', "
+                "ictd_fix_phase_context must be 'content', 'radial', "
+                "'irrep-norm', or 'content-irrep-norm', "
                 f"got {self.ictd_fix_phase_context!r}"
             )
         if self.ictd_fix_phase_density_pairs not in {
