@@ -11,7 +11,6 @@ are measured separately and excluded from steady-state latency.
 from __future__ import annotations
 
 import argparse
-import copy
 import json
 import os
 import statistics
@@ -299,11 +298,6 @@ def build_dpa(args: argparse.Namespace):
     from deepmd.utils.argcheck import normalize
 
     config = normalize(json.loads(Path(args.config).read_text()))
-    descriptor = config["model"]["descriptor"]
-    if args.lmax_override >= 0:
-        descriptor["lmax"] = int(args.lmax_override)
-    if args.mmax_override >= 0:
-        descriptor["mmax"] = int(args.mmax_override)
     if args.dpa_amp == "on":
         config["model"]["descriptor"]["use_amp"] = True
     elif args.dpa_amp == "off":
@@ -311,14 +305,13 @@ def build_dpa(args: argparse.Namespace):
     config["model"]["use_compile"] = True
     config["model"]["enable_tf32"] = False
     model = get_model(config["model"])
-    if not args.random_init:
-        raw = torch.load(args.checkpoint, map_location="cpu", weights_only=False)["model"]
-        state = {
-            key.removeprefix("model.Default."): value
-            for key, value in raw.items()
-            if key.startswith("model.Default.")
-        }
-        model.load_state_dict(state, strict=True)
+    raw = torch.load(args.checkpoint, map_location="cpu", weights_only=False)["model"]
+    state = {
+        key.removeprefix("model.Default."): value
+        for key, value in raw.items()
+        if key.startswith("model.Default.")
+    }
+    model.load_state_dict(state, strict=True)
     model = model.cuda()
     nparams = sum(p.numel() for p in model.parameters() if p.requires_grad)
 
@@ -372,11 +365,6 @@ def build_dpa(args: argparse.Namespace):
             "bfloat16" if config["model"]["descriptor"]["use_amp"] else None
         ),
         "dpa_inference_amp": False,
-        "angular_configuration": {
-            "lmax": int(descriptor["lmax"]),
-            "mmax": int(descriptor["mmax"]),
-        },
-        "state_source": "random-initialization" if args.random_init else "checkpoint",
     }
 
 
@@ -388,33 +376,10 @@ def build_tece(args: argparse.Namespace):
 
     from torch_geometric.loader import DataLoader
     from tace.dataset.graph import from_atoms
-    from tace.dataset.quantity import (
-        KEYS,
-        KeySpecification,
-        get_embedding_property,
-        get_target_property,
-        update_keyspec_from_kwargs,
-    )
-    from tace.lightning import create_model, load_tace
+    from tace.dataset.quantity import KEYS, KeySpecification, update_keyspec_from_kwargs
+    from tace.lightning import load_tace
 
-    if args.random_init or args.lmax_override >= 0 or args.mmax_override >= 0:
-        checkpoint = torch.load(args.checkpoint, map_location="cpu", weights_only=False)
-        cfg = copy.deepcopy(checkpoint["hyper_parameters"]["cfg"])
-        model_config = cfg["model"]["config"]
-        if args.lmax_override >= 0:
-            model_config["Lmax"] = int(args.lmax_override)
-            model_config["lmax"] = int(args.lmax_override)
-        if args.mmax_override >= 0:
-            model_config["mmax"] = int(args.mmax_override)
-        statistics = checkpoint["hyper_parameters"]["statistics"]
-        model = create_model(
-            cfg,
-            statistics,
-            get_target_property(cfg),
-            get_embedding_property(cfg),
-        ).cuda()
-    else:
-        model = load_tace(args.checkpoint, "cuda", strict=True, use_ema=False).cuda()
+    model = load_tace(args.checkpoint, "cuda", strict=True, use_ema=False).cuda()
     openeq_modules = [
         name
         for name, module in model.named_modules()
@@ -484,16 +449,6 @@ def build_tece(args: argparse.Namespace):
         "configuration": args.checkpoint,
         "tece_openeq_module_count": len(openeq_modules),
         "tece_openeq_modules": openeq_modules,
-        "angular_configuration": {
-            "Lmax": int(model.readout_fn.model_config["Lmax"]),
-            "lmax": int(model.readout_fn.model_config["lmax"]),
-            "mmax": int(model.readout_fn.model_config["mmax"]),
-        },
-        "state_source": (
-            "random-initialization"
-            if args.random_init or args.lmax_override >= 0 or args.mmax_override >= 0
-            else "checkpoint"
-        ),
     }
 
 
@@ -522,26 +477,6 @@ def main() -> None:
     parser.add_argument("--degree", type=int, default=32)
     parser.add_argument("--cutoff", type=float, default=5.0)
     parser.add_argument("--seed", type=int, default=20260728)
-    parser.add_argument(
-        "--lmax-override",
-        type=int,
-        default=-1,
-        help=(
-            "override DPA-4 descriptor lmax or both TECE node Lmax and edge "
-            "lmax; use with --random-init when the checkpoint shape changes"
-        ),
-    )
-    parser.add_argument(
-        "--mmax-override",
-        type=int,
-        default=-1,
-        help="override the local-frame m cutoff",
-    )
-    parser.add_argument(
-        "--random-init",
-        action="store_true",
-        help="benchmark architecture cost without loading checkpoint weights",
-    )
     parser.add_argument(
         "--dpa-amp",
         choices=("config", "on", "off"),
