@@ -1,0 +1,49 @@
+{
+  "angular_configuration": {
+    "lmax": 6,
+    "mmax": 1
+  },
+  "backend": "DPA-4 internal torch.compile (model.use_compile=true)",
+  "checkpoint": "",
+  "configuration": "/public/home/sps-xia/rxlin/a100_scaling_assets_20260804/dpa4/c32/input.json",
+  "dpa_descriptor_amp": false,
+  "dpa_inference_amp": false,
+  "dpa_training_autocast_dtype": null,
+  "engine": "dpa4",
+  "graph_build_in_timing": true,
+  "parameters": 1743292,
+  "protocol": {
+    "dtype": "float32",
+    "gpu": "NVIDIA A100-SXM4-40GB",
+    "steady_state_excludes_compile_and_prepare": true,
+    "target_neighbors_per_atom": 32,
+    "tasks": {
+      "inference": "energy plus conservative forces",
+      "train": "energy+force loss, backward, optimizer update"
+    },
+    "tf32": false,
+    "torch": "2.11.0+cu126"
+  },
+  "rows": [
+    {
+      "atoms_per_second": 3430.579850336819,
+      "compile_s": 142.98876478802413,
+      "engine": "dpa4",
+      "mean_ms": 74.60646994877607,
+      "median_ms": 74.62295331060886,
+      "natoms": 256,
+      "nedges": -1,
+      "neighbors_per_atom": null,
+      "p10_ms": 74.2497369647026,
+      "p90_ms": 74.94417298585176,
+      "parameters": 1743292,
+      "peak_memory_gib": 3.783637046813965,
+      "prepare_s": 142.9903784431517,
+      "status": "ok",
+      "steps_per_second": 13.4007025403782,
+      "task": "train",
+      "warmup_s": 0.22639938723295927
+    }
+  ],
+  "state_source": "random-initialization"
+}

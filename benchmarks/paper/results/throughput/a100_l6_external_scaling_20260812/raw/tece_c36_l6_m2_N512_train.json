@@ -1,0 +1,52 @@
+{
+  "angular_configuration": {
+    "Lmax": 6,
+    "lmax": 6,
+    "mmax": 2
+  },
+  "backend": "TECE OpenEquivariance",
+  "checkpoint": "/public/home/sps-xia/rxlin/a100_scaling_assets_20260804/tece_c36.ckpt",
+  "configuration": "/public/home/sps-xia/rxlin/a100_scaling_assets_20260804/tece_c36.ckpt",
+  "engine": "tece",
+  "graph_build_in_timing": false,
+  "parameters": 12514893,
+  "protocol": {
+    "dtype": "float32",
+    "gpu": "NVIDIA A100-SXM4-40GB",
+    "steady_state_excludes_compile_and_prepare": true,
+    "target_neighbors_per_atom": 32,
+    "tasks": {
+      "inference": "energy plus conservative forces",
+      "train": "energy+force loss, backward, optimizer update"
+    },
+    "tf32": false,
+    "torch": "2.7.1+cu128"
+  },
+  "rows": [
+    {
+      "atoms_per_second": 85.06928004072124,
+      "compile_s": 0.0,
+      "engine": "tece",
+      "mean_ms": 6018.803283013403,
+      "median_ms": 6018.623876385391,
+      "natoms": 512,
+      "nedges": 16384,
+      "neighbors_per_atom": 32.0,
+      "p10_ms": 6017.790865153074,
+      "p90_ms": 6019.660858437419,
+      "parameters": 12514893,
+      "peak_memory_gib": 20.038901805877686,
+      "prepare_s": 0.01135176606476307,
+      "status": "ok",
+      "steps_per_second": 0.16615093757953367,
+      "task": "train",
+      "warmup_s": 20.46020563878119
+    }
+  ],
+  "state_source": "random-initialization",
+  "tece_openeq_module_count": 2,
+  "tece_openeq_modules": [
+    "readout_fn.representation.interactions.0.rejector.fused_tp",
+    "readout_fn.representation.interactions.0.rejector.fused_tp.oeq_tp"
+  ]
+}
