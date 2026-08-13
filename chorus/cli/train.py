@@ -319,6 +319,41 @@ def _atomic_inter_scale_shift_from_h5(
     return float(scale), mean
 
 
+def _resolve_atomic_inter_scale_shift(
+    path: str,
+    *,
+    atomic_energy_keys,
+    atomic_energy_values,
+    scaling: str,
+    atomic_inter_scale: float | None,
+    atomic_inter_shift: float | None,
+    no_atomic_inter_shift: bool = False,
+    max_samples: int | None = None,
+) -> tuple[float, float]:
+    """Resolve ScaleShift values, avoiding an H5 scan when both are explicit."""
+    if atomic_inter_scale is not None and (
+        atomic_inter_shift is not None or no_atomic_inter_shift
+    ):
+        return float(atomic_inter_scale), (
+            0.0 if no_atomic_inter_shift else float(atomic_inter_shift)
+        )
+
+    scale, shift = _atomic_inter_scale_shift_from_h5(
+        path,
+        atomic_energy_keys=atomic_energy_keys,
+        atomic_energy_values=atomic_energy_values,
+        scaling=scaling,
+        max_samples=max_samples,
+    )
+    if no_atomic_inter_shift:
+        shift = 0.0
+    if atomic_inter_scale is not None:
+        scale = float(atomic_inter_scale)
+    if atomic_inter_shift is not None:
+        shift = float(atomic_inter_shift)
+    return scale, shift
+
+
 def build_baseline_model(
     cfg: ModelConfig,
     *,
@@ -1200,19 +1235,16 @@ def main(argv=None):
     atomic_numbers = aek if aek is not None else [1, 6, 7, 8]
     atomic_energy_keys = aek if aek is not None else _DEFAULT_E0_KEYS
     atomic_energy_values = aev if aev is not None else _DEFAULT_E0_VALUES
-    scale, shift = _atomic_inter_scale_shift_from_h5(
+    scale, shift = _resolve_atomic_inter_scale_shift(
         train_h5,
         atomic_energy_keys=atomic_energy_keys,
         atomic_energy_values=atomic_energy_values,
         scaling=args.scaling,
+        atomic_inter_scale=args.atomic_inter_scale,
+        atomic_inter_shift=args.atomic_inter_shift,
+        no_atomic_inter_shift=args.no_atomic_inter_shift,
         max_samples=args.scaling_max_samples,
     )
-    if args.no_atomic_inter_shift:
-        shift = 0.0
-    if args.atomic_inter_scale is not None:
-        scale = float(args.atomic_inter_scale)
-    if args.atomic_inter_shift is not None:
-        shift = float(args.atomic_inter_shift)
     if args.angular_basis == "e3nn" and args.product_backend not in {"cueq", "ictd-pure-u"}:
         raise ValueError(
             "--angular-basis e3nn requires --product-backend cueq or ictd-pure-u. "
