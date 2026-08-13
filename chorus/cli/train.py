@@ -998,6 +998,9 @@ def build_arg_parser() -> argparse.ArgumentParser:
     ap.add_argument("--evals-per-epoch", type=int, default=1,
                     help="Validation passes per epoch (1=epoch-end only; 2=mid-epoch + end). "
                          "Mid-epoch passes run on all ranks and barrier, so DDP stays in sync.")
+    ap.add_argument("--validation-interval-steps", type=int, default=0,
+                    help="Run full validation every N optimizer steps and allow those points to "
+                         "update the best checkpoint. 0 keeps epoch-based validation only.")
     ap.add_argument("--keep-checkpoints", type=int, default=0,
                     help="Retain the N most-recent VALIDATION checkpoints (saved at every val: "
                          "mid-epoch + epoch-end), rolling -- oldest deleted. 0=disabled (only the "
@@ -1530,6 +1533,7 @@ def main(argv=None):
         makefx_max_slots=args.makefx_max_slots,
         train_sampler=sampler, checkpoint_path=args.checkpoint, log_interval=args.log_interval,
         evals_per_epoch=args.evals_per_epoch,
+        validation_interval_steps=args.validation_interval_steps,
         keep_checkpoints=args.keep_checkpoints,
         checkpoint_interval_steps=args.checkpoint_interval_steps,
         extra_hparams=extra_hparams,

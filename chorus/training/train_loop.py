@@ -131,6 +131,7 @@ class ForceTrainer:
         train_sampler=None,
         log_interval: int = 10,
         evals_per_epoch: int = 1,
+        validation_interval_steps: int = 0,
         checkpoint_path: str | None = None,
         keep_checkpoints: int = 0,
         checkpoint_interval_steps: int = 0,
@@ -213,6 +214,8 @@ class ForceTrainer:
         self.gradient_accumulation_steps = max(1, int(gradient_accumulation_steps))
         self.log_interval = int(log_interval)
         self.evals_per_epoch = max(1, int(evals_per_epoch))
+        self.validation_interval_steps = max(0, int(validation_interval_steps))
+        self.best_validation_loss = math.inf
         self.checkpoint_path = checkpoint_path
         self.keep_checkpoints = max(0, int(keep_checkpoints))
         self.checkpoint_interval_steps = max(0, int(checkpoint_interval_steps))
@@ -1368,6 +1371,17 @@ class ForceTrainer:
             for k in run:
                 run[k] += float(out[k])
             seen += 1
+            step_validation = (
+                optimizer_step
+                and self.val_loader is not None
+                and self.validation_interval_steps > 0
+                and self.global_step % self.validation_interval_steps == 0
+            )
+            if step_validation:
+                self._validate_and_checkpoint(epoch, label="step")
+                if self._dist_ready():
+                    dist.barrier()
+                self.model.train()
             if self.main_process and self.log_interval and (i % self.log_interval == 0):
                 lr = self.optimizer.param_groups[0]["lr"]
                 s = f" S={float(out['stress_loss']):.4f}" if self.c > 0 else ""
@@ -1534,7 +1548,6 @@ class ForceTrainer:
 
     def fit(self, epochs=None, start_epoch: int = 0):
         epochs = int(epochs) if epochs is not None else self.epochs
-        best = math.inf
         for epoch in range(int(start_epoch), epochs):
             if self._reached_max_steps():
                 break
@@ -1559,9 +1572,9 @@ class ForceTrainer:
                 log.info(msg)
                 print(msg, flush=True)
             self._step_scheduler_after_epoch(cur)
-            improved = cur < best
+            improved = cur < self.best_validation_loss
             if improved:
-                best = cur
+                self.best_validation_loss = cur
             should_save = self.checkpoint_path is not None and improved
             if should_save:
                 self._sync_dispersion_graph_observation()
@@ -1572,7 +1585,27 @@ class ForceTrainer:
                 dist.barrier()
             if self._reached_max_steps():
                 break
-        return best
+        return self.best_validation_loss
+
+    def _validate_and_checkpoint(self, epoch: int, *, label: str) -> dict:
+        """Validate one model state and make it eligible for global best selection."""
+        va = self._val_pass()
+        cur = self._broadcast_float(va["total_loss"])
+        if self.main_process:
+            log.info(
+                "epoch %d step %d %s-VAL loss=%.6g Frmse=%.6g Ermse=%.6g Fmae=%.6g Emae=%.6g",
+                epoch, self.global_step, label.upper(), cur, va["force_rmse"],
+                va["energy_rmse_avg"], va["force_mae"], va["energy_mae_avg"],
+            )
+            self._append_loss_csv(epoch, self.global_step, label, va)
+            if cur < self.best_validation_loss:
+                self.best_validation_loss = cur
+                if self.checkpoint_path is not None:
+                    self._sync_dispersion_graph_observation()
+                    self.save_checkpoint(self.checkpoint_path, epoch=epoch)
+            self._save_rolling_checkpoint(epoch)
+        self.best_validation_loss = self._broadcast_float(self.best_validation_loss)
+        return va
 
     @torch.no_grad()
     def fit_element_energy_correction_from_training_set(self) -> dict:
