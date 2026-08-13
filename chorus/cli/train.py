@@ -889,6 +889,9 @@ def build_arg_parser() -> argparse.ArgumentParser:
     ap.add_argument("--max-steps", type=int, default=None,
                     help="Optional hard cap on optimizer steps. If omitted, train for --epochs.")
     ap.add_argument("--batch-size", type=int, default=4)
+    ap.add_argument("--gradient-accumulation-steps", type=int, default=1,
+                    help="Accumulate this many micro-batches per optimizer step, allowing a "
+                         "smaller memory-resident batch at the same effective batch size.")
     ap.add_argument("--lr", type=float, default=1e-3)
     ap.add_argument("--min-lr", type=float, default=1e-6)
     ap.add_argument("--weight-decay", type=float, default=0.0)
@@ -999,6 +1002,9 @@ def build_arg_parser() -> argparse.ArgumentParser:
                     help="Retain the N most-recent VALIDATION checkpoints (saved at every val: "
                          "mid-epoch + epoch-end), rolling -- oldest deleted. 0=disabled (only the "
                          "best-on-improvement checkpoint is kept). Files: <ckpt-stem>.e<E>s<STEP>.pth.")
+    ap.add_argument("--checkpoint-interval-steps", type=int, default=0,
+                    help="Atomically replace <checkpoint-stem>.recovery.pth every N optimizer "
+                         "steps. 0 disables periodic recovery checkpoints.")
     ap.add_argument("--eval-only", action="store_true",
                     help="Load --resume-checkpoint, run ONE validation pass, print Frmse/Ermse, and exit (no training).")
     return ap
@@ -1508,6 +1514,7 @@ def main(argv=None):
         lr_scheduler_gamma=args.lr_scheduler_gamma,
         lr_decay_step=args.lr_decay_step, lr_decay_factor=args.lr_decay_factor,
         epochs=args.epochs, max_steps=args.max_steps, max_grad_norm=args.max_grad_norm,
+        gradient_accumulation_steps=args.gradient_accumulation_steps,
         ema_decay=args.ema_decay, ema_start_step=args.ema_start_step,
         stage_two_enabled=args.stage_two,
         swa_start_epoch=args.swa_start_epoch, swa_start_step=args.swa_start_step,
@@ -1524,6 +1531,7 @@ def main(argv=None):
         train_sampler=sampler, checkpoint_path=args.checkpoint, log_interval=args.log_interval,
         evals_per_epoch=args.evals_per_epoch,
         keep_checkpoints=args.keep_checkpoints,
+        checkpoint_interval_steps=args.checkpoint_interval_steps,
         extra_hparams=extra_hparams,
         distributed=ddp_info["enabled"],
         rank=ddp_info["rank"],

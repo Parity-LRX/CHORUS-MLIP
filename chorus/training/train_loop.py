@@ -109,6 +109,7 @@ class ForceTrainer:
         epochs: int = 1,
         max_steps: int | None = None,
         max_grad_norm: float | None = None,
+        gradient_accumulation_steps: int = 1,
         # averaged weights
         ema_decay: float = 0.0,
         ema_start_step: int = 0,
@@ -132,6 +133,7 @@ class ForceTrainer:
         evals_per_epoch: int = 1,
         checkpoint_path: str | None = None,
         keep_checkpoints: int = 0,
+        checkpoint_interval_steps: int = 0,
         extra_hparams: dict | None = None,
         distributed: bool = False,
         rank: int = 0,
@@ -208,10 +210,12 @@ class ForceTrainer:
         self.max_steps = int(max_steps) if max_steps is not None and int(max_steps) > 0 else None
         self.global_step = 0
         self.max_grad_norm = max_grad_norm
+        self.gradient_accumulation_steps = max(1, int(gradient_accumulation_steps))
         self.log_interval = int(log_interval)
         self.evals_per_epoch = max(1, int(evals_per_epoch))
         self.checkpoint_path = checkpoint_path
         self.keep_checkpoints = max(0, int(keep_checkpoints))
+        self.checkpoint_interval_steps = max(0, int(checkpoint_interval_steps))
         self._rolling_ckpts: list[str] = []
         self.element_energy_calibration_report: dict | None = None
         self.metrics_csv_path = (
@@ -1335,25 +1339,32 @@ class ForceTrainer:
         if self.evals_per_epoch > 1 and self.val_loader is not None:
             for _k in range(1, self.evals_per_epoch):
                 _val_pts.add((n_batches * _k) // self.evals_per_epoch)
+        self.optimizer.zero_grad(set_to_none=True)
+        accumulation_count = 0
         for i, batch in enumerate(self.train_loader):
             if self._reached_max_steps():
                 break
             self._maybe_activate_stage_two(epoch)
-            self.optimizer.zero_grad(set_to_none=True)
             out = self._compute(batch, training=True)
-            loss = out["total_loss"]
+            loss = out["total_loss"] / self.gradient_accumulation_steps
             if self.phase_rank_orthogonal_weight > 0.0:
                 loss = loss + (
                     self.phase_rank_orthogonal_weight
                     * self._phase_rank_orthogonal_penalty()
-                )
+                ) / self.gradient_accumulation_steps
             loss.backward()
-            if self.max_grad_norm is not None and self.max_grad_norm > 0:
-                torch.nn.utils.clip_grad_norm_(self.model.parameters(), self.max_grad_norm)
-            self.optimizer.step()
-            self.global_step += 1
-            self._step_scheduler_after_batch()
-            self._update_averaged_states(epoch)
+            accumulation_count += 1
+            optimizer_step = accumulation_count == self.gradient_accumulation_steps
+            if optimizer_step:
+                if self.max_grad_norm is not None and self.max_grad_norm > 0:
+                    torch.nn.utils.clip_grad_norm_(self.model.parameters(), self.max_grad_norm)
+                self.optimizer.step()
+                self.optimizer.zero_grad(set_to_none=True)
+                self.global_step += 1
+                accumulation_count = 0
+                self._step_scheduler_after_batch()
+                self._update_averaged_states(epoch)
+                self._save_recovery_checkpoint(epoch)
             for k in run:
                 run[k] += float(out[k])
             seen += 1
@@ -1941,6 +1952,21 @@ class ForceTrainer:
             ckpt["swa_n_averaged"] = int(self._swa_n)
         ckpt.update(self._collect_arch_metadata())
         torch.save(ckpt, path)
+
+    def _save_recovery_checkpoint(self, epoch: int) -> None:
+        """Atomically replace the periodic checkpoint after an optimizer step."""
+        if (
+            self.checkpoint_interval_steps <= 0
+            or self.checkpoint_path is None
+            or not self.main_process
+            or self.global_step % self.checkpoint_interval_steps != 0
+        ):
+            return
+        stem, ext = os.path.splitext(self.checkpoint_path)
+        path = f"{stem}.recovery{ext or '.pth'}"
+        tmp = f"{path}.tmp"
+        self.save_checkpoint(tmp, epoch=epoch)
+        os.replace(tmp, path)
 
     def _save_rolling_checkpoint(self, epoch: int) -> None:
         """Keep the N most-recent VALIDATION checkpoints (``--keep-checkpoints N``), saved at
