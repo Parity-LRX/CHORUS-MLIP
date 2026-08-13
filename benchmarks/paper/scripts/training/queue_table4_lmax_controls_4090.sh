@@ -5,7 +5,7 @@ set -euo pipefail
 # two-interaction protocol, only hidden_lmax=max_ell=L changes.  L=2 is the
 # existing reference and is deliberately not repeated.
 
-REPO="${REPO:-/home/ylzhang/CHORUS-MLIP}"
+REPO="${REPO:-/home/ylzhang/CHORUS-MLIP-attention-test}"
 PYTHON_BIN="${PYTHON_BIN:-/home/ylzhang/micromamba/envs/FSCETP/bin/python}"
 MACE_TORCH_PATH="${MACE_TORCH_PATH:-/tmp/mace_torch_0_3_16}"
 RUNNER="${REPO}/benchmarks/paper/scripts/training/queue_chorus_c64_rank16_all.sh"
@@ -18,6 +18,17 @@ STATUS="${ROOT}/queue_status.log"
 mkdir -p "${ROOT}"
 export NVIDIA_TF32_OVERRIDE=0
 export TORCH_ALLOW_TF32_CUBLAS_OVERRIDE=0
+
+if [[ ! -f "${REPO}/chorus/__init__.py" ]]; then
+  echo "CHORUS source package not found under REPO=${REPO}" >&2
+  exit 2
+fi
+if [[ ! -f "${RUNNER}" ]]; then
+  echo "Table 4 runner not found: ${RUNNER}" >&2
+  exit 2
+fi
+PYTHONPATH="${REPO}:${MACE_TORCH_PATH}:${PYTHONPATH:-}" \
+  "${PYTHON_BIN}" -c 'import chorus; print(chorus.__file__)' >/dev/null
 
 mark() {
   printf '%s %s\n' "$1" "$(date --iso-8601=seconds)" | tee -a "${STATUS}"
