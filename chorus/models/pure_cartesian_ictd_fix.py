@@ -723,6 +723,9 @@ class PhaseHermitianFullLResidual(nn.Module):
         adaptive_coherence_init: float = 0.1,
         quadratic_form: str = "hermitian",
         output_gate: bool = False,
+        species_mode: str = "onehot-full",
+        species_embedding_dim: int = 16,
+        species_rank: int = 16,
     ):
         super().__init__()
         self.num_elements = int(num_elements)
@@ -735,6 +738,9 @@ class PhaseHermitianFullLResidual(nn.Module):
         self.adaptive_coherence_init = float(adaptive_coherence_init)
         self.quadratic_form = str(quadratic_form)
         self.output_gate = bool(output_gate)
+        self.species_mode = str(species_mode)
+        self.species_embedding_dim = int(species_embedding_dim)
+        self.species_rank = int(species_rank)
         if self.quadratic_form not in {"hermitian", "charge2"}:
             raise ValueError(
                 "quadratic_form must be 'hermitian' or 'charge2', "
@@ -762,6 +768,15 @@ class PhaseHermitianFullLResidual(nn.Module):
             )
         if self.density_rank <= 0:
             raise ValueError(f"density_rank must be positive, got {self.density_rank}")
+        if self.species_mode not in {"onehot-full", "embedded-lowrank"}:
+            raise ValueError(
+                "species_mode must be 'onehot-full' or 'embedded-lowrank', "
+                f"got {self.species_mode!r}"
+            )
+        if self.species_embedding_dim <= 0:
+            raise ValueError("species_embedding_dim must be positive")
+        if self.species_rank <= 0:
+            raise ValueError("species_rank must be positive")
 
         self.rank_projections = nn.ModuleDict(
             {
@@ -837,17 +852,61 @@ class PhaseHermitianFullLResidual(nn.Module):
                 offset += width
             self.coupling_groups.append((l1, l2, fused_name, tuple(slices)))
 
-        self.output_weights = nn.ParameterDict()
-        for out_l, in_mul in enumerate(self.input_multiplicities):
-            weight = nn.Parameter(
-                torch.empty(self.num_elements, self.channels, int(in_mul))
+        if self.species_mode == "onehot-full":
+            self.output_weights = nn.ParameterDict()
+            for out_l, in_mul in enumerate(self.input_multiplicities):
+                weight = nn.Parameter(
+                    torch.empty(self.num_elements, self.channels, int(in_mul))
+                )
+                nn.init.normal_(
+                    weight,
+                    mean=0.0,
+                    std=1.0 / math.sqrt(float(max(in_mul, 1))),
+                )
+                self.output_weights[str(out_l)] = weight
+            self.shared_output_weights = None
+            self.species_left = None
+            self.species_right = None
+            self.species_gate = None
+        else:
+            self.output_weights = None
+            self.shared_output_weights = nn.ParameterDict()
+            self.species_left = nn.ParameterDict()
+            self.species_right = nn.ParameterDict()
+            for out_l, in_mul in enumerate(self.input_multiplicities):
+                in_mul = int(in_mul)
+                shared = nn.Parameter(torch.empty(self.channels, in_mul))
+                left = nn.Parameter(
+                    torch.empty(self.channels, self.species_rank)
+                )
+                right = nn.Parameter(torch.empty(self.species_rank, in_mul))
+                nn.init.normal_(
+                    shared,
+                    mean=0.0,
+                    std=1.0 / math.sqrt(float(max(in_mul, 1))),
+                )
+                nn.init.normal_(
+                    left,
+                    mean=0.0,
+                    std=1.0 / math.sqrt(float(self.species_rank)),
+                )
+                nn.init.normal_(
+                    right,
+                    mean=0.0,
+                    std=1.0 / math.sqrt(float(max(in_mul, 1))),
+                )
+                self.shared_output_weights[str(out_l)] = shared
+                self.species_left[str(out_l)] = left
+                self.species_right[str(out_l)] = right
+            self.species_gate = nn.Linear(
+                self.species_embedding_dim, self.species_rank, bias=True
             )
             nn.init.normal_(
-                weight,
+                self.species_gate.weight,
                 mean=0.0,
-                std=1.0 / math.sqrt(float(max(in_mul, 1))),
+                std=1.0 / math.sqrt(float(self.species_embedding_dim)),
             )
-            self.output_weights[str(out_l)] = weight
+            nn.init.zeros_(self.species_gate.bias)
         self.residual_scale = nn.Parameter(
             torch.full(
                 (self.lmax + 1,),
@@ -1108,6 +1167,7 @@ class PhaseHermitianFullLResidual(nn.Module):
         node_attrs: torch.Tensor | None,
         node_type_idx: torch.Tensor | None = None,
         gate_features: torch.Tensor | None = None,
+        species_embedding: torch.Tensor | None = None,
     ) -> torch.Tensor:
         density_blocks = self.hermitian_blocks(real, imag)
         return self._mix_density_blocks(
@@ -1116,7 +1176,86 @@ class PhaseHermitianFullLResidual(nn.Module):
             node_attrs=node_attrs,
             node_type_idx=node_type_idx,
             gate_features=gate_features,
+            species_embedding=species_embedding,
         )
+
+    def _mix_output_block(
+        self,
+        density: torch.Tensor,
+        out_l: int,
+        *,
+        type_idx: torch.Tensor | None,
+        node_attrs: torch.Tensor | None,
+        species_gates: torch.Tensor | None,
+    ) -> torch.Tensor:
+        """Apply the configured species-conditioned map without dense node weights."""
+        if self.species_mode == "onehot-full":
+            if self.output_weights is None:
+                raise RuntimeError("onehot-full Hermitian output weights are missing")
+            weight = self.output_weights[str(out_l)].to(density)
+            if type_idx is not None:
+                mixed_weight = weight.index_select(0, type_idx)
+            else:
+                if node_attrs is None:
+                    raise ValueError(
+                        "node_attrs is required when node_type_idx is not provided"
+                    )
+                mixed_weight = torch.einsum(
+                    "ne,eoi->noi", node_attrs.to(density), weight
+                )
+            return torch.bmm(mixed_weight, density)
+
+        if species_gates is None:
+            raise ValueError(
+                "embedded-lowrank Hermitian writeback requires species gates"
+            )
+        if (
+            self.shared_output_weights is None
+            or self.species_left is None
+            or self.species_right is None
+        ):
+            raise RuntimeError("embedded-lowrank Hermitian parameters are missing")
+        shared = torch.einsum(
+            "oi,nim->nom",
+            self.shared_output_weights[str(out_l)].to(density),
+            density,
+        )
+        low_rank_density = torch.einsum(
+            "si,nim->nsm",
+            self.species_right[str(out_l)].to(density),
+            density,
+        )
+        residual = torch.einsum(
+            "os,ns,nsm->nom",
+            self.species_left[str(out_l)].to(density),
+            species_gates.to(density),
+            low_rank_density,
+        )
+        return shared + residual
+
+    def _species_gates(
+        self,
+        reference: torch.Tensor,
+        species_embedding: torch.Tensor | None,
+    ) -> torch.Tensor | None:
+        if self.species_mode == "onehot-full":
+            return None
+        if species_embedding is None:
+            raise ValueError(
+                "embedded-lowrank Hermitian writeback requires species_embedding"
+            )
+        if species_embedding.ndim != 2 or species_embedding.shape != (
+            reference.shape[0],
+            self.species_embedding_dim,
+        ):
+            raise ValueError(
+                "species_embedding must have shape "
+                f"({reference.shape[0]}, {self.species_embedding_dim}), got "
+                f"{tuple(species_embedding.shape)}"
+            )
+        if self.species_gate is None:
+            raise RuntimeError("embedded-lowrank Hermitian gate is missing")
+        return torch.tanh(self.species_gate(species_embedding.to(reference)))
 
     def forward_diagonal_edges_doublet(
         self,
@@ -1126,6 +1265,7 @@ class PhaseHermitianFullLResidual(nn.Module):
         num_nodes: int,
         node_attrs: torch.Tensor | None,
         node_type_idx: torch.Tensor | None = None,
+        species_embedding: torch.Tensor | None = None,
     ) -> torch.Tensor:
         """Build only j=k Hermitian terms, then aggregate the neutral edge densities."""
         edge_density_blocks = self.hermitian_blocks_doublet(edge_doublet)
@@ -1146,19 +1286,15 @@ class PhaseHermitianFullLResidual(nn.Module):
             type_idx = None
             if node_attrs is None:
                 raise ValueError("node_attrs is required when node_type_idx is not provided")
+        species_gates = self._species_gates(edge_doublet, species_embedding)
         for out_l in range(self.lmax + 1):
-            weight = self.output_weights[str(out_l)].to(
-                dtype=edge_doublet.dtype, device=edge_doublet.device
+            out = self._mix_output_block(
+                density_blocks[out_l],
+                out_l,
+                type_idx=type_idx,
+                node_attrs=node_attrs,
+                species_gates=species_gates,
             )
-            if type_idx is not None:
-                mixed_weight = weight.index_select(0, type_idx)
-            else:
-                mixed_weight = torch.einsum(
-                    "ne,eoi->noi",
-                    node_attrs.to(dtype=edge_doublet.dtype, device=edge_doublet.device),
-                    weight,
-                )
-            out = torch.bmm(mixed_weight, density_blocks[out_l])
             scale = self.residual_scale[out_l].to(dtype=out.dtype, device=out.device)
             out_blocks[out_l] = scale * out
         return _merge_irreps(out_blocks, self.channels, self.lmax)
@@ -1255,6 +1391,7 @@ class PhaseHermitianFullLResidual(nn.Module):
         node_attrs: torch.Tensor | None,
         node_type_idx: torch.Tensor | None,
         gate_features: torch.Tensor | None = None,
+        species_embedding: torch.Tensor | None = None,
     ) -> torch.Tensor:
         out_blocks: Dict[int, torch.Tensor] = {}
         output_gate = None
@@ -1285,19 +1422,15 @@ class PhaseHermitianFullLResidual(nn.Module):
                 raise ValueError(
                     "node_attrs is required when node_type_idx is not provided"
                 )
+        species_gates = self._species_gates(reference, species_embedding)
         for out_l in range(self.lmax + 1):
-            weight = self.output_weights[str(out_l)].to(
-                dtype=reference.dtype, device=reference.device
+            out = self._mix_output_block(
+                density_blocks[out_l],
+                out_l,
+                type_idx=type_idx,
+                node_attrs=node_attrs,
+                species_gates=species_gates,
             )
-            if type_idx is not None:
-                mixed_weight = weight.index_select(0, type_idx)
-            else:
-                mixed_weight = torch.einsum(
-                    "ne,eoi->noi",
-                    node_attrs.to(dtype=reference.dtype, device=reference.device),
-                    weight,
-                )
-            out = torch.bmm(mixed_weight, density_blocks[out_l])
             if output_gate is not None:
                 out = out * output_gate[:, out_l, :, None].to(
                     dtype=out.dtype, device=out.device
@@ -1317,6 +1450,7 @@ class PhaseHermitianFullLResidual(nn.Module):
         num_nodes: int,
         node_attrs: torch.Tensor | None,
         node_type_idx: torch.Tensor | None = None,
+        species_embedding: torch.Tensor | None = None,
     ) -> torch.Tensor:
         """Build the exact j=k density from a real orbital and coefficient norm."""
         density_blocks = self._diagonal_blocks_factorized(
@@ -1330,6 +1464,7 @@ class PhaseHermitianFullLResidual(nn.Module):
             reference=edge_orbital,
             node_attrs=node_attrs,
             node_type_idx=node_type_idx,
+            species_embedding=species_embedding,
         )
 
     def forward_coherence_gated_factorized(
@@ -1343,6 +1478,7 @@ class PhaseHermitianFullLResidual(nn.Module):
         num_nodes: int,
         node_attrs: torch.Tensor | None,
         node_type_idx: torch.Tensor | None = None,
+        species_embedding: torch.Tensor | None = None,
     ) -> torch.Tensor:
         """Mix D and j!=k coherence using an exact factorized diagonal path."""
         if (
@@ -1376,6 +1512,7 @@ class PhaseHermitianFullLResidual(nn.Module):
             reference=doublet,
             node_attrs=node_attrs,
             node_type_idx=node_type_idx,
+            species_embedding=species_embedding,
         )
 
     def forward_pair_count_balanced_factorized(
@@ -1390,6 +1527,7 @@ class PhaseHermitianFullLResidual(nn.Module):
         num_nodes: int,
         node_attrs: torch.Tensor | None,
         node_type_idx: torch.Tensor | None = None,
+        species_embedding: torch.Tensor | None = None,
     ) -> torch.Tensor:
         """Balance diagonal and coherent terms by their local pair counts.
 
@@ -1438,6 +1576,7 @@ class PhaseHermitianFullLResidual(nn.Module):
             reference=doublet,
             node_attrs=node_attrs,
             node_type_idx=node_type_idx,
+            species_embedding=species_embedding,
         )
 
     def forward_coherence_gated_doublet(
@@ -1450,6 +1589,7 @@ class PhaseHermitianFullLResidual(nn.Module):
         num_nodes: int,
         node_attrs: torch.Tensor | None,
         node_type_idx: torch.Tensor | None = None,
+        species_embedding: torch.Tensor | None = None,
     ) -> torch.Tensor:
         """Mix diagonal and coherent density as D + gamma_L (rho_full - D)."""
         if (
@@ -1492,19 +1632,15 @@ class PhaseHermitianFullLResidual(nn.Module):
                 raise ValueError(
                     "node_attrs is required when node_type_idx is not provided"
                 )
+        species_gates = self._species_gates(doublet, species_embedding)
         for out_l in range(self.lmax + 1):
-            weight = self.output_weights[str(out_l)].to(
-                dtype=doublet.dtype, device=doublet.device
+            out = self._mix_output_block(
+                density_blocks[out_l],
+                out_l,
+                type_idx=type_idx,
+                node_attrs=node_attrs,
+                species_gates=species_gates,
             )
-            if type_idx is not None:
-                mixed_weight = weight.index_select(0, type_idx)
-            else:
-                mixed_weight = torch.einsum(
-                    "ne,eoi->noi",
-                    node_attrs.to(dtype=doublet.dtype, device=doublet.device),
-                    weight,
-                )
-            out = torch.bmm(mixed_weight, density_blocks[out_l])
             scale = self.residual_scale[out_l].to(
                 dtype=out.dtype, device=out.device
             )
@@ -1518,6 +1654,7 @@ class PhaseHermitianFullLResidual(nn.Module):
         node_attrs: torch.Tensor | None,
         node_type_idx: torch.Tensor | None = None,
         gate_features: torch.Tensor | None = None,
+        species_embedding: torch.Tensor | None = None,
     ) -> torch.Tensor:
         density_blocks = self.hermitian_blocks_doublet(doublet)
         return self._mix_density_blocks(
@@ -1526,6 +1663,7 @@ class PhaseHermitianFullLResidual(nn.Module):
             node_attrs=node_attrs,
             node_type_idx=node_type_idx,
             gate_features=gate_features,
+            species_embedding=species_embedding,
         )
 
 
@@ -3973,6 +4111,9 @@ class PureCartesianICTDFix(nn.Module):
         ictd_fix_phase_context: str = "content",
         ictd_fix_phase_placement: str = "post-product",
         ictd_fix_phase_density_rank: int = 8,
+        ictd_fix_phase_density_species_mode: str = "onehot-full",
+        ictd_fix_phase_density_species_embedding_dim: int = 16,
+        ictd_fix_phase_density_species_rank: int = 16,
         ictd_fix_phase_density_pairs: str = "full",
         ictd_fix_phase_coherence_init: float = 0.1,
         ictd_fix_phase_normalization: str = "avg-neighbors",
@@ -4136,6 +4277,15 @@ class PureCartesianICTDFix(nn.Module):
         self.ictd_fix_phase_context = str(ictd_fix_phase_context)
         self.ictd_fix_phase_placement = str(ictd_fix_phase_placement)
         self.ictd_fix_phase_density_rank = int(ictd_fix_phase_density_rank)
+        self.ictd_fix_phase_density_species_mode = str(
+            ictd_fix_phase_density_species_mode
+        )
+        self.ictd_fix_phase_density_species_embedding_dim = int(
+            ictd_fix_phase_density_species_embedding_dim
+        )
+        self.ictd_fix_phase_density_species_rank = int(
+            ictd_fix_phase_density_species_rank
+        )
         self.ictd_fix_phase_density_pairs = str(ictd_fix_phase_density_pairs)
         self.ictd_fix_phase_coherence_init = float(ictd_fix_phase_coherence_init)
         self.ictd_fix_phase_normalization = str(ictd_fix_phase_normalization)
@@ -4225,6 +4375,31 @@ class PureCartesianICTDFix(nn.Module):
             raise ValueError(
                 "ictd_fix_phase_density_rank must be positive, "
                 f"got {self.ictd_fix_phase_density_rank}"
+            )
+        if self.ictd_fix_phase_density_species_mode not in {
+            "onehot-full",
+            "embedded-lowrank",
+        }:
+            raise ValueError(
+                "ictd_fix_phase_density_species_mode must be 'onehot-full' or "
+                f"'embedded-lowrank', got "
+                f"{self.ictd_fix_phase_density_species_mode!r}"
+            )
+        if self.ictd_fix_phase_density_species_embedding_dim <= 0:
+            raise ValueError(
+                "ictd_fix_phase_density_species_embedding_dim must be positive"
+            )
+        if self.ictd_fix_phase_density_species_rank <= 0:
+            raise ValueError(
+                "ictd_fix_phase_density_species_rank must be positive"
+            )
+        if (
+            self.ictd_fix_phase_density_species_mode == "embedded-lowrank"
+            and self.ictd_fix_phase_mode != "final-full-l-residual"
+        ):
+            raise ValueError(
+                "embedded-lowrank phase-density species writeback requires "
+                "phase_mode='final-full-l-residual'"
             )
         if self.ictd_fix_phase_scope not in {"final", "persistent"}:
             raise ValueError(
@@ -4386,6 +4561,23 @@ class PureCartesianICTDFix(nn.Module):
         self.register_buffer("atomic_number_to_index", atomic_number_to_index, persistent=False)
 
         self.node_embedding = nn.Linear(self.num_elements, self.channels, bias=False)
+        self.phase_density_species_embedding = (
+            nn.Embedding(
+                self.num_elements,
+                self.ictd_fix_phase_density_species_embedding_dim,
+            )
+            if self.ictd_fix_phase_density_species_mode == "embedded-lowrank"
+            else None
+        )
+        if self.phase_density_species_embedding is not None:
+            nn.init.normal_(
+                self.phase_density_species_embedding.weight,
+                mean=0.0,
+                std=1.0
+                / math.sqrt(
+                    float(self.ictd_fix_phase_density_species_embedding_dim)
+                ),
+            )
         product_target_lmax = [
             self.lmax if layer_idx < self.num_interaction - 1 else 0
             for layer_idx in range(self.num_interaction)
@@ -4590,6 +4782,11 @@ class PureCartesianICTDFix(nn.Module):
                             self.ictd_fix_phase_density_pairs
                             in {"full-nonlinear", "full-nonlinear-readout"}
                         ),
+                        species_mode=self.ictd_fix_phase_density_species_mode,
+                        species_embedding_dim=(
+                            self.ictd_fix_phase_density_species_embedding_dim
+                        ),
+                        species_rank=self.ictd_fix_phase_density_species_rank,
                     )
                     if (
                         self.ictd_fix_phase_density_pairs
@@ -5157,6 +5354,11 @@ class PureCartesianICTDFix(nn.Module):
         else:
             node_attrs = F.one_hot(compact_idx, num_classes=self.num_elements).to(dtype=dtype)
             h = self.node_embedding(node_attrs)
+        phase_density_species_embedding = (
+            self.phase_density_species_embedding(compact_idx)
+            if self.phase_density_species_embedding is not None
+            else None
+        )
 
         layer_states: List[torch.Tensor] = []
         last_preproduct_state: torch.Tensor | None = None
@@ -5253,6 +5455,7 @@ class PureCartesianICTDFix(nn.Module):
                         num_nodes=h.shape[0],
                         node_attrs=node_attrs,
                         node_type_idx=compact_idx,
+                        species_embedding=phase_density_species_embedding,
                     )
                 elif self.ictd_fix_phase_density_pairs in {
                     "full-gated",
@@ -5281,6 +5484,7 @@ class PureCartesianICTDFix(nn.Module):
                         num_nodes=h.shape[0],
                         node_attrs=node_attrs,
                         node_type_idx=compact_idx,
+                        species_embedding=phase_density_species_embedding,
                     )
                 elif self.ictd_fix_phase_density_pairs == "full-balanced":
                     if phase_edge_orbital is None or phase_edge_norm_sq is None:
@@ -5320,6 +5524,7 @@ class PureCartesianICTDFix(nn.Module):
                         num_nodes=h.shape[0],
                         node_attrs=node_attrs,
                         node_type_idx=compact_idx,
+                        species_embedding=phase_density_species_embedding,
                     )
                 elif self.ictd_fix_phase_density_pairs in {
                     "full-nonlinear",
@@ -5330,13 +5535,23 @@ class PureCartesianICTDFix(nn.Module):
                         node_attrs=node_attrs,
                         node_type_idx=compact_idx,
                         gate_features=h[:, : self.channels],
+                        species_embedding=phase_density_species_embedding,
                     )
                 else:
-                    phase_delta = self.phase_adapters[phase_key].forward_doublet(
-                        phase_doublet,
-                        node_attrs=node_attrs,
-                        node_type_idx=compact_idx,
-                    )
+                    phase_adapter = self.phase_adapters[phase_key]
+                    if isinstance(phase_adapter, PhaseHermitianFullLResidual):
+                        phase_delta = phase_adapter.forward_doublet(
+                            phase_doublet,
+                            node_attrs=node_attrs,
+                            node_type_idx=compact_idx,
+                            species_embedding=phase_density_species_embedding,
+                        )
+                    else:
+                        phase_delta = phase_adapter.forward_doublet(
+                            phase_doublet,
+                            node_attrs=node_attrs,
+                            node_type_idx=compact_idx,
+                        )
                 if phase_key in self.phase_direct_readouts:
                     phase_direct_energy = self.phase_direct_readouts[phase_key](
                         phase_delta[:, : self.channels]

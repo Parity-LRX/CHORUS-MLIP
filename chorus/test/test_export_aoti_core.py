@@ -3,6 +3,7 @@ from __future__ import annotations
 import torch
 
 from chorus.cli import export_aoti_core as export_aoti
+from chorus.models.pure_cartesian_ictd_fix import PhaseHermitianFullLResidual
 
 
 class _NoFoldProduct(torch.nn.Module):
@@ -41,6 +42,32 @@ class _DummySymmetricContractions(torch.nn.Module):
         self.contractions = torch.nn.ModuleList([
             _DummyContraction(u_value=u_value, weight_value=weight_value),
         ])
+
+
+class _PhasePruneModel(torch.nn.Module):
+    def __init__(self, species_mode: str):
+        super().__init__()
+        self.atomic_numbers = (1, 6, 7, 8)
+        self.num_elements = 4
+        self.node_embedding = torch.nn.Linear(4, 3, bias=False)
+        self.phase_density_species_embedding = (
+            torch.nn.Embedding(4, 5)
+            if species_mode == "embedded-lowrank"
+            else None
+        )
+        self.phase_adapter = PhaseHermitianFullLResidual(
+            num_elements=4,
+            channels=3,
+            lmax=1,
+            density_rank=2,
+            species_mode=species_mode,
+            species_embedding_dim=5,
+            species_rank=2,
+        )
+        self.register_buffer(
+            "atomic_number_to_index",
+            torch.tensor([-1, 0, -1, -1, -1, -1, 1, 2, 3]),
+        )
 
 
 def test_torch_export_retries_non_strict_after_strict_failure(monkeypatch) -> None:
@@ -96,3 +123,39 @@ def test_fold_capable_backend_keeps_requested_e3nn_basis() -> None:
 
     assert basis == "e3nn"
     assert model.angular_basis == "e3nn"
+
+
+def test_element_pruning_handles_both_phase_species_modes() -> None:
+    for species_mode in ("onehot-full", "embedded-lowrank"):
+        model = _PhasePruneModel(species_mode)
+        old_phase_embedding = model.phase_density_species_embedding
+        old_phase_rows = (
+            old_phase_embedding.weight.detach().clone()
+            if old_phase_embedding is not None
+            else None
+        )
+        old_output_rows = (
+            {
+                key: value.detach().clone()
+                for key, value in model.phase_adapter.output_weights.items()
+            }
+            if model.phase_adapter.output_weights is not None
+            else None
+        )
+
+        selected = export_aoti._prune_model_elements(model, [8, 1])
+
+        assert selected == [8, 1]
+        assert model.atomic_numbers == (8, 1)
+        assert model.num_elements == 2
+        assert model.phase_adapter.num_elements == 2
+        if species_mode == "embedded-lowrank":
+            assert model.phase_density_species_embedding is not None
+            torch.testing.assert_close(
+                model.phase_density_species_embedding.weight,
+                old_phase_rows[[3, 0]],
+            )
+        else:
+            assert model.phase_adapter.output_weights is not None
+            for key, value in model.phase_adapter.output_weights.items():
+                torch.testing.assert_close(value, old_output_rows[key][[3, 0]])

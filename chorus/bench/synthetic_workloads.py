@@ -294,6 +294,9 @@ def build_ictc(
     phase_amplitude: str = "unit",
     phase_placement: str = "post-product",
     phase_density_rank: int = 8,
+    phase_density_species_mode: str = "onehot-full",
+    phase_density_species_embedding_dim: int = 16,
+    phase_density_species_rank: int = 16,
     phase_scope: str = "final",
 ) -> PureCartesianICTDFix:
     with default_dtype(dtype):
@@ -331,6 +334,15 @@ def build_ictc(
             ictd_fix_phase_amplitude=str(phase_amplitude),
             ictd_fix_phase_placement=str(phase_placement),
             ictd_fix_phase_density_rank=int(phase_density_rank),
+            ictd_fix_phase_density_species_mode=str(
+                phase_density_species_mode
+            ),
+            ictd_fix_phase_density_species_embedding_dim=int(
+                phase_density_species_embedding_dim
+            ),
+            ictd_fix_phase_density_species_rank=int(
+                phase_density_species_rank
+            ),
             ictd_fix_phase_scope=str(phase_scope),
             internal_compute_dtype=dtype,
             device=device,

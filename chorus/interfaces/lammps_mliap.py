@@ -1585,6 +1585,46 @@ class LAMMPS_MLIAP_MFF(MLIAPUnified):
                     8,
                 )
             )
+            inferred_phase_density_species_mode = str(
+                ckpt.get("ictd_fix_phase_density_species_mode")
+                or arch_meta.get("ictd_fix_phase_density_species_mode")
+                or (
+                    "embedded-lowrank"
+                    if any(
+                        ".shared_output_weights." in key
+                        for key in selected_state_dict
+                    )
+                    else "onehot-full"
+                )
+            )
+            inferred_phase_density_species_embedding_dim = int(
+                ckpt.get("ictd_fix_phase_density_species_embedding_dim")
+                or arch_meta.get(
+                    "ictd_fix_phase_density_species_embedding_dim",
+                    next(
+                        (
+                            value.shape[1]
+                            for key, value in selected_state_dict.items()
+                            if key == "phase_density_species_embedding.weight"
+                        ),
+                        16,
+                    ),
+                )
+            )
+            inferred_phase_density_species_rank = int(
+                ckpt.get("ictd_fix_phase_density_species_rank")
+                or arch_meta.get(
+                    "ictd_fix_phase_density_species_rank",
+                    next(
+                        (
+                            value.shape[0]
+                            for key, value in selected_state_dict.items()
+                            if ".species_gate.weight" in key
+                        ),
+                        16,
+                    ),
+                )
+            )
             inferred_phase_scale_init = float(
                 ckpt.get(
                     "ictd_fix_phase_residual_scale_init",
@@ -1824,6 +1864,15 @@ class LAMMPS_MLIAP_MFF(MLIAPUnified):
                 ictd_fix_phase_context=inferred_phase_context,
                 ictd_fix_phase_placement=inferred_phase_placement,
                 ictd_fix_phase_density_rank=inferred_phase_density_rank,
+                ictd_fix_phase_density_species_mode=(
+                    inferred_phase_density_species_mode
+                ),
+                ictd_fix_phase_density_species_embedding_dim=(
+                    inferred_phase_density_species_embedding_dim
+                ),
+                ictd_fix_phase_density_species_rank=(
+                    inferred_phase_density_species_rank
+                ),
                 ictd_fix_phase_density_pairs=inferred_phase_density_pairs,
                 ictd_fix_phase_coherence_init=inferred_phase_coherence_init,
                 ictd_fix_phase_normalization=inferred_phase_normalization,

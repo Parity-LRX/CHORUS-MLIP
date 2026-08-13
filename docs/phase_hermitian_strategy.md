@@ -75,6 +75,9 @@ Training flags:
 --phase-amplitude unit|softplus
 --phase-placement post-product|pre-product-l0|pre-product-full-l|pre-and-post
 --phase-density-rank 8
+--phase-density-species-mode onehot-full|embedded-lowrank
+--phase-density-species-embedding-dim 16
+--phase-density-species-rank 16
 --phase-scope final|persistent
 ```
 
@@ -105,6 +108,33 @@ current `max_ell=2` configuration it constructs neutral L=0,1,2 density blocks,
 projects them back to the corresponding 64-channel main-trunk blocks, and then
 runs the unchanged MACE symmetric contraction. `--phase-density-rank` controls
 the latent channel rank (8 in the first experiment).
+
+The default `--phase-density-species-mode onehot-full` preserves the original
+CHORUS parameterization and checkpoint keys: every element has a dense map from
+the shared Hermitian density paths back to the main channels. The opt-in
+`embedded-lowrank` mode replaces only that species-conditioned writeback with
+
+\[
+W_{Z,L}=W_L^{\mathrm{shared}}+
+U_L\,\mathrm{diag}(\tanh(g(e_Z)))\,V_L.
+\]
+
+The species embedding `e_Z` is shared across persistent layers, while each
+Hermitian layer retains its own gate and degree-resolved factors. The charged
+stream, Hermitian CG contraction, density rank, and U(1) closure are unchanged.
+This changes the species-dependent writeback parameter scaling from
+`O(E C M_L)` to `O(C M_L + s(C + M_L) + E d)`, where `E` is the number of
+elements, `M_L` is the Hermitian path multiplicity, `d` is the embedding width,
+and `s` is the species residual rank. It is intended for many-element training;
+it is not assumed to improve accuracy without a matched benchmark.
+
+For example, a scalable persistent full-L run can add:
+
+```bash
+--phase-density-species-mode embedded-lowrank \
+--phase-density-species-embedding-dim 16 \
+--phase-density-species-rank 16
+```
 
 Persistent scalar mode requires `--phase-placement pre-product-l0`; persistent
 full-L mode requires `--phase-placement pre-product-full-l`. These restrictions

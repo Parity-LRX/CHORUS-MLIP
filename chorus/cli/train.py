@@ -353,6 +353,9 @@ def build_baseline_model(
     phase_context: str = "content",
     phase_placement: str = "post-product",
     phase_density_rank: int = 8,
+    phase_density_species_mode: str = "onehot-full",
+    phase_density_species_embedding_dim: int = 16,
+    phase_density_species_rank: int = 16,
     phase_density_pairs: str = "full",
     phase_coherence_init: float = 0.1,
     phase_normalization: str = "avg-neighbors",
@@ -451,6 +454,11 @@ def build_baseline_model(
         ictd_fix_phase_context=phase_context,
         ictd_fix_phase_placement=phase_placement,
         ictd_fix_phase_density_rank=phase_density_rank,
+        ictd_fix_phase_density_species_mode=phase_density_species_mode,
+        ictd_fix_phase_density_species_embedding_dim=(
+            phase_density_species_embedding_dim
+        ),
+        ictd_fix_phase_density_species_rank=phase_density_species_rank,
         ictd_fix_phase_density_pairs=phase_density_pairs,
         ictd_fix_phase_coherence_init=phase_coherence_init,
         ictd_fix_phase_normalization=phase_normalization,
@@ -682,6 +690,28 @@ def build_arg_parser() -> argparse.ArgumentParser:
         type=int,
         default=8,
         help="Latent channel rank of final-full-l-residual (ignored by scalar mode).",
+    )
+    ap.add_argument(
+        "--phase-density-species-mode",
+        default="onehot-full",
+        choices=["onehot-full", "embedded-lowrank"],
+        help=(
+            "Element conditioning of the full-L Hermitian writeback. The default "
+            "keeps one dense map per element; embedded-lowrank uses a shared dense "
+            "map plus a low-rank residual controlled by a learned species embedding."
+        ),
+    )
+    ap.add_argument(
+        "--phase-density-species-embedding-dim",
+        type=int,
+        default=16,
+        help="Species embedding width for embedded-lowrank Hermitian writeback.",
+    )
+    ap.add_argument(
+        "--phase-density-species-rank",
+        type=int,
+        default=16,
+        help="Rank of the species-conditioned Hermitian writeback residual.",
     )
     ap.add_argument(
         "--phase-rank-orthogonal-weight",
@@ -1058,6 +1088,11 @@ def _override_args_from_checkpoint(args):
         "ictd_fix_phase_context": "phase_context",
         "ictd_fix_phase_placement": "phase_placement",
         "ictd_fix_phase_density_rank": "phase_density_rank",
+        "ictd_fix_phase_density_species_mode": "phase_density_species_mode",
+        "ictd_fix_phase_density_species_embedding_dim": (
+            "phase_density_species_embedding_dim"
+        ),
+        "ictd_fix_phase_density_species_rank": "phase_density_species_rank",
         "ictd_fix_phase_density_pairs": "phase_density_pairs",
         "ictd_fix_phase_coherence_init": "phase_coherence_init",
         "ictd_fix_phase_normalization": "phase_normalization",
@@ -1292,6 +1327,11 @@ def main(argv=None):
         phase_context=args.phase_context,
         phase_placement=args.phase_placement,
         phase_density_rank=args.phase_density_rank,
+        phase_density_species_mode=args.phase_density_species_mode,
+        phase_density_species_embedding_dim=(
+            args.phase_density_species_embedding_dim
+        ),
+        phase_density_species_rank=args.phase_density_species_rank,
         phase_density_pairs=args.phase_density_pairs,
         phase_coherence_init=args.phase_coherence_init,
         phase_normalization=args.phase_normalization,
@@ -1447,6 +1487,13 @@ def main(argv=None):
         ictd_fix_phase_context=args.phase_context,
         ictd_fix_phase_placement=args.phase_placement,
         ictd_fix_phase_density_rank=int(args.phase_density_rank),
+        ictd_fix_phase_density_species_mode=args.phase_density_species_mode,
+        ictd_fix_phase_density_species_embedding_dim=int(
+            args.phase_density_species_embedding_dim
+        ),
+        ictd_fix_phase_density_species_rank=int(
+            args.phase_density_species_rank
+        ),
         ictd_fix_phase_density_pairs=args.phase_density_pairs,
         ictd_fix_phase_coherence_init=float(args.phase_coherence_init),
         ictd_fix_phase_normalization=args.phase_normalization,

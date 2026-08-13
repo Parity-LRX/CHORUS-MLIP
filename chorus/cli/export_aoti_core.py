@@ -493,6 +493,20 @@ def _prune_model_elements(model: torch.nn.Module, selected_z: list[int]) -> list
             new_embedding.weight.copy_(old_embedding.weight.index_select(1, keep_dev))
         model.node_embedding = new_embedding
 
+    phase_embedding = getattr(model, "phase_density_species_embedding", None)
+    if isinstance(phase_embedding, torch.nn.Embedding):
+        new_phase_embedding = torch.nn.Embedding(
+            len(selected_z), phase_embedding.embedding_dim
+        ).to(
+            device=phase_embedding.weight.device,
+            dtype=phase_embedding.weight.dtype,
+        )
+        with torch.no_grad():
+            new_phase_embedding.weight.copy_(
+                phase_embedding.weight.index_select(0, keep_dev)
+            )
+        model.phase_density_species_embedding = new_phase_embedding
+
     for module in model.modules():
         if type(module).__name__ == "ElementConditionedLinearSO3":
             module.num_elements = len(selected_z)
@@ -516,6 +530,17 @@ def _prune_model_elements(model: torch.nn.Module, selected_z: list[int]) -> list
                         )
                 if getattr(contraction, "_use_scalar_corr3_fast", False):
                     contraction.refresh_scalar_corr3_fast_buffers()
+        if type(module).__name__ == "PhaseHermitianFullLResidual":
+            module.num_elements = len(selected_z)
+            output_weights = getattr(module, "output_weights", None)
+            if isinstance(output_weights, torch.nn.ParameterDict):
+                for key, param in list(output_weights.items()):
+                    _set_parameter(
+                        output_weights,
+                        key,
+                        param.index_select(0, keep_dev),
+                        like=param,
+                    )
 
     sc0 = getattr(model, "mace_first_layer_sc0", None)
     if sc0 is not None:

@@ -45,6 +45,9 @@ DEFAULT_MODEL_ARCHITECTURE: dict[str, Any] = {
     "ictd_fix_phase_amplitude": "unit",
     "ictd_fix_phase_placement": "post-product",
     "ictd_fix_phase_density_rank": 8,
+    "ictd_fix_phase_density_species_mode": "onehot-full",
+    "ictd_fix_phase_density_species_embedding_dim": 16,
+    "ictd_fix_phase_density_species_rank": 16,
     "ictd_fix_phase_scope": "final",
     "ictd_fix_phase_heads": 1,
     "save_contraction_order": 3,
@@ -606,6 +609,39 @@ def resolve_model_architecture(
             arch_meta,
             "ictd_fix_phase_density_rank",
             DEFAULT_MODEL_ARCHITECTURE["ictd_fix_phase_density_rank"],
+        )
+    )
+    resolved["ictd_fix_phase_density_species_mode"] = str(
+        _resolve_value(
+            overrides,
+            checkpoint,
+            arch_meta,
+            "ictd_fix_phase_density_species_mode",
+            DEFAULT_MODEL_ARCHITECTURE[
+                "ictd_fix_phase_density_species_mode"
+            ],
+        )
+    )
+    resolved["ictd_fix_phase_density_species_embedding_dim"] = int(
+        _resolve_value(
+            overrides,
+            checkpoint,
+            arch_meta,
+            "ictd_fix_phase_density_species_embedding_dim",
+            DEFAULT_MODEL_ARCHITECTURE[
+                "ictd_fix_phase_density_species_embedding_dim"
+            ],
+        )
+    )
+    resolved["ictd_fix_phase_density_species_rank"] = int(
+        _resolve_value(
+            overrides,
+            checkpoint,
+            arch_meta,
+            "ictd_fix_phase_density_species_rank",
+            DEFAULT_MODEL_ARCHITECTURE[
+                "ictd_fix_phase_density_species_rank"
+            ],
         )
     )
     resolved["ictd_fix_phase_scope"] = str(

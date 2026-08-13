@@ -35,6 +35,9 @@ def _build(
     phase_context: str = "content",
     phase_placement: str = "post-product",
     phase_density_rank: int = 8,
+    phase_density_species_mode: str = "onehot-full",
+    phase_density_species_embedding_dim: int = 16,
+    phase_density_species_rank: int = 16,
     phase_density_pairs: str = "full",
     phase_coherence_init: float = 0.1,
     phase_normalization: str = "avg-neighbors",
@@ -63,6 +66,11 @@ def _build(
         ictd_fix_phase_context=phase_context,
         ictd_fix_phase_placement=phase_placement,
         ictd_fix_phase_density_rank=phase_density_rank,
+        ictd_fix_phase_density_species_mode=phase_density_species_mode,
+        ictd_fix_phase_density_species_embedding_dim=(
+            phase_density_species_embedding_dim
+        ),
+        ictd_fix_phase_density_species_rank=phase_density_species_rank,
         ictd_fix_phase_density_pairs=phase_density_pairs,
         ictd_fix_phase_coherence_init=phase_coherence_init,
         ictd_fix_phase_normalization=phase_normalization,
@@ -201,6 +209,177 @@ def test_full_l_low_rank_density_u1_invariance_and_shapes():
             blocks[out_l], reference[out_l], atol=3.0e-13, rtol=3.0e-13
         )
         assert blocks[out_l].abs().max().item() > 0.0
+
+
+def test_embedded_lowrank_species_writeback_is_trainable_and_u1_invariant():
+    torch.manual_seed(911)
+    operator = PhaseHermitianFullLResidual(
+        num_elements=89,
+        channels=8,
+        lmax=2,
+        density_rank=4,
+        species_mode="embedded-lowrank",
+        species_embedding_dim=16,
+        species_rank=6,
+    ).to(device=DEVICE, dtype=torch.float64)
+    embedding = torch.nn.Embedding(89, 16).to(
+        device=DEVICE, dtype=torch.float64
+    )
+    doublet = torch.randn(
+        7,
+        2,
+        8 * 9,
+        device=DEVICE,
+        dtype=torch.float64,
+        requires_grad=True,
+    )
+    type_idx = torch.tensor(
+        [0, 1, 2, 17, 32, 57, 88], device=DEVICE, dtype=torch.long
+    )
+    species_embedding = embedding(type_idx)
+    actual = operator.forward_doublet(
+        doublet,
+        node_attrs=None,
+        node_type_idx=type_idx,
+        species_embedding=species_embedding,
+    )
+    phi = torch.tensor(0.731, device=DEVICE, dtype=torch.float64)
+    c, s = torch.cos(phi), torch.sin(phi)
+    rotated = torch.stack(
+        (
+            c * doublet[:, 0] - s * doublet[:, 1],
+            s * doublet[:, 0] + c * doublet[:, 1],
+        ),
+        dim=1,
+    )
+    rotated_actual = operator.forward_doublet(
+        rotated,
+        node_attrs=None,
+        node_type_idx=type_idx,
+        species_embedding=species_embedding,
+    )
+    torch.testing.assert_close(
+        rotated_actual, actual, atol=2.0e-10, rtol=2.0e-10
+    )
+    actual.square().mean().backward()
+    assert embedding.weight.grad is not None
+    assert torch.isfinite(embedding.weight.grad).all()
+    assert float(embedding.weight.grad.abs().sum()) > 0.0
+    assert operator.species_gate is not None
+    assert operator.species_gate.weight.grad is not None
+    assert float(operator.species_gate.weight.grad.abs().sum()) > 0.0
+
+
+def test_embedded_lowrank_species_writeback_scales_sublinearly() -> None:
+    common = dict(
+        num_elements=89,
+        channels=64,
+        lmax=4,
+        density_rank=16,
+    )
+    full = PhaseHermitianFullLResidual(**common)
+    scalable = PhaseHermitianFullLResidual(
+        **common,
+        species_mode="embedded-lowrank",
+        species_embedding_dim=16,
+        species_rank=16,
+    )
+    assert full.output_weights is not None
+    full_writeback = sum(
+        parameter.numel() for parameter in full.output_weights.values()
+    )
+    scalable_writeback = 89 * 16 + sum(
+        parameter.numel()
+        for name, parameter in scalable.named_parameters()
+        if name.startswith(
+            (
+                "shared_output_weights.",
+                "species_left.",
+                "species_right.",
+                "species_gate.",
+            )
+        )
+    )
+    assert scalable_writeback < full_writeback // 4
+
+
+def test_onehot_full_remains_the_exact_default_parameterization() -> None:
+    common = dict(
+        num_elements=4,
+        channels=8,
+        lmax=2,
+        density_rank=4,
+    )
+    torch.manual_seed(912)
+    implicit = PhaseHermitianFullLResidual(**common)
+    torch.manual_seed(912)
+    explicit = PhaseHermitianFullLResidual(
+        **common,
+        species_mode="onehot-full",
+        species_embedding_dim=7,
+        species_rank=5,
+    )
+    assert implicit.state_dict().keys() == explicit.state_dict().keys()
+    for key, value in implicit.state_dict().items():
+        torch.testing.assert_close(value, explicit.state_dict()[key])
+
+
+def test_embedded_lowrank_full_model_force_rotation_and_gradients() -> None:
+    torch.manual_seed(913)
+    model = _build(
+        phase_mode="final-full-l-residual",
+        phase_amplitude="softplus",
+        phase_placement="pre-product-full-l",
+        phase_density_rank=4,
+        phase_density_species_mode="embedded-lowrank",
+        phase_density_species_embedding_dim=6,
+        phase_density_species_rank=5,
+        phase_density_pairs="full",
+        phase_scope="persistent",
+    )
+    graph = make_fixed_graph(
+        num_nodes=8,
+        avg_degree=4,
+        dtype=torch.float64,
+        device=DEVICE,
+        seed=914,
+    )
+    model.eval()
+    energy, forces, _ = compute_energy_forces(model, graph, create_graph=False)
+    rotation = random_rotation(dtype=torch.float64, seed=915).to(DEVICE)
+    rotated_graph = (graph[0] @ rotation.T,) + graph[1:]
+    energy_rot, forces_rot, _ = compute_energy_forces(
+        model, rotated_graph, create_graph=False
+    )
+    torch.testing.assert_close(energy_rot, energy, atol=3.0e-12, rtol=3.0e-12)
+    torch.testing.assert_close(
+        forces_rot, forces @ rotation.T, atol=3.0e-11, rtol=3.0e-11
+    )
+
+    model.train()
+    model.zero_grad(set_to_none=True)
+    model(*graph).sum().backward()
+    assert model.phase_density_species_embedding is not None
+    embedding_grad = model.phase_density_species_embedding.weight.grad
+    assert embedding_grad is not None
+    assert torch.isfinite(embedding_grad).all()
+    assert float(embedding_grad.abs().sum()) > 0.0
+    adapter = model.phase_adapters["1"]
+    assert adapter.species_gate is not None
+    assert adapter.species_gate.weight.grad is not None
+    assert adapter.shared_output_weights is not None
+    assert adapter.shared_output_weights["1"].grad is not None
+
+    graph_module = trace_and_compile_force(
+        model,
+        graph,
+        training=True,
+        do_compile=False,
+    )
+    traced_energy, traced_forces = graph_module(*graph)
+    assert torch.isfinite(traced_energy)
+    assert traced_forces.shape == (8, 3)
+    assert torch.isfinite(traced_forces).all()
 
 
 def test_charge2_quadratic_density_formula_breaks_u1_with_matched_parameters():
@@ -1230,8 +1409,8 @@ def test_phase_model_rotation_force_covariance_and_gradients(
         assert amplitude_grad is not None and amplitude_grad.abs().max().item() > 0.0
 
 
-def test_phase_attention_combination_is_rejected():
-    with pytest.raises(ValueError, match="mutually exclusive"):
+def test_phase_legacy_attention_combination_is_rejected():
+    with pytest.raises(ValueError, match="density-preserving"):
         build_model(
             channels=8,
             lmax=1,
@@ -1380,6 +1559,13 @@ def test_phase_checkpoint_strict_deployment_round_trip(
     final_layer_readout_only = phase_density_pairs == "full-nonlinear-readout"
     element_energy_correction = phase_density_pairs == "full-nonlinear-readout"
     scalar_ffn = phase_density_pairs == "full-nonlinear-readout"
+    phase_density_species_mode = (
+        "embedded-lowrank"
+        if phase_mode == "final-full-l-residual"
+        and phase_scope == "persistent"
+        and phase_density_pairs == "full"
+        else "onehot-full"
+    )
     cfg = ModelConfig(dtype=dtype)
     cfg.channel_in = 8
     cfg.irreps_output_conv_channels = 8
@@ -1409,6 +1595,9 @@ def test_phase_checkpoint_strict_deployment_round_trip(
         phase_amplitude="softplus",
         phase_placement=phase_placement,
         phase_density_rank=4,
+        phase_density_species_mode=phase_density_species_mode,
+        phase_density_species_embedding_dim=6,
+        phase_density_species_rank=5,
         phase_density_pairs=phase_density_pairs,
         phase_normalization=phase_normalization,
         phase_scope=phase_scope,
@@ -1448,6 +1637,9 @@ def test_phase_checkpoint_strict_deployment_round_trip(
             "ictd_fix_phase_amplitude": "softplus",
             "ictd_fix_phase_placement": phase_placement,
             "ictd_fix_phase_density_rank": 4,
+            "ictd_fix_phase_density_species_mode": phase_density_species_mode,
+            "ictd_fix_phase_density_species_embedding_dim": 6,
+            "ictd_fix_phase_density_species_rank": 5,
             "ictd_fix_phase_density_pairs": phase_density_pairs,
             "ictd_fix_phase_normalization": phase_normalization,
             "ictd_fix_phase_scope": phase_scope,
@@ -1475,6 +1667,12 @@ def test_phase_checkpoint_strict_deployment_round_trip(
     assert deployed.ictd_fix_phase_amplitude == "softplus"
     assert deployed.ictd_fix_phase_placement == phase_placement
     assert deployed.ictd_fix_phase_density_rank == 4
+    assert (
+        deployed.ictd_fix_phase_density_species_mode
+        == phase_density_species_mode
+    )
+    assert deployed.ictd_fix_phase_density_species_embedding_dim == 6
+    assert deployed.ictd_fix_phase_density_species_rank == 5
     assert deployed.ictd_fix_phase_density_pairs == phase_density_pairs
     assert deployed.ictd_fix_phase_normalization == phase_normalization
     assert deployed.ictd_fix_phase_scope == phase_scope

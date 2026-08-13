@@ -34,26 +34,48 @@ from chorus.training.makefx_compile import trace_and_compile_force
 
 
 PHASE_MODES = {
-    "baseline": ("none", "unit", "post-product", "final"),
-    "phase_unit": ("final-scalar-residual", "unit", "post-product", "final"),
-    "phase_softplus": ("final-scalar-residual", "softplus", "post-product", "final"),
+    "baseline": ("none", "unit", "post-product", "final", "onehot-full"),
+    "phase_unit": (
+        "final-scalar-residual",
+        "unit",
+        "post-product",
+        "final",
+        "onehot-full",
+    ),
+    "phase_softplus": (
+        "final-scalar-residual",
+        "softplus",
+        "post-product",
+        "final",
+        "onehot-full",
+    ),
     "phase_full_l_rank8": (
         "final-full-l-residual",
         "softplus",
         "pre-product-full-l",
         "final",
+        "onehot-full",
     ),
     "phase_scalar_persistent": (
         "final-scalar-residual",
         "softplus",
         "pre-product-l0",
         "persistent",
+        "onehot-full",
     ),
     "phase_full_l_persistent_rank8": (
         "final-full-l-residual",
         "softplus",
         "pre-product-full-l",
         "persistent",
+        "onehot-full",
+    ),
+    "phase_full_l_persistent_scalable": (
+        "final-full-l-residual",
+        "softplus",
+        "pre-product-full-l",
+        "persistent",
+        "embedded-lowrank",
     ),
 }
 
@@ -65,6 +87,7 @@ def _time_mode(
     phase_amplitude: str,
     phase_placement: str,
     phase_scope: str,
+    phase_density_species_mode: str,
     args: argparse.Namespace,
     cfg: AngularConfig,
     graph,
@@ -93,6 +116,11 @@ def _time_mode(
         phase_amplitude=phase_amplitude,
         phase_placement=phase_placement,
         phase_density_rank=args.phase_density_rank,
+        phase_density_species_mode=phase_density_species_mode,
+        phase_density_species_embedding_dim=(
+            args.phase_density_species_embedding_dim
+        ),
+        phase_density_species_rank=args.phase_density_species_rank,
         phase_scope=phase_scope,
     )
     params = sum(parameter.numel() for parameter in model.parameters() if parameter.requires_grad)
@@ -188,6 +216,7 @@ def _time_mode(
         "phase_amplitude": phase_amplitude,
         "phase_placement": phase_placement,
         "phase_scope": phase_scope,
+        "phase_density_species_mode": phase_density_species_mode,
         "product_backend": args.product_backend,
         "atoms": atoms,
         "edges": atoms * args.avg_degree,
@@ -277,6 +306,8 @@ def build_arg_parser() -> argparse.ArgumentParser:
     parser.add_argument("--phase-hidden-channels", type=int, default=32)
     parser.add_argument("--phase-scale-init", type=float, default=0.05)
     parser.add_argument("--phase-density-rank", type=int, default=8)
+    parser.add_argument("--phase-density-species-embedding-dim", type=int, default=16)
+    parser.add_argument("--phase-density-species-rank", type=int, default=16)
     parser.add_argument("--seed", type=int, default=20260715)
     parser.add_argument("--lr", type=float, default=1.0e-3)
     parser.add_argument("--train-warmup", type=int, default=3)
@@ -336,7 +367,9 @@ def main(argv: list[str] | None = None) -> int:
         )
         for task in tasks:
             for label in selected_modes:
-                phase_mode, amplitude, placement, scope = PHASE_MODES[label]
+                phase_mode, amplitude, placement, scope, species_mode = PHASE_MODES[
+                    label
+                ]
                 try:
                     row = _time_mode(
                         label=label,
@@ -344,6 +377,7 @@ def main(argv: list[str] | None = None) -> int:
                         phase_amplitude=amplitude,
                         phase_placement=placement,
                         phase_scope=scope,
+                        phase_density_species_mode=species_mode,
                         args=args,
                         cfg=cfg,
                         graph=graph,
@@ -358,6 +392,7 @@ def main(argv: list[str] | None = None) -> int:
                         "phase_amplitude": amplitude,
                         "phase_placement": placement,
                         "phase_scope": scope,
+                        "phase_density_species_mode": species_mode,
                         "product_backend": args.product_backend,
                         "atoms": atoms,
                         "edges": atoms * args.avg_degree,
