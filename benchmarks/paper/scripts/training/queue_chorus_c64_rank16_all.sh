@@ -10,6 +10,8 @@ SEED="${SEED:-20260616}"
 CHANNELS="${CHANNELS:-64}"
 RANK="${RANK:-16}"
 NUM_INTERACTIONS="${NUM_INTERACTIONS:-2}"
+HIDDEN_LMAX="${HIDDEN_LMAX:-2}"
+MAX_ELL="${MAX_ELL:-2}"
 MODE="${MODE:-chorus}"
 PHASE_CONTEXT="${PHASE_CONTEXT:-content}"
 SYSTEMS="${SYSTEMS:-t1x,mal,sti,bucky,3bpa}"
@@ -156,7 +158,7 @@ run_system() {
   local batch_size="$8"
   local keep_checkpoints="$9"
 
-  local tag="${system}_${MODE_TAG}_c${CHANNELS}_l2_corr3_rank${RANK}"
+  local tag="${system}_${MODE_TAG}_c${CHANNELS}_l${HIDDEN_LMAX}_L${MAX_ELL}_corr3_rank${RANK}"
   local out="${ROOT}/${system}"
   local checkpoint="${out}/checkpoints/${tag}_final.pth"
   local train_log="${out}/logs/train.log"
@@ -175,7 +177,7 @@ run_system() {
     mark "START_${system}_TRAIN"
     "${PYTHON_BIN}" -m chorus.cli.train \
       --data-dir "${data_dir}" --train-prefix train --val-prefix val \
-      --channels "${CHANNELS}" --lmax 2 --max-ell 2 \
+      --channels "${CHANNELS}" --lmax "${HIDDEN_LMAX}" --max-ell "${MAX_ELL}" \
       --num-interaction "${NUM_INTERACTIONS}" --correlation 3 \
       --product-backend ictd-bridge-u --angular-basis ictd --use-reduced-cg \
       --first-layer-self-connection --mace-compatible-random-init \
@@ -213,7 +215,7 @@ run_system() {
     mark "START_${system}_TEST"
     "${PYTHON_BIN}" -m chorus.cli.train \
       --data-dir "${data_dir}" --train-prefix train --val-prefix test \
-      --channels "${CHANNELS}" --lmax 2 --max-ell 2 \
+      --channels "${CHANNELS}" --lmax "${HIDDEN_LMAX}" --max-ell "${MAX_ELL}" \
       --num-interaction "${NUM_INTERACTIONS}" --correlation 3 \
       --product-backend ictd-bridge-u --angular-basis ictd --use-reduced-cg \
       --first-layer-self-connection --mace-compatible-random-init \
@@ -249,6 +251,7 @@ run_system() {
         DATA_DIR="${data_dir}" ROOT="${out}" \
         OUT="${out}/train_only_energy_calibration" \
         CHANNELS="${CHANNELS}" PHASE_DENSITY_RANK="${RANK}" \
+        HIDDEN_LMAX="${HIDDEN_LMAX}" MAX_ELL="${MAX_ELL}" \
         PHASE_CONTEXT="${PHASE_CONTEXT}" \
         NUM_INTERACTIONS="${NUM_INTERACTIONS}" \
         RUN_BASELINE=1 RUN_CHORUS=0 BASELINE_NAME="phaseoff_c${CHANNELS}" \
@@ -259,6 +262,7 @@ run_system() {
         DATA_DIR="${data_dir}" ROOT="${out}" \
         OUT="${out}/train_only_energy_calibration" \
         CHANNELS="${CHANNELS}" PHASE_DENSITY_RANK="${RANK}" \
+        HIDDEN_LMAX="${HIDDEN_LMAX}" MAX_ELL="${MAX_ELL}" \
         PHASE_CONTEXT="${PHASE_CONTEXT}" \
         NUM_INTERACTIONS="${NUM_INTERACTIONS}" \
         CHORUS_SCOPE="${PHASE_SCOPE}" \
@@ -321,6 +325,7 @@ if should_run 3bpa; then
   fi
   REPO="${REPO}" PYTHON_BIN="${PYTHON_BIN}" MACE_TORCH_PATH="${MACE_TORCH_PATH}" \
     ROOT="${ROOT}/3bpa" CHANNELS="${CHANNELS}" RANK="${RANK}" \
+    HIDDEN_LMAX="${HIDDEN_LMAX}" MAX_ELL="${MAX_ELL}" \
     DATA_DIR="${THREE_BPA_DATA_DIR}" \
     SEED="${SEED}" \
     NUM_INTERACTIONS="${NUM_INTERACTIONS}" \

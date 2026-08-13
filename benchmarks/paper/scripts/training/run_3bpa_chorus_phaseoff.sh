@@ -12,6 +12,8 @@ MAX_STEPS="${MAX_STEPS:-45000}"
 BATCH_SIZE="${BATCH_SIZE:-16}"
 RANK="${RANK:-32}"
 CHANNELS="${CHANNELS:-128}"
+HIDDEN_LMAX="${HIDDEN_LMAX:-2}"
+MAX_ELL="${MAX_ELL:-2}"
 NUM_INTERACTIONS="${NUM_INTERACTIONS:-2}"
 MODES="${MODES:-chorus_rank32 phaseoff}"
 SKIP_EVAL="${SKIP_EVAL:-0}"
@@ -54,7 +56,7 @@ train_one() {
   local attention_args=()
   case "${mode}" in
     chorus|chorus_rank32)
-      tag="3bpa_chorus_c${CHANNELS}_l2_corr3_rank${RANK}"
+      tag="3bpa_chorus_c${CHANNELS}_l${HIDDEN_LMAX}_L${MAX_ELL}_corr3_rank${RANK}"
       phase_args=(
         --phase-mode final-full-l-residual
         --phase-amplitude softplus
@@ -67,7 +69,7 @@ train_one() {
       )
       ;;
     persistent)
-      tag="3bpa_persistent_c${CHANNELS}_l2_corr3_rank${RANK}"
+      tag="3bpa_persistent_c${CHANNELS}_l${HIDDEN_LMAX}_L${MAX_ELL}_corr3_rank${RANK}"
       phase_args=(
         --phase-mode final-full-l-residual
         --phase-amplitude softplus
@@ -80,7 +82,7 @@ train_one() {
       )
       ;;
     chorus_rank16_attention)
-      tag="3bpa_chorus_attention_c${CHANNELS}_l2_corr3_rank${RANK}"
+      tag="3bpa_chorus_attention_c${CHANNELS}_l${HIDDEN_LMAX}_L${MAX_ELL}_corr3_rank${RANK}"
       phase_args=(
         --phase-mode final-full-l-residual
         --phase-amplitude softplus
@@ -98,7 +100,7 @@ train_one() {
       )
       ;;
     phaseoff)
-      tag="3bpa_phaseoff_c${CHANNELS}_l2_corr3"
+      tag="3bpa_phaseoff_c${CHANNELS}_l${HIDDEN_LMAX}_L${MAX_ELL}_corr3"
       phase_args=(--phase-mode none)
       ;;
     *)
@@ -114,7 +116,7 @@ train_one() {
     mark "START_${tag}"
     "${PYTHON_BIN}" -m chorus.cli.train \
       --data-dir "${DATA_DIR}" --train-prefix train --val-prefix val \
-      --channels "${CHANNELS}" --lmax 2 --max-ell 2 \
+      --channels "${CHANNELS}" --lmax "${HIDDEN_LMAX}" --max-ell "${MAX_ELL}" \
       --num-interaction "${NUM_INTERACTIONS}" --correlation 3 \
       --product-backend ictd-bridge-u --angular-basis ictd --use-reduced-cg \
       --first-layer-self-connection --mace-compatible-random-init \
@@ -207,7 +209,7 @@ PY
     mark "START_${tag}_TEST_${temperature}"
     "${PYTHON_BIN}" -m chorus.cli.train \
       --data-dir "${eval_data}" --train-prefix train --val-prefix val \
-      --channels "${CHANNELS}" --lmax 2 --max-ell 2 \
+      --channels "${CHANNELS}" --lmax "${HIDDEN_LMAX}" --max-ell "${MAX_ELL}" \
       --num-interaction "${NUM_INTERACTIONS}" --correlation 3 \
       --product-backend ictd-bridge-u --angular-basis ictd --use-reduced-cg \
       --first-layer-self-connection --mace-compatible-random-init \
