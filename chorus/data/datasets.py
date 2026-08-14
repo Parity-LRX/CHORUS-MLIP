@@ -365,16 +365,68 @@ class H5Dataset(Dataset):
         self.pad_edges_to_max = bool(pad_edges_to_max)
         self.pad_nodes_to_max = bool(pad_nodes_to_max)
         with h5py.File(self.file_path, 'r') as f:
-            self.num_samples = len(f.keys())
-            # E_max for fixed-shape edge padding: prefer the preprocess-summarized attr, else
-            # (datasets made before this feature) scan the per-frame edge lengths once at load.
+            self.num_samples = len(f)
+
+            # Load the count sidecar before resolving global padding maxima.  Merged large
+            # datasets are HDF5 files containing millions of external-link groups and often do
+            # not carry max_atoms/max_edges attributes.  Scanning those links here defeats the
+            # sidecar used by make_fx bucketing and can turn startup into hours of shared-filesystem
+            # I/O.  Keep counts as compact arrays and reuse them for both global maxima and buckets.
+            _sidecar = self.file_path + ".counts.npz"
+            atom_counts = edge_counts = None
+            if os.path.exists(_sidecar):
+                try:
+                    with np.load(_sidecar, allow_pickle=False) as _d:
+                        _node_counts = np.asarray(_d['node_counts'], dtype=np.int64)
+                        _edge_counts = np.asarray(_d['edge_counts'], dtype=np.int64)
+                    valid = (
+                        _node_counts.ndim == 1
+                        and _edge_counts.ndim == 1
+                        and len(_node_counts) == self.num_samples
+                        and len(_edge_counts) == self.num_samples
+                        and np.all(_node_counts >= 0)
+                        and np.all(_edge_counts >= 0)
+                    )
+                    if valid:
+                        atom_counts = _node_counts
+                        edge_counts = _edge_counts
+                    else:
+                        import warnings
+                        warnings.warn(
+                            f"Ignoring stale or invalid H5 count sidecar {_sidecar}; "
+                            "falling back to a one-pass group scan.",
+                            RuntimeWarning,
+                        )
+                except (KeyError, OSError, ValueError) as exc:
+                    import warnings
+                    warnings.warn(
+                        f"Could not read H5 count sidecar {_sidecar} ({exc}); "
+                        "falling back to a one-pass group scan.",
+                        RuntimeWarning,
+                    )
+
+            def _scan_sample_counts():
+                nodes = np.empty(self.num_samples, dtype=np.int64)
+                edges = np.empty(self.num_samples, dtype=np.int64)
+                for i in range(self.num_samples):
+                    group = f[f'sample_{i}']
+                    nodes[i] = int(group['pos'].shape[0])
+                    edges[i] = int(group['edge_src'].shape[0])
+                return nodes, edges
+
+            # E_max/N_max for fixed-shape padding: prefer preprocess-summarized attrs, then
+            # the sidecar, and scan the groups only as a legacy fallback.  If a scan is needed,
+            # collect node and edge counts together rather than traversing the H5 twice.
             self.max_edges = int(f.attrs.get('max_edges', 0))
-            if self.pad_edges_to_max and self.max_edges <= 0:
-                self.max_edges = max((int(f[k]['edge_src'].shape[0]) for k in f.keys()), default=0)
-            # N_max for fixed-shape node padding (same high-water-mark pattern as max_edges).
             self.max_atoms = int(f.attrs.get('max_atoms', 0))
-            if self.pad_nodes_to_max and self.max_atoms <= 0:
-                self.max_atoms = max((int(f[k]['pos'].shape[0]) for k in f.keys()), default=0)
+            need_edge_max = self.pad_edges_to_max and self.max_edges <= 0
+            need_atom_max = self.pad_nodes_to_max and self.max_atoms <= 0
+            if (need_edge_max or need_atom_max) and atom_counts is None:
+                atom_counts, edge_counts = _scan_sample_counts()
+            if need_edge_max:
+                self.max_edges = int(edge_counts.max()) if self.num_samples else 0
+            if need_atom_max:
+                self.max_atoms = int(atom_counts.max()) if self.num_samples else 0
 
             # rcut guard: the baked neighbor graph is valid ONLY at the cutoff it was built at
             # (stored by mff-preprocess). Reject a training --max-radius that disagrees, which would
@@ -416,36 +468,29 @@ class H5Dataset(Dataset):
                 # NUMERIC sample id to match __getitem__ -> f['sample_{idx}'] (h5 key order is
                 # alphabetical: sample_0,1,10,2,... so a keys()-ordered list would mis-map
                 # bucket -> sample and truncate frames).
-                _sidecar = self.file_path + ".counts.npz"
-                atom_counts = None
-                if os.path.exists(_sidecar):
-                    _d = np.load(_sidecar)
-                    if len(_d['node_counts']) == self.num_samples:
-                        atom_counts = [int(x) for x in _d['node_counts']]
-                        edge_counts = [int(x) for x in _d['edge_counts']]
                 if atom_counts is None:
-                    atom_counts = [int(f[f'sample_{i}']['pos'].shape[0]) for i in range(self.num_samples)]
-                    edge_counts = [int(f[f'sample_{i}']['edge_src'].shape[0]) for i in range(self.num_samples)]
+                    atom_counts, edge_counts = _scan_sample_counts()
                 if isinstance(makefx_buckets, (list, tuple)):
                     bounds = sorted({int(b) for b in makefx_buckets})
                 else:
                     # auto: K-1 interior atom-count quantiles -> K equal-frequency buckets
                     K = max(int(makefx_buckets), 1)
-                    a_sorted = sorted(atom_counts)
+                    a_sorted = np.sort(atom_counts)
                     nsamp = len(a_sorted)
-                    bounds = sorted({a_sorted[min(nsamp - 1, (j * nsamp) // K)]
+                    bounds = sorted({int(a_sorted[min(nsamp - 1, (j * nsamp) // K)])
                                      for j in range(1, K)}) if nsamp else []
-                import bisect as _bisect
                 self._bucket_bounds = bounds
-                self._sample_bucket = [_bisect.bisect_right(bounds, a) for a in atom_counts]
+                bucket_ids = np.searchsorted(
+                    np.asarray(bounds, dtype=np.int64), atom_counts, side='right'
+                ).astype(np.int64, copy=False)
+                self._sample_bucket = bucket_ids.tolist()
                 nb = len(bounds) + 1
-                self._bucket_n_max = [0] * nb
-                self._bucket_e_max = [0] * nb
-                for a, e, b in zip(atom_counts, edge_counts, self._sample_bucket):
-                    if a > self._bucket_n_max[b]:
-                        self._bucket_n_max[b] = a
-                    if e > self._bucket_e_max[b]:
-                        self._bucket_e_max[b] = e
+                bucket_n_max = np.zeros(nb, dtype=np.int64)
+                bucket_e_max = np.zeros(nb, dtype=np.int64)
+                np.maximum.at(bucket_n_max, bucket_ids, atom_counts)
+                np.maximum.at(bucket_e_max, bucket_ids, edge_counts)
+                self._bucket_n_max = bucket_n_max.tolist()
+                self._bucket_e_max = bucket_e_max.tolist()
 
         self._extra_labels: Dict[str, torch.Tensor] = {}
         if extra_label_paths:
