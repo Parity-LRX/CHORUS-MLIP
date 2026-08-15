@@ -184,15 +184,16 @@ def build_ictc(args: argparse.Namespace):
 
         return infer, natoms * args.degree, compile_s
 
+    default_configuration = (
+        f"loaded paper checkpoint; C128 L2 correlation3 2 interactions "
+        f"{args.engine.removeprefix('chorus-')}"
+        if phase
+        else "loaded paper checkpoint; C128 L2 correlation3 2 interactions phase-off"
+    )
     return model, nparams, prepare, {
         "backend": "MakeFX/Inductor",
         "graph_build_in_timing": False,
-        "configuration": (
-            f"loaded paper checkpoint; C128 L2 correlation3 2 interactions "
-            f"{args.engine.removeprefix('chorus-')}"
-            if phase
-            else "loaded paper checkpoint; C128 L2 correlation3 2 interactions phase-off"
-        ),
+        "configuration": args.configuration_label or default_configuration,
     }
 
 
@@ -471,6 +472,11 @@ def main() -> None:
     )
     parser.add_argument("--checkpoint", default="")
     parser.add_argument("--config", default="")
+    parser.add_argument(
+        "--configuration-label",
+        default="",
+        help="Explicit architecture label stored in the output metadata.",
+    )
     parser.add_argument("--output", required=True)
     parser.add_argument("--sizes", default="128,256,512,1024,2048,4096")
     parser.add_argument("--tasks", default="inference,train")
