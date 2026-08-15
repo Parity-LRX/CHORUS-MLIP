@@ -156,7 +156,6 @@ def main() -> None:
         "chorus_scale_init": 0.05,
         "r_max": 5.0,
         "num_layers": int(args.num_layers),
-        "lmax": int(args.lmax),
         "num_basis": 8,
         "BesselBasis_trainable": True,
         "PolynomialCutoff_p": 6,
