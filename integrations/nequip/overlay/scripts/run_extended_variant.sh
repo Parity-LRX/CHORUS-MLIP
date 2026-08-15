@@ -16,6 +16,7 @@ CHANNELS="${CHANNELS:-64}"
 CHORUS_RANK="${CHORUS_RANK:-16}"
 CHORUS_SCOPE="${CHORUS_SCOPE:-final}"
 NUM_LAYERS="${NUM_LAYERS:-3}"
+LMAX="${LMAX:-2}"
 SEED="${SEED:-20260616}"
 EVAL_BATCH_SIZE="${EVAL_BATCH_SIZE:-50}"
 REUSE_COMPLETED_TRAIN="${REUSE_COMPLETED_TRAIN:-0}"
@@ -51,6 +52,7 @@ for dataset in ${DATASETS}; do
     --channels "${CHANNELS}" --chorus-rank "${CHORUS_RANK}"
     --chorus-scope "${CHORUS_SCOPE}"
     --num-layers "${NUM_LAYERS}"
+    --lmax "${LMAX}"
     --seed "${SEED}"
   )
   if [[ -n "${EPOCHS_OVERRIDE}" ]]; then

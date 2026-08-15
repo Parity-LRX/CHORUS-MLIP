@@ -92,6 +92,7 @@ def main() -> None:
     parser.add_argument("--channels", type=int, default=64)
     parser.add_argument("--chorus-rank", type=int, default=16)
     parser.add_argument("--num-layers", type=int, default=3)
+    parser.add_argument("--lmax", type=int, default=2)
     parser.add_argument("--openequivariance", action="store_true")
     parser.add_argument("--seed", type=int, default=20260616)
     args = parser.parse_args()
@@ -117,6 +118,16 @@ def main() -> None:
         raise ValueError("--chorus-rank must be positive")
     if int(args.num_layers) <= 0:
         raise ValueError("--num-layers must be positive")
+    if int(args.lmax) < 0:
+        raise ValueError("--lmax must be non-negative")
+    angular_irreps = " + ".join(
+        f"{ell}{'e' if ell % 2 == 0 else 'o'}"
+        for ell in range(int(args.lmax) + 1)
+    )
+    hidden_irreps = " + ".join(
+        f"{channels}x{ell}{'e' if ell % 2 == 0 else 'o'}"
+        for ell in range(int(args.lmax) + 1)
+    )
     config = {
         "root": str(args.run_root),
         "run_name": "run",
@@ -133,10 +144,8 @@ def main() -> None:
             "RescaleEnergyEtc",
         ],
         "chemical_embedding_irreps_out": f"{channels}x0e",
-        "irreps_edge_sh": "0e + 1o + 2e",
-        "feature_irreps_hidden": (
-            f"{channels}x0e + {channels}x1o + {channels}x2e"
-        ),
+        "irreps_edge_sh": angular_irreps,
+        "feature_irreps_hidden": hidden_irreps,
         "conv_to_output_hidden_irreps_out": f"{max(1, channels // 2)}x0e",
         "interaction_backend": args.backend,
         "openequivariance_enabled": bool(args.openequivariance),
@@ -147,6 +156,7 @@ def main() -> None:
         "chorus_scale_init": 0.05,
         "r_max": 5.0,
         "num_layers": int(args.num_layers),
+        "lmax": int(args.lmax),
         "num_basis": 8,
         "BesselBasis_trainable": True,
         "PolynomialCutoff_p": 6,
@@ -229,6 +239,7 @@ def main() -> None:
         "seed": int(args.seed),
         "chorus_scope": args.chorus_scope,
         "num_layers": int(args.num_layers),
+        "lmax": int(args.lmax),
         "openequivariance": bool(args.openequivariance),
     }
     (args.output_dir / "protocol.yaml").write_text(
