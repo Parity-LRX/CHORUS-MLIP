@@ -119,8 +119,11 @@ def main() -> None:
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--sizes", default="128,256,512,1024,2048,4096")
     parser.add_argument("--tasks", default="inference,train")
+    parser.add_argument("--max-train-atoms", type=int)
     parser.add_argument("--seed", type=int, default=20260804)
+    parser.add_argument("--enable-openequivariance", action="store_true")
     parser.add_argument("--require-openequivariance", action="store_true")
+    parser.add_argument("--num-layers", type=int)
     args = parser.parse_args()
 
     if not torch.cuda.is_available():
@@ -134,6 +137,10 @@ def main() -> None:
     config["allow_tf32"] = False
     config["default_dtype"] = "float32"
     config["model_dtype"] = "float32"
+    if args.enable_openequivariance:
+        config["openequivariance_enabled"] = True
+    if args.num_layers is not None:
+        config["num_layers"] = int(args.num_layers)
     _set_global_options(config)
     dataset = dataset_from_config(config, prefix="dataset")
     model = model_from_config(config, initialize=True, dataset=dataset).to(device)
@@ -180,6 +187,12 @@ def main() -> None:
     rows: list[dict[str, object]] = []
     for natoms in [int(value) for value in args.sizes.split(",")]:
         for task in [value.strip() for value in args.tasks.split(",") if value.strip()]:
+            if (
+                task == "train"
+                and args.max_train_atoms is not None
+                and natoms > args.max_train_atoms
+            ):
+                continue
             torch.cuda.empty_cache()
             torch.cuda.reset_peak_memory_stats()
             optimizer = None
@@ -268,6 +281,7 @@ def main() -> None:
             "target_neighbors_per_atom": 32,
             "graph_build_in_timing": False,
             "steady_state_excludes_prepare": True,
+            "max_train_atoms": args.max_train_atoms,
             "tasks": {
                 "inference": "energy plus conservative forces",
                 "train": "energy+force loss, force double backward, AdamW update",
@@ -275,6 +289,12 @@ def main() -> None:
         },
         "engine": args.label,
         "configuration": str(args.config),
+        "configuration_overrides": {
+            "openequivariance_enabled": bool(
+                config.get("openequivariance_enabled", False)
+            ),
+            "num_layers": int(config["num_layers"]),
+        },
         "parameters": nparams,
         "openequivariance": oeq_metadata,
         "rows": rows,
