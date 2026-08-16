@@ -10,6 +10,7 @@ import torch.nn.functional as F
 from e3nn import o3
 
 from chorus.models.ictd_irreps import (
+    _apply_cg_normalization,
     build_cg_tensor,
     EdgeWeightedPathPreservingTensorProduct,
     EquivariantChannelLinearSO3,
@@ -2940,6 +2941,309 @@ class InvariantScalarResidualFFN(nn.Module):
         )
 
 
+class CueqConvTensorProductSO3(nn.Module):
+    """cuEquivariance backend for the interaction convolution tensor product.
+
+    The reference ``EdgeWeightedPathPreservingTensorProduct`` evaluates the conv-TP
+    with dense per-``(l1, l2)`` projector matmuls in the ICTC Cartesian basis.
+    This module evaluates the same algebra with cuEquivariance's fused CUDA
+    segmented-polynomial kernel (``cuet.ChannelWiseTensorProduct``), folding the
+    per-edge/per-channel gates AND the learnable per-path channel weights into the
+    kernel's external weight operand.
+
+    The ICTC and e3nn/MACE bases differ only by fixed per-l orthogonal matrices
+    ``Q_l`` (see ``chorus.mace_basis``), and every linear map around the TP acts
+    on the channel axis only, so the basis change is an exact boundary bridge:
+
+        out_ictc_p  =  Q_l3^T @ cueq_p(Q_l1 @ x1, Q_l2 @ x2;  u_p)
+        u_p         =  gates_p * w_p / s_p
+
+    where ``s_p`` is the per-path scalar between the tp's ICTC-normalized CG
+    projector and the e3nn ``component``-normalized one used by cueq (the same
+    ratio that ``conv_tp_scale_init='e3nn'`` calibrates empirically).  ``s_p`` is
+    computed deterministically at construction in float64 from the tp's own CG
+    tensors folded by Q (``o3.wigner_3j * sqrt(2*l3+1)`` on the cueq side), with a
+    max-residual check that raises if the two conventions ever drifted apart.
+
+    Layout contract (verified against e3nn at construction-independent probes):
+    cueq sorts output segments by ``(l3, l1, l2)``; within one ``l3`` that order
+    equals the reference tp's ``path_offset`` order, so each flat output chunk
+    reshapes directly to the path-preserving block ``(E, channels*paths_l, 2l+1)``.
+    Only the external weight vector needs a fixed permutation over the path axis.
+
+    The module holds NO trainable parameters: the authoritative per-path channel
+    weights stay in ``tp.weight`` (checkpoint-compatible) and are passed to
+    ``forward`` so gradients land on the reference tensors.  All buffers (Q
+    bridges, inverse path scales, path permutation) are non-persistent, so the
+    state_dict layout is unchanged relative to the pytorch backend.  The compute
+    dtype is fixed at construction (from ``tp.internal_compute_dtype``), matching
+    the existing cueq product backend; cueq's fused ops are CUDA-only, so the
+    caller keeps the reference pytorch path as the CPU fallback.
+
+    Only the message-passing TP of ``ICTDResidualInteractionBlock`` is mirrored
+    here: path list ``tp.paths`` (already pruned to ``l1 <= input_lmax`` and
+    ``l3 <= target_lmax``), component irrep normalization and element path
+    normalization (the only normalization cueq supports, and exactly the
+    convention of the e3nn reference TP used for calibration).
+    """
+
+    def __init__(
+        self,
+        *,
+        tp: EdgeWeightedPathPreservingTensorProduct,
+        input_lmax: int,
+        target_lmax: int,
+    ):
+        super().__init__()
+        try:
+            import cuequivariance as cue
+            import cuequivariance_torch as cuet
+        except Exception as exc:  # pragma: no cover - optional accelerator dependency
+            raise RuntimeError(
+                "ictd_tp_backend='cueq' requires cuequivariance and "
+                "cuequivariance_torch to be installed"
+            ) from exc
+
+        from chorus.mace_basis import orthogonal_Q_blocks
+
+        self.channels = int(tp.channels)
+        self.lmax = int(tp.lmax)  # edge (in2) lmax
+        self.input_lmax = int(input_lmax)
+        self.target_lmax = int(target_lmax)
+        self.num_paths = int(tp.num_paths)
+        self.compute_dtype = tp.internal_compute_dtype
+        self._e3nn_basis = False
+
+        paths = [tuple(int(v) for v in p) for p in tp.paths]
+        self.paths = paths
+        self._in1_ls = sorted({l1 for l1, _l2, _l3 in paths})
+        self._in2_ls = sorted({l2 for _l1, l2, _l3 in paths})
+        self._out_ls = sorted({l3 for _l1, _l2, l3 in paths})
+        self.path_counts_by_l = {
+            l: int(tp.path_counts_by_l.get(l, 0)) for l in range(self.target_lmax + 1)
+        }
+        # cueq emits segments sorted by (l3, l1, l2); the reference tp lists paths
+        # (l1, l2, l3)-lexicographic. Within one l3 the two orders coincide (l1- then
+        # l2-ascending == path_offset order), so only the weight vector is permuted.
+        cueq_order = sorted(
+            range(self.num_paths), key=lambda p: (paths[p][2], paths[p][0], paths[p][1])
+        )
+        self.register_buffer(
+            "cueq_path_perm",
+            torch.tensor(cueq_order, dtype=torch.long),
+            persistent=False,
+        )
+
+        # --- per-path ICTC -> e3nn CG ratio s_p (float64, deterministic) ---
+        # Rebuild the reference CGs in float64 exactly the way the tp builds its
+        # master copies (build_cg_tensor + normalization + path scales). Going
+        # through tp._get_cg_list would silently downcast to internal_compute_dtype.
+        q_blocks_f64 = orthogonal_Q_blocks(self.lmax, dtype=torch.float64, device="cpu")
+        cg_list: List[torch.Tensor] = []
+        for p_idx, (l1, l2, l3) in enumerate(paths):
+            c_ref = build_cg_tensor(l1, l2, l3)
+            c_ref = _apply_cg_normalization(c_ref, l3, tp._normalization)
+            c_ref = c_ref * float(tp._path_normalization_scales[p_idx])
+            cg_list.append(c_ref.to(torch.float64))
+        inv_scales: List[float] = []
+        for p_idx, (l1, l2, l3) in enumerate(paths):
+            c_ictd = cg_list[p_idx]
+            c_fold = torch.einsum(
+                "ax,by,cz,abc->xyz",
+                q_blocks_f64[l1],
+                q_blocks_f64[l2],
+                q_blocks_f64[l3],
+                c_ictd,
+            )
+            c_e3nn = o3.wigner_3j(l1, l2, l3, dtype=torch.float64) * math.sqrt(2 * l3 + 1)
+            den = (c_fold * c_fold).sum().clamp_min(1e-30)
+            scale = float(((c_fold * c_e3nn).sum() / den).item())
+            resid = float((c_e3nn - scale * c_fold).abs().max().item())
+            if resid > 1e-8:
+                raise RuntimeError(
+                    f"ictd_tp_backend='cueq': ICTC/e3nn CG convention mismatch on path "
+                    f"{(l1, l2, l3)} (residual {resid:.2e}); cannot mirror the conv-TP in cueq"
+                )
+            inv_scales.append(1.0 / scale)
+        self.register_buffer(
+            "cueq_inv_path_scales",
+            torch.tensor(inv_scales, dtype=self.compute_dtype).reshape(self.num_paths, 1),
+            persistent=False,
+        )
+
+        # --- fixed orthogonal basis bridges (applied per l on the m axis) ---
+        for l in self._in1_ls:
+            self.register_buffer(
+                f"cueq_q_in_{l}",
+                q_blocks_f64[l].to(dtype=self.compute_dtype),
+                persistent=False,
+            )
+        for l in self._in2_ls:
+            self.register_buffer(
+                f"cueq_q_edge_{l}",
+                q_blocks_f64[l].to(dtype=self.compute_dtype),
+                persistent=False,
+            )
+        for l in self._out_ls:
+            self.register_buffer(
+                f"cueq_q_out_t_{l}",
+                q_blocks_f64[l].transpose(0, 1).contiguous().to(dtype=self.compute_dtype),
+                persistent=False,
+            )
+
+        # --- cueq channelwise TP: external per-edge weights, e3nn mul_ir layout ---
+        group = _cueq_o3_e3nn_group()
+
+        def _parity(l: int) -> str:
+            return "e" if int(l) % 2 == 0 else "o"
+
+        irreps_in1 = cue.Irreps(
+            group, " + ".join(f"{self.channels}x{l}{_parity(l)}" for l in self._in1_ls)
+        )
+        irreps_in2 = cue.Irreps(
+            group, " + ".join(f"1x{l}{_parity(l)}" for l in self._in2_ls)
+        )
+        filter_out = [
+            group(l=l, p=1 if int(l) % 2 == 0 else -1) for l in self._out_ls
+        ]
+        self.cueq_tp = cuet.ChannelWiseTensorProduct(
+            irreps_in1,
+            irreps_in2,
+            filter_out,
+            layout=cue.mul_ir,
+            shared_weights=False,
+            internal_weights=False,
+            dtype=self.compute_dtype,
+            math_dtype=self.compute_dtype,
+        )
+        if int(self.cueq_tp.weight_numel) != self.num_paths * self.channels:
+            raise RuntimeError(
+                "ictd_tp_backend='cueq': unexpected cueq weight layout "
+                f"({int(self.cueq_tp.weight_numel)} != {self.num_paths * self.channels}); "
+                "the conv-TP mirror assumes one weight per (path, channel)"
+            )
+
+        # Output segments are sorted by l3 and NOT merged; group the flat offsets per l3.
+        self._out_slices: Dict[int, tuple[int, int]] = {}
+        offset = 0
+        prev_l3: int | None = None
+        seg_count_by_l: Dict[int, int] = {}
+        for mul, ir in self.cueq_tp.irreps_out:
+            l3 = int(ir.l)
+            if int(mul) != self.channels:
+                raise RuntimeError(
+                    "ictd_tp_backend='cueq': unexpected cueq output segment multiplicity "
+                    f"({int(mul)} != {self.channels})"
+                )
+            if prev_l3 is not None and l3 < prev_l3:
+                raise RuntimeError(
+                    "ictd_tp_backend='cueq': cueq output segments are not sorted by l3; "
+                    "the path-preserving layout mirror would be wrong"
+                )
+            prev_l3 = l3
+            start, end = offset, offset + int(mul) * int(ir.dim)
+            seg_count_by_l[l3] = seg_count_by_l.get(l3, 0) + 1
+            if l3 in self._out_slices:
+                self._out_slices[l3] = (self._out_slices[l3][0], end)
+            else:
+                self._out_slices[l3] = (start, end)
+            offset = end
+        for l, count in seg_count_by_l.items():
+            if count != self.path_counts_by_l.get(l, 0):
+                raise RuntimeError(
+                    f"ictd_tp_backend='cueq': cueq produced {count} paths for l={l}, "
+                    f"reference tp has {self.path_counts_by_l.get(l, 0)}; path tables diverged"
+                )
+
+    def fold_cg_to_e3nn(self, q_blocks: "List[torch.Tensor] | None" = None) -> None:
+        """``angular_basis='e3nn'`` fold hook: features and edge harmonics already
+        arrive in the e3nn convention, so the Q bridges become identity and are
+        skipped. The per-path scale ``s_p`` is basis-independent and stays."""
+        del q_blocks
+        self._e3nn_basis = True
+
+    def enable_e3nn_basis(self, q_blocks: "List[torch.Tensor] | None" = None) -> None:
+        """Same flag for the checkpoint-reload path (``activate_e3nn_basis_from_folded_state_dict``)."""
+        del q_blocks
+        self._e3nn_basis = True
+
+    def forward(
+        self,
+        x1: Dict[int, torch.Tensor],
+        edge_src: torch.Tensor,
+        edge_attrs: Dict[int, torch.Tensor],
+        gates: torch.Tensor,
+        path_weight: torch.Tensor,
+    ) -> Dict[int, torch.Tensor]:
+        """cueq conv-TP. ``x1`` is the NODE-level ICTC feature dict (gather by
+        ``edge_src`` happens inside the kernel); ``edge_attrs`` the per-edge
+        harmonic dict ``(E, 1, 2l+1)``; ``gates`` the radial-MLP output
+        ``(E, num_paths*channels)``; ``path_weight`` the authoritative
+        ``tp.weight`` ``(num_paths, channels)``. Returns the path-preserving
+        edge blocks ``{l: (E, channels*paths_l, 2l+1)}`` in the ICTC convention
+        (or e3nn when the model runs folded), exactly like the reference tp."""
+        sample = next(iter(x1.values()))
+        dtype = sample.dtype
+        compute_dtype = self.compute_dtype
+        num_edges = int(edge_src.shape[0])
+
+        g = gates
+        if g.shape[-1] == self.num_paths * self.channels:
+            g = g.view(num_edges, self.num_paths, self.channels)
+        elif g.shape[-2:] != (self.num_paths, self.channels):
+            raise ValueError(
+                f"Expected gates shape (E, {self.num_paths * self.channels}) or "
+                f"(E, {self.num_paths}, {self.channels}), got {tuple(g.shape)}"
+            )
+        if g.dtype != compute_dtype:
+            g = g.to(compute_dtype)
+        w = path_weight.to(compute_dtype) * self.cueq_inv_path_scales.to(compute_dtype)
+        u = (g * w).index_select(1, self.cueq_path_perm).reshape(
+            num_edges, self.num_paths * self.channels
+        )
+
+        parts1 = []
+        for l in self._in1_ls:
+            blk = x1[l]
+            if blk.dtype != compute_dtype:
+                blk = blk.to(compute_dtype)
+            if not self._e3nn_basis:
+                blk = blk @ getattr(self, f"cueq_q_in_{l}").to(compute_dtype)
+            parts1.append(blk.reshape(blk.shape[0], self.channels * (2 * l + 1)))
+        x1f = torch.cat(parts1, dim=-1)
+
+        parts2 = []
+        for l in self._in2_ls:
+            blk = edge_attrs[l].squeeze(-2)
+            if blk.dtype != compute_dtype:
+                blk = blk.to(compute_dtype)
+            if not self._e3nn_basis:
+                blk = blk @ getattr(self, f"cueq_q_edge_{l}").to(compute_dtype)
+            parts2.append(blk)
+        x2f = torch.cat(parts2, dim=-1)
+
+        out = self.cueq_tp(
+            x1f,
+            x2f,
+            u,
+            indices_1=edge_src.to(torch.int32).contiguous(),
+        )
+
+        blocks: Dict[int, torch.Tensor] = {}
+        for l in range(self.target_lmax + 1):
+            count = self.path_counts_by_l.get(l, 0)
+            m = 2 * l + 1
+            if count == 0:
+                blocks[l] = sample.new_zeros(num_edges, 0, m)
+                continue
+            start, end = self._out_slices[l]
+            blk = out[:, start:end].reshape(num_edges, count * self.channels, m)
+            if not self._e3nn_basis:
+                blk = blk @ getattr(self, f"cueq_q_out_t_{l}").to(compute_dtype)
+            blocks[l] = blk.to(dtype) if blk.dtype != dtype else blk
+        return blocks
+
+
 class ICTDResidualInteractionBlock(nn.Module):
     """
     ICTC-SO3 interaction block with MACE-like interface.
@@ -3031,6 +3335,26 @@ class ICTDResidualInteractionBlock(nn.Module):
                     self.tp.weight[path_idx].fill_(float(scale))
         if self.freeze_conv_tp_weight:
             self.tp.weight.requires_grad_(False)
+        # conv-TP compute backend. "pytorch" (default) is the reference projector
+        # path; "auto"/"cuda_ext" are accepted for interface consistency with the
+        # other ICTC TPs but this block's message-passing TP has no cuda_ext kernel,
+        # so they keep the reference behavior; "cueq" mirrors the TP with a fused
+        # cuEquivariance kernel (CUDA only, CPU forward falls back to pytorch).
+        self.ictd_tp_backend = str(ictd_tp_backend).strip().lower()
+        if self.ictd_tp_backend not in {"pytorch", "auto", "cuda_ext", "cueq"}:
+            raise ValueError(
+                f"ictd_tp_backend must be 'pytorch', 'auto', 'cuda_ext', or 'cueq', "
+                f"got {ictd_tp_backend!r}"
+            )
+        self.tp_cueq = (
+            CueqConvTensorProductSO3(
+                tp=self.tp,
+                input_lmax=self.input_lmax,
+                target_lmax=self.target_lmax,
+            )
+            if self.ictd_tp_backend == "cueq"
+            else None
+        )
         self.fc = nn.Sequential(
             nn.Linear(self.number_of_basis, 64, bias=False),
             _Normalize2MomSiLU(),
@@ -3556,8 +3880,13 @@ class ICTDResidualInteractionBlock(nn.Module):
         node_feats = self.linear_up(node_feats)
         gates = self.fc(edge_feats)
         x1 = _split_irreps(node_feats, self.channels, self.input_lmax)
-        x1e = {l: x1[l][edge_src] for l in range(self.input_lmax + 1)}
-        edge_blocks = self.tp(x1e, edge_attrs, gates)
+        if self.tp_cueq is not None and node_feats.is_cuda:
+            # cueq fused kernel gathers node feats internally and emits the same
+            # path-preserving ICTC edge blocks; CPU falls back to the reference TP.
+            edge_blocks = self.tp_cueq(x1, edge_src, edge_attrs, gates, self.tp.weight)
+        else:
+            x1e = {l: x1[l][edge_src] for l in range(self.input_lmax + 1)}
+            edge_blocks = self.tp(x1e, edge_attrs, gates)
         if edge_mask is not None:
             mask = edge_mask.to(dtype=node_feats.dtype)
             edge_blocks = {l: block * mask.unsqueeze(-1) for l, block in edge_blocks.items()}
@@ -4180,6 +4509,17 @@ class PureCartesianICTDFix(nn.Module):
             raise ValueError(
                 "ictd_fix_conv_tp_scale_init must be 'none' or 'e3nn', "
                 f"got {ictd_fix_conv_tp_scale_init!r}"
+            )
+        # conv-TP compute backend of the interaction blocks (forwarded as-is; the
+        # interaction validates the value). "cueq" mirrors the message-passing TP
+        # with a fused cuEquivariance kernel and only affects the compute path, not
+        # the parameterization or the function.
+        self.ictd_tp_backend = str(ictd_tp_backend).strip().lower()
+        if self.ictd_tp_backend == "cueq" and requested_product_backend == "ictd":
+            raise ValueError(
+                "ictd_tp_backend='cueq' accelerates the interaction conv-TP only; the 'ictd' "
+                "product backend runs its own TP engine that does not accept 'cueq'. Use product "
+                "backend 'native-mace', 'ictd-bridge-u', 'ictd-pure-u', or 'cueq'."
             )
         if ictd_fix_interaction_init not in {"identity", "mace-random"}:
             raise ValueError(

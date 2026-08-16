@@ -366,6 +366,7 @@ def build_baseline_model(
     first_layer_self_connection: bool = True,
     interaction_scale: str = "none",
     conv_tp_scale_init: str = "none",
+    conv_tp_backend: str = "pytorch",
     freeze_conv_tp_weight: bool = False,
     interaction_init: str = "identity",
     readout_hidden_channels: int = 16,
@@ -471,6 +472,7 @@ def build_baseline_model(
         ictd_fix_first_layer_self_connection=bool(first_layer_self_connection),
         ictd_fix_interaction_scale=interaction_scale,
         ictd_fix_conv_tp_scale_init=conv_tp_scale_init,
+        ictd_tp_backend=conv_tp_backend,
         ictd_fix_freeze_conv_tp_weight=bool(freeze_conv_tp_weight),
         ictd_fix_interaction_init=interaction_init,
         ictd_fix_readout_hidden_channels=int(readout_hidden_channels),
@@ -578,6 +580,10 @@ def build_arg_parser() -> argparse.ArgumentParser:
                     help="Optional learnable per-l interaction/self-connection scale initialization.")
     ap.add_argument("--conv-tp-scale-init", default="none", choices=["none", "e3nn"],
                     help="Initialize ICTC convolution TP path weights to match e3nn/MACE path scales.")
+    ap.add_argument("--conv-tp-backend", default="pytorch", choices=["pytorch", "cueq"],
+                    help="Interaction conv-TP compute backend: 'pytorch' reference projector path, or "
+                         "'cueq' for the fused cuEquivariance kernel (CUDA only; numerically equivalent, "
+                         "checkpoint-compatible). Saved as ictd_tp_backend in model_hyperparameters.")
     ap.add_argument("--freeze-conv-tp-weight", action="store_true",
                     help="Freeze ICTC convolution TP base path weights, matching MACE's external-weight parameterization more closely.")
     ap.add_argument("--interaction-init", default="identity", choices=["identity", "mace-random"],
@@ -1111,6 +1117,7 @@ def _override_args_from_checkpoint(args):
         "ictd_fix_element_energy_correction": "element_energy_correction",
         "ictd_fix_scalar_ffn": "scalar_ffn",
         "ictd_fix_product_backend": "product_backend",
+        "ictd_tp_backend": "conv_tp_backend",
         "ictd_fix_use_reduced_cg": "use_reduced_cg",
         "ictd_fix_interaction_attn_heads": "attn_heads",
         "ictd_fix_interaction_attn_mode": "attn_mode",
@@ -1338,6 +1345,7 @@ def main(argv=None):
         first_layer_self_connection=args.first_layer_self_connection,
         interaction_scale=args.interaction_scale,
         conv_tp_scale_init=args.conv_tp_scale_init,
+        conv_tp_backend=args.conv_tp_backend,
         freeze_conv_tp_weight=args.freeze_conv_tp_weight,
         interaction_init=args.interaction_init,
         readout_hidden_channels=args.readout_hidden_channels,
@@ -1496,6 +1504,7 @@ def main(argv=None):
         ictd_fix_first_layer_self_connection=bool(args.first_layer_self_connection),
         ictd_fix_interaction_scale=args.interaction_scale,
         ictd_fix_conv_tp_scale_init=args.conv_tp_scale_init,
+        ictd_tp_backend=args.conv_tp_backend,
         ictd_fix_freeze_conv_tp_weight=bool(args.freeze_conv_tp_weight),
         ictd_fix_interaction_init=args.interaction_init,
         mace_compatible_random_init=bool(args.mace_compatible_random_init),

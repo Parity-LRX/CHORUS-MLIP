@@ -29,6 +29,7 @@ DEFAULT_MODEL_ARCHITECTURE: dict[str, Any] = {
     "k_policy": "k0",
     "ictd_tp_path_policy": "full",
     "ictd_tp_max_rank_other": None,
+    "ictd_tp_backend": "pytorch",
     "ictd_save_tp_mode": "fully-connected",
     "ictd_fix_use_reduced_cg": False,
     "ictd_fix_edge_lmax": None,
@@ -491,6 +492,15 @@ def resolve_model_architecture(
         arch_meta,
         "ictd_tp_max_rank_other",
         DEFAULT_MODEL_ARCHITECTURE["ictd_tp_max_rank_other"],
+    )
+    resolved["ictd_tp_backend"] = str(
+        _resolve_value(
+            overrides,
+            checkpoint,
+            arch_meta,
+            "ictd_tp_backend",
+            DEFAULT_MODEL_ARCHITECTURE["ictd_tp_backend"],
+        )
     )
     resolved["ictd_fix_nonlinear_layer_readouts"] = bool(
         _resolve_value(

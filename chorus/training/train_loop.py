@@ -1805,6 +1805,7 @@ class ForceTrainer:
                 "ictd_fix_route", "ictd_fix_product_backend",
                 "ictd_fix_use_reduced_cg", "ictd_fix_first_layer_self_connection",
                 "ictd_fix_conv_tp_scale_init", "ictd_fix_freeze_conv_tp_weight",
+                "ictd_tp_backend",
                 "ictd_fix_interaction_init",
                 "ictd_fix_edge_lmax",
                 "ictd_fix_readout_hidden_channels",
