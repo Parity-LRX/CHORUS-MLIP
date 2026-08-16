@@ -2430,6 +2430,25 @@ class LAMMPS_MLIAP_MFF(MLIAPUnified):
                 raise RuntimeError("checkpoint contains mace_first_layer_sc0 but model cannot install it")
             model.install_mace_first_layer_sc0(selected_state_dict["mace_first_layer_sc0"])
 
+        folded_in_state = False
+        if mode == "pure-cartesian-ictd-fix" and getattr(model, "angular_basis", "ictd") == "e3nn":
+            folded_in_state = bool(
+                ckpt.get(
+                    "angular_basis_folded_in_state_dict",
+                    arch_meta.get("angular_basis_folded_in_state_dict", False),
+                )
+            )
+            if folded_in_state:
+                if not hasattr(model, "activate_e3nn_basis_from_folded_state_dict"):
+                    raise RuntimeError(
+                        "checkpoint declares angular_basis=e3nn folded state, but model cannot restore it"
+                    )
+                # This creates the fixed bridge modules/buffers and enables the
+                # runtime basis flags without folding trainable state.  It must
+                # precede strict loading because folded checkpoints may contain
+                # those derived bridge buffers.
+                model.activate_e3nn_basis_from_folded_state_dict()
+
         if mode == "spherical-save-cue":
             load_result = model.load_state_dict(selected_state_dict, strict=False)
             if load_result.unexpected_keys or load_result.missing_keys:
@@ -2456,20 +2475,6 @@ class LAMMPS_MLIAP_MFF(MLIAPUnified):
                         )
         else:
             model.load_state_dict(selected_state_dict, strict=True)
-
-        if mode == "pure-cartesian-ictd-fix" and getattr(model, "angular_basis", "ictd") == "e3nn":
-            folded_in_state = bool(
-                ckpt.get(
-                    "angular_basis_folded_in_state_dict",
-                    arch_meta.get("angular_basis_folded_in_state_dict", False),
-                )
-            )
-            if folded_in_state:
-                if not hasattr(model, "activate_e3nn_basis_from_folded_state_dict"):
-                    raise RuntimeError(
-                        "checkpoint declares angular_basis=e3nn folded state, but model cannot restore it"
-                    )
-                model.activate_e3nn_basis_from_folded_state_dict()
 
         model = maybe_wrap_model_with_zbl(model, arch_meta)
 

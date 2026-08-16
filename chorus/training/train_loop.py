@@ -1831,6 +1831,7 @@ class ForceTrainer:
                 "ictd_fix_phase_heads",
                 "ictd_fix_fusion_scale_init", "ictd_fix_gmix_gate_init",
                 "ictd_fix_gmix_output_lmax", "avg_num_neighbors",
+                "radial_sqrt_num_basis",
                 "polynomial_cutoff_p", "long_range_mode", "angular_basis",
                 "long_range_hidden_dim", "long_range_boundary", "long_range_neutralize",
                 "long_range_filter_hidden_dim", "long_range_kmax", "long_range_mesh_size",
