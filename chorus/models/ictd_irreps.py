@@ -18,6 +18,7 @@ Important:
 
 from __future__ import annotations
 
+import hashlib
 import math
 import os
 import re
@@ -651,6 +652,137 @@ def _gram_gaussian(L: int) -> torch.Tensor:
     return G
 
 
+_CANONICAL_HARMONIC_BASIS_VERSION = "v1"
+_CANONICAL_HARMONIC_BASIS_SHA256 = {
+    0: "6c3c396ed6b5c36dcae172271f462051b1266b851e92df3deea8ac65478fd712",
+    1: "1332df685c45a61a0ac008a6a653295b8c5655361c1d34b6304b22ec40235fb8",
+    2: "0881fbfd2a1866b76334d823d216ec74773a91a5f77234c45bb956838df7c315",
+    3: "a7440553d51231cc044287b305d35cb5cafc59f77d7528d8189956c51a52a9e0",
+    4: "f89f4b7f49ed9be8cc7fbbcec5e1a8947442c612d239bd42ce36180c6c644225",
+    5: "8cce9bfb0a710f2c19d50ca3bcf6a79593697b5bd129085f10422066c2030ea8",
+    6: "01cc08fe54c00daaff6899a86c923b62433f1691b7f283b95643c7be78ce9a96",
+    7: "bde0ef7cf352a8cc83b4df959405616a390d270cf0b10bd93eed01da80e1a531",
+    8: "85cdd2180f8078d9016110556076bf0464d12985ef079f51fee6c8f2641acf28",
+    9: "190d6891295881dd5db122b80442a8feea21d0d716c6ff97faddcb0720509c6b",
+    10: "fed2be677a84dc357b0e9b27e14b5bbc4c8a110520f44e536e7bc11365d70586",
+    11: "4708bb0367de5a1c0d8d6bb01de80cb1a9a84ce6e128bc1913fecceabdf834ec",
+    12: "761c7af5c246722d57a910b32ffe82741ac39326d6cba627be7db3b14d4ab689",
+}
+
+
+def _canonical_harmonic_basis_asset(L: int) -> torch.Tensor | None:
+    """Load the frozen ICTC angular basis used by released checkpoints.
+
+    An SVD nullspace is a subspace, not a basis: LAPACK/PyTorch versions are
+    free to rotate its degenerate columns.  The former runtime construction
+    therefore produced mutually incompatible high-l direction harmonics and
+    shipped CG tensors on different machines.  Freeze the established basis
+    through l=12 and verify its bytes before use.
+    """
+    expected_sha = _CANONICAL_HARMONIC_BASIS_SHA256.get(int(L))
+    if expected_sha is None:
+        return None
+    path = os.path.join(
+        os.path.dirname(os.path.abspath(__file__)),
+        "_ictd_basis",
+        _CANONICAL_HARMONIC_BASIS_VERSION,
+        f"harmonic_basis_l{int(L)}.pt",
+    )
+    if not os.path.isfile(path):
+        raise RuntimeError(
+            f"Missing canonical ICTC harmonic-basis asset for l={int(L)}: {path}. "
+            "Reinstall CHORUS-O2U1 with package data enabled; regenerating this "
+            "basis at runtime would invalidate high-L checkpoints and CG caches."
+        )
+    try:
+        blob = torch.load(path, map_location="cpu", weights_only=True)
+    except TypeError:  # pragma: no cover - torch<2.0 compatibility
+        blob = torch.load(path, map_location="cpu")
+    if not isinstance(blob, dict) or not torch.is_tensor(blob.get("tensor")):
+        raise RuntimeError(f"Invalid canonical ICTC harmonic-basis asset: {path}")
+    tensor = blob["tensor"].detach().to(device="cpu", dtype=torch.float64).contiguous()
+    expected_shape = (sym_dim(int(L)), 2 * int(L) + 1)
+    actual_sha = hashlib.sha256(tensor.numpy().tobytes()).hexdigest()
+    if (
+        blob.get("format") != "ictd-canonical-harmonic-basis"
+        or blob.get("version") != _CANONICAL_HARMONIC_BASIS_VERSION
+        or int(blob.get("l", -1)) != int(L)
+        or tuple(tensor.shape) != expected_shape
+        or blob.get("sha256") != expected_sha
+        or actual_sha != expected_sha
+    ):
+        raise RuntimeError(
+            f"Canonical ICTC harmonic-basis integrity check failed for l={int(L)}: {path}"
+        )
+    return tensor
+
+
+def _deterministic_harmonic_basis_cpu_f64(L: int) -> torch.Tensor:
+    """Deterministic fallback for degrees above the frozen l=12 range.
+
+    Fixed-column RREF chooses a canonical nullspace of the integer Laplacian;
+    fixed-order modified Gram-Schmidt then orthonormalizes it in the invariant
+    Gaussian metric.  Unlike SVD/eigh, neither step may arbitrarily rotate a
+    degenerate subspace.
+    """
+    if int(L) == 0:
+        return torch.ones(1, 1, dtype=torch.float64)
+    if int(L) == 1:
+        return torch.eye(3, dtype=torch.float64)
+
+    a = _build_laplacian_matrix(int(L), dtype=torch.float64).clone()
+    rows, cols = a.shape
+    pivot_cols: List[int] = []
+    pivot_row = 0
+    for col in range(cols):
+        if pivot_row >= rows:
+            break
+        candidates = a[pivot_row:, col].abs()
+        rel = int(candidates.argmax().item())
+        row = pivot_row + rel
+        if float(candidates[rel]) <= 1.0e-14:
+            continue
+        if row != pivot_row:
+            tmp = a[pivot_row].clone()
+            a[pivot_row] = a[row]
+            a[row] = tmp
+        a[pivot_row] = a[pivot_row] / a[pivot_row, col]
+        for other in range(rows):
+            if other == pivot_row:
+                continue
+            factor = a[other, col].clone()
+            if float(factor.abs()) > 0.0:
+                a[other] = a[other] - factor * a[pivot_row]
+        pivot_cols.append(col)
+        pivot_row += 1
+
+    free_cols = [col for col in range(cols) if col not in set(pivot_cols)]
+    if len(free_cols) != 2 * int(L) + 1:
+        raise RuntimeError(
+            f"Deterministic harmonic nullspace has {len(free_cols)} columns for l={int(L)}; "
+            f"expected {2 * int(L) + 1}"
+        )
+    null = torch.zeros(cols, len(free_cols), dtype=torch.float64)
+    for basis_col, free_col in enumerate(free_cols):
+        null[free_col, basis_col] = 1.0
+        for row, pivot_col in enumerate(pivot_cols):
+            null[pivot_col, basis_col] = -a[row, free_col]
+
+    gram = _gram_gaussian(int(L))
+    orthogonal: List[torch.Tensor] = []
+    for basis_col in range(null.shape[1]):
+        vector = null[:, basis_col].clone()
+        # Re-orthogonalize once; the fixed order also fixes all column signs.
+        for _ in range(2):
+            for previous in orthogonal:
+                vector = vector - previous * (previous @ gram @ vector)
+        norm2 = vector @ gram @ vector
+        if float(norm2) <= 1.0e-24:
+            raise RuntimeError(f"Degenerate deterministic harmonic basis at l={int(L)}")
+        orthogonal.append(vector / norm2.sqrt())
+    return torch.stack(orthogonal, dim=1).contiguous()
+
+
 @lru_cache(maxsize=None)
 def _harmonic_basis_cpu_f64(L: int) -> torch.Tensor:
     """
@@ -658,23 +790,10 @@ def _harmonic_basis_cpu_f64(L: int) -> torch.Tensor:
     Computed once per L and cached; use _harmonic_basis_t(L, device, dtype) for device/dtype.
     Returns shape (Dsym(L), 2L+1).
     """
-    if L == 0:
-        return torch.ones(1, 1, dtype=torch.float64)
-    if L == 1:
-        return torch.eye(3, dtype=torch.float64)
-
-    # Build harmonic subspace as nullspace of Laplacian on Sym^L -> Sym^{L-2}
-    Delta = _build_laplacian_matrix(L, dtype=torch.float64)  # (D_{L-2}, D_L)
-    _, s, vh = torch.linalg.svd(Delta, full_matrices=True)
-    rank = int((s > 1e-12).sum().item())
-    B = vh[rank:].T.contiguous()  # (D_L, 2L+1)
-
-    G = _gram_gaussian(L)
-    M = B.T @ G @ B
-    evals, evecs = torch.linalg.eigh(M)
-    evals = torch.clamp(evals, min=1e-14)
-    W = evecs @ torch.diag(evals.rsqrt()) @ evecs.T
-    return (B @ W).contiguous()
+    frozen = _canonical_harmonic_basis_asset(int(L))
+    if frozen is not None:
+        return frozen
+    return _deterministic_harmonic_basis_cpu_f64(int(L))
 
 
 def _harmonic_basis_t(L: int, device=None, dtype=None) -> torch.Tensor:

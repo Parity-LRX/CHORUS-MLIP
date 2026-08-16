@@ -10,7 +10,6 @@ import torch.nn.functional as F
 from e3nn import o3
 
 from chorus.models.ictd_irreps import (
-    _apply_cg_normalization,
     build_cg_tensor,
     EdgeWeightedPathPreservingTensorProduct,
     EquivariantChannelLinearSO3,
@@ -2958,18 +2957,15 @@ class CueqConvTensorProductSO3(nn.Module):
         out_ictc_p  =  Q_l3^T @ cueq_p(Q_l1 @ x1, Q_l2 @ x2;  u_p)
         u_p         =  gates_p * w_p / s_p
 
-    where ``s_p`` is the per-path scalar between the tp's ICTC-normalized CG
-    projector and the e3nn ``component``-normalized one used by cueq (the same
-    ratio that ``conv_tp_scale_init='e3nn'`` calibrates empirically).  ``s_p`` is
-    computed deterministically at construction in float64 from the tp's own CG
-    tensors folded by Q (``o3.wigner_3j * sqrt(2*l3+1)`` on the cueq side), with a
-    max-residual check that raises if the two conventions ever drifted apart.
+    where ``1/s_p`` is the reference TP's explicit element/path-normalization
+    scalar.  The frozen ICTC basis fixes the same positive component-normalized
+    natural-parity CG convention as the Q-bridged e3nn representation, so no
+    high-L CG table needs to be rebuilt just to recover this scalar.
 
-    Layout contract (verified against e3nn at construction-independent probes):
-    cueq sorts output segments by ``(l3, l1, l2)``; within one ``l3`` that order
-    equals the reference tp's ``path_offset`` order, so each flat output chunk
-    reshapes directly to the path-preserving block ``(E, channels*paths_l, 2l+1)``.
-    Only the external weight vector needs a fixed permutation over the path axis.
+    Layout is derived from cuEquivariance's public segmented-polynomial descriptor:
+    both weight and output segments are explicitly mapped back to reference
+    ``(l1,l2,l3)`` paths.  No undocumented cuEquivariance sorting convention is
+    assumed.
 
     The module holds NO trainable parameters: the authoritative per-path channel
     weights stay in ``tp.weight`` (checkpoint-compatible) and are passed to
@@ -3022,49 +3018,19 @@ class CueqConvTensorProductSO3(nn.Module):
         self.path_counts_by_l = {
             l: int(tp.path_counts_by_l.get(l, 0)) for l in range(self.target_lmax + 1)
         }
-        # cueq emits segments sorted by (l3, l1, l2); the reference tp lists paths
-        # (l1, l2, l3)-lexicographic. Within one l3 the two orders coincide (l1- then
-        # l2-ascending == path_offset order), so only the weight vector is permuted.
-        cueq_order = sorted(
-            range(self.num_paths), key=lambda p: (paths[p][2], paths[p][0], paths[p][1])
-        )
-        self.register_buffer(
-            "cueq_path_perm",
-            torch.tensor(cueq_order, dtype=torch.long),
-            persistent=False,
-        )
-
-        # --- per-path ICTC -> e3nn CG ratio s_p (float64, deterministic) ---
-        # Rebuild the reference CGs in float64 exactly the way the tp builds its
-        # master copies (build_cg_tensor + normalization + path scales). Going
-        # through tp._get_cg_list would silently downcast to internal_compute_dtype.
+        # --- exact per-path reference normalization ---
+        # The frozen ICTC basis and Q bridge fix the positive component-normalized
+        # natural-parity CG convention.  Both normalized CG tensors therefore have
+        # identical Frobenius norm sqrt(2*l3+1); the only remaining factor in the
+        # reference TP is its explicit element/path normalization.  Using that
+        # stored scalar directly avoids rebuilding O(L^3) CG tables merely to
+        # calibrate a scalar, which was especially costly at L6/L8.
         q_blocks_f64 = orthogonal_Q_blocks(self.lmax, dtype=torch.float64, device="cpu")
-        cg_list: List[torch.Tensor] = []
-        for p_idx, (l1, l2, l3) in enumerate(paths):
-            c_ref = build_cg_tensor(l1, l2, l3)
-            c_ref = _apply_cg_normalization(c_ref, l3, tp._normalization)
-            c_ref = c_ref * float(tp._path_normalization_scales[p_idx])
-            cg_list.append(c_ref.to(torch.float64))
-        inv_scales: List[float] = []
-        for p_idx, (l1, l2, l3) in enumerate(paths):
-            c_ictd = cg_list[p_idx]
-            c_fold = torch.einsum(
-                "ax,by,cz,abc->xyz",
-                q_blocks_f64[l1],
-                q_blocks_f64[l2],
-                q_blocks_f64[l3],
-                c_ictd,
+        if str(tp._normalization) != "component":
+            raise RuntimeError(
+                "ictd_tp_backend='cueq' currently requires component CG normalization"
             )
-            c_e3nn = o3.wigner_3j(l1, l2, l3, dtype=torch.float64) * math.sqrt(2 * l3 + 1)
-            den = (c_fold * c_fold).sum().clamp_min(1e-30)
-            scale = float(((c_fold * c_e3nn).sum() / den).item())
-            resid = float((c_e3nn - scale * c_fold).abs().max().item())
-            if resid > 1e-8:
-                raise RuntimeError(
-                    f"ictd_tp_backend='cueq': ICTC/e3nn CG convention mismatch on path "
-                    f"{(l1, l2, l3)} (residual {resid:.2e}); cannot mirror the conv-TP in cueq"
-                )
-            inv_scales.append(1.0 / scale)
+        inv_scales = [float(value) for value in tp._path_normalization_scales]
         self.register_buffer(
             "cueq_inv_path_scales",
             torch.tensor(inv_scales, dtype=self.compute_dtype).reshape(self.num_paths, 1),
@@ -3106,6 +3072,17 @@ class CueqConvTensorProductSO3(nn.Module):
         filter_out = [
             group(l=l, p=1 if int(l) % 2 == 0 else -1) for l in self._out_ls
         ]
+        # Read the exact path-to-segment table from the same public descriptor
+        # factory used by ChannelWiseTensorProduct.  Do not infer it from an
+        # undocumented sorting convention: a same-l3 reordering would preserve
+        # all shapes/counts while silently coupling every radial weight to the
+        # wrong CG path.
+        cueq_descriptor = cue.descriptors.channelwise_tensor_product(
+            irreps_in1,
+            irreps_in2,
+            filter_out,
+        )
+        segmented_tp = cueq_descriptor.polynomial.operations[0][1]
         self.cueq_tp = cuet.ChannelWiseTensorProduct(
             irreps_in1,
             irreps_in2,
@@ -3116,6 +3093,18 @@ class CueqConvTensorProductSO3(nn.Module):
             dtype=self.compute_dtype,
             math_dtype=self.compute_dtype,
         )
+        # cuEquivariance's fallback/naive implementations register generated CG
+        # constants as ordinary persistent buffers.  They are fully derivable from
+        # the descriptor and must not leak into our backend-independent checkpoint
+        # schema.  Mark all such implementation buffers non-persistent while
+        # retaining normal device/dtype movement.
+        for module in self.cueq_tp.modules():
+            module._non_persistent_buffers_set.update(module._buffers)
+        if str(self.cueq_tp.method) != "uniform_1d":
+            raise RuntimeError(
+                "ictd_tp_backend='cueq' requires a fused uniform_1d descriptor; "
+                "the requested channel/path layout fell back to the naive backend"
+            )
         if int(self.cueq_tp.weight_numel) != self.num_paths * self.channels:
             raise RuntimeError(
                 "ictd_tp_backend='cueq': unexpected cueq weight layout "
@@ -3123,12 +3112,62 @@ class CueqConvTensorProductSO3(nn.Module):
                 "the conv-TP mirror assumes one weight per (path, channel)"
             )
 
-        # Output segments are sorted by l3 and NOT merged; group the flat offsets per l3.
+        reference_path_by_triple = {path: idx for idx, path in enumerate(paths)}
+        if len(reference_path_by_triple) != self.num_paths:
+            raise RuntimeError("ictd_tp_backend='cueq': duplicate reference conv-TP paths")
+        out_irreps = list(self.cueq_tp.irreps_out)
+        weight_segment_to_reference = [-1] * self.num_paths
+        output_segment_to_reference = [-1] * len(out_irreps)
+        for row in segmented_tp.indices.tolist():
+            weight_segment, in1_segment, in2_segment, out_segment = (
+                int(value) for value in row
+            )
+            triple = (
+                int(self._in1_ls[in1_segment]),
+                int(self._in2_ls[in2_segment]),
+                int(out_irreps[out_segment].ir.l),
+            )
+            reference_path = reference_path_by_triple.get(triple)
+            if reference_path is None:
+                raise RuntimeError(
+                    "ictd_tp_backend='cueq': descriptor contains a path absent "
+                    f"from the reference TP: {triple}"
+                )
+            if weight_segment_to_reference[weight_segment] not in (-1, reference_path):
+                raise RuntimeError(
+                    "ictd_tp_backend='cueq': one weight segment maps to multiple paths"
+                )
+            if output_segment_to_reference[out_segment] not in (-1, reference_path):
+                raise RuntimeError(
+                    "ictd_tp_backend='cueq': one output segment maps to multiple paths"
+                )
+            weight_segment_to_reference[weight_segment] = reference_path
+            output_segment_to_reference[out_segment] = reference_path
+        if sorted(weight_segment_to_reference) != list(range(self.num_paths)):
+            raise RuntimeError(
+                "ictd_tp_backend='cueq': descriptor weight segments do not form "
+                "a bijection with reference paths"
+            )
+        if sorted(output_segment_to_reference) != list(range(self.num_paths)):
+            raise RuntimeError(
+                "ictd_tp_backend='cueq': descriptor output segments do not form "
+                "a bijection with reference paths"
+            )
+        self.register_buffer(
+            "cueq_path_perm",
+            torch.tensor(weight_segment_to_reference, dtype=torch.long),
+            persistent=False,
+        )
+
+        # Output segments are grouped by l3 but may use any within-degree order.
+        # Record an explicit descriptor-derived permutation back to the reference
+        # path_offset order for each degree.
         self._out_slices: Dict[int, tuple[int, int]] = {}
         offset = 0
         prev_l3: int | None = None
         seg_count_by_l: Dict[int, int] = {}
-        for mul, ir in self.cueq_tp.irreps_out:
+        output_paths_by_l: Dict[int, List[int]] = {}
+        for out_segment, (mul, ir) in enumerate(self.cueq_tp.irreps_out):
             l3 = int(ir.l)
             if int(mul) != self.channels:
                 raise RuntimeError(
@@ -3141,6 +3180,9 @@ class CueqConvTensorProductSO3(nn.Module):
                     "the path-preserving layout mirror would be wrong"
                 )
             prev_l3 = l3
+            output_paths_by_l.setdefault(l3, []).append(
+                int(output_segment_to_reference[out_segment])
+            )
             start, end = offset, offset + int(mul) * int(ir.dim)
             seg_count_by_l[l3] = seg_count_by_l.get(l3, 0) + 1
             if l3 in self._out_slices:
@@ -3154,6 +3196,14 @@ class CueqConvTensorProductSO3(nn.Module):
                     f"ictd_tp_backend='cueq': cueq produced {count} paths for l={l}, "
                     f"reference tp has {self.path_counts_by_l.get(l, 0)}; path tables diverged"
                 )
+            current_paths = output_paths_by_l[l]
+            desired_paths = sorted(current_paths, key=lambda path: int(tp.path_offset[path]))
+            reorder = [current_paths.index(path) for path in desired_paths]
+            self.register_buffer(
+                f"cueq_out_reorder_{l}",
+                torch.tensor(reorder, dtype=torch.long),
+                persistent=False,
+            )
 
     def fold_cg_to_e3nn(self, q_blocks: "List[torch.Tensor] | None" = None) -> None:
         """``angular_basis='e3nn'`` fold hook: features and edge harmonics already
@@ -3237,7 +3287,10 @@ class CueqConvTensorProductSO3(nn.Module):
                 blocks[l] = sample.new_zeros(num_edges, 0, m)
                 continue
             start, end = self._out_slices[l]
-            blk = out[:, start:end].reshape(num_edges, count * self.channels, m)
+            blk = out[:, start:end].reshape(num_edges, count, self.channels, m)
+            blk = blk.index_select(
+                1, getattr(self, f"cueq_out_reorder_{l}")
+            ).reshape(num_edges, count * self.channels, m)
             if not self._e3nn_basis:
                 blk = blk @ getattr(self, f"cueq_q_out_t_{l}").to(compute_dtype)
             blocks[l] = blk.to(dtype) if blk.dtype != dtype else blk

@@ -44,7 +44,7 @@ import torch
 # Bump this string on ANY change to the CG / U mathematics or storage format.
 # A new value uses a fresh cache directory, so stale precomputed tensors are
 # never read.
-CACHE_VERSION = "v2"
+CACHE_VERSION = "v3-fixed-basis"
 
 _TRUE = {"1", "true", "yes", "on"}
 _FALSE = {"0", "false", "no", "off", ""}
@@ -61,12 +61,13 @@ def _validate_on_load() -> bool:
 
 
 def _default_root() -> str:
-    """In-repo cache directory (ships with the code).
+    """In-repo runtime cache directory.
 
-    Placing the cache next to the source means the precomputed CG/U tensors are
-    committed and read directly on every checkout (4090 / Parity / local) with no
-    recompute. Override with FSCETP_ICTD_CACHE_DIR to point elsewhere (e.g. a shared
-    scratch dir, or to keep a working tree clean during exploratory runs).
+    CG/U entries are generated lazily against the separately shipped canonical
+    harmonic basis; they are deliberately not package data.  Keeping the runtime
+    cache next to an editable checkout makes later processes reuse it. Override
+    FSCETP_ICTD_CACHE_DIR for installed/read-only packages or a shared scratch
+    cache.
     """
     return os.path.join(os.path.dirname(os.path.abspath(__file__)), "_ictd_cache")
 

@@ -240,6 +240,29 @@ def test_cueq_conv_tp_block_parity_cuda() -> None:
         assert worst_grad < 5e-4, f"{case}: grad parity {worst_grad:.3e}\n{errs}"
 
 
+def test_cueq_conv_tp_high_l_block_parity_cuda() -> None:
+    """Pin the high-L regime that motivated this backend.
+
+    Small channel counts and rectangular low-L-input/high-L-output cases keep
+    this a kernel/parity test rather than accidentally benchmarking a full O3-L8
+    trunk.  L4 catches the former runtime-basis/cache mismatch at (1,3,4), while
+    L6/L8 match O2U1's intended fixed-low-L carrier plus scalable high-L lift.
+    """
+    _require_cueq()
+    device = _require_cuda()
+    _disable_tf32()
+    for case in (
+        dict(channels=4, lmax=4, input_lmax=None),
+        dict(channels=2, lmax=6, input_lmax=2),
+        dict(channels=2, lmax=8, input_lmax=2),
+    ):
+        errs = _block_parity_case(device=device, **case)
+        worst_out = max(v for key, v in errs.items() if not key.startswith("grad:"))
+        worst_grad = max(v for key, v in errs.items() if key.startswith("grad:"))
+        assert worst_out < 1e-4, f"{case}: high-L output parity {worst_out:.3e}\n{errs}"
+        assert worst_grad < 2e-3, f"{case}: high-L grad parity {worst_grad:.3e}\n{errs}"
+
+
 def test_cueq_conv_tp_cpu_falls_back_to_reference() -> None:
     _require_cueq()
     _disable_tf32()
@@ -280,7 +303,7 @@ def test_cueq_conv_tp_cuda_uses_cueq_kernel_and_reference_weight_grads() -> None
     assert not cueq_params, f"cueq mirror must not own parameters, got {cueq_params}"
 
 
-def _build_o3_models(dtype, device, *, conv_tp_backend_pair=("pytorch", "cueq")):
+def _build_o3_models(dtype, device, *, lmax: int = 2, conv_tp_backend_pair=("pytorch", "cueq")):
     from chorus.synthetic import build_model
 
     models = []
@@ -289,7 +312,7 @@ def _build_o3_models(dtype, device, *, conv_tp_backend_pair=("pytorch", "cueq"))
         models.append(
             build_model(
                 channels=8,
-                lmax=2,
+                lmax=lmax,
                 num_interaction=2,
                 route="baseline",
                 product_backend="ictd-pure-u",
@@ -319,6 +342,32 @@ def test_cueq_conv_tp_model_energy_force_parity_cuda() -> None:
     # end-to-end accumulation of the FP32 reordering through 2 layers + force autodiff
     assert d_e < 1e-4, f"model energy parity {d_e:.3e}"
     assert d_f < 1e-4 * max(1.0, f_scale), f"model force parity {d_f:.3e} (scale {f_scale:.3e})"
+
+
+def test_cueq_conv_tp_model_high_l_energy_force_parity_cuda() -> None:
+    """Model-level energy/force parity at lmax=4.
+
+    The block tests pin the kernel at L4/L6/L8; this pins the end-to-end
+    integration (interaction + product + readout + force autodiff) when the
+    trunk itself runs at high L.
+    """
+    _require_cueq()
+    device = _require_cuda()
+    _disable_tf32()
+    from chorus.synthetic import compute_energy_forces, make_fixed_graph
+
+    dtype = torch.float32
+    m_ref, m_fast = _build_o3_models(dtype, device, lmax=4)
+    graph = make_fixed_graph(num_nodes=24, avg_degree=12, dtype=dtype, device=device, seed=5)
+    e_r, f_r, _ = compute_energy_forces(m_ref, graph, create_graph=False)
+    e_f, f_f, _ = compute_energy_forces(m_fast, graph, create_graph=False)
+    d_e = float((e_r - e_f).abs().max().cpu())
+    d_f = float((f_r - f_f).abs().max().cpu())
+    f_scale = float(f_r.abs().max().cpu())
+    # same FP32-reordering origin as the lmax=2 case, mildly amplified by the
+    # larger path count
+    assert d_e < 5e-4, f"model high-L energy parity {d_e:.3e}"
+    assert d_f < 5e-4 * max(1.0, f_scale), f"model high-L force parity {d_f:.3e} (scale {f_scale:.3e})"
 
 
 def test_cueq_conv_tp_o3_covariance_including_reflection_cuda() -> None:
@@ -364,6 +413,9 @@ def main() -> None:
         dict(channels=6, lmax=3, input_lmax=None),
         dict(channels=6, lmax=3, input_lmax=0),
         dict(channels=5, lmax=2, input_lmax=None, conv_tp_scale_init="e3nn"),
+        dict(channels=4, lmax=4, input_lmax=None),
+        dict(channels=2, lmax=6, input_lmax=2),
+        dict(channels=2, lmax=8, input_lmax=2),
     ):
         errs = _block_parity_case(device=device, **case)
         worst_out = max(v for k, v in errs.items() if not k.startswith("grad:"))
@@ -373,12 +425,16 @@ def main() -> None:
             print(f"    {key}: {errs[key]:.3e}")
     test_cueq_conv_tp_block_parity_cuda()
     print("[cuda] block parity PASS")
+    test_cueq_conv_tp_high_l_block_parity_cuda()
+    print("[cuda] L4/L6/L8 block parity PASS")
     test_cueq_conv_tp_cpu_falls_back_to_reference()
     print("[cpu] fallback PASS")
     test_cueq_conv_tp_cuda_uses_cueq_kernel_and_reference_weight_grads()
     print("[cuda] cueq-kernel usage + reference weight grads PASS")
     test_cueq_conv_tp_model_energy_force_parity_cuda()
     print("[cuda] model energy/force parity PASS")
+    test_cueq_conv_tp_model_high_l_energy_force_parity_cuda()
+    print("[cuda] model L4 energy/force parity PASS")
     test_cueq_conv_tp_o3_covariance_including_reflection_cuda()
     print("[cuda] O(3) covariance incl. reflection PASS")
 

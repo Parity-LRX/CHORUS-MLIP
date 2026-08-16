@@ -65,9 +65,7 @@ setup(
     packages=find_packages(include=["chorus", "chorus.*"]),
     package_data={
         "chorus": [
-            "models/_ictd_cache/v1/cg/*.pt",
-            "models/_ictd_cache/v1/cg_full/*.pt",
-            "models/_ictd_cache/v1/u_so3/*.pt",
+            "models/_ictd_basis/v1/*.pt",
             "csrc/*.cpp",
             "csrc/*.cu",
         ],
