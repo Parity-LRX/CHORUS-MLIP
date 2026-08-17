@@ -567,7 +567,7 @@ def _aoti_compile(exported, out_path):
         return aoti_compile_and_package(exported, out_path)
 
 
-# torch<=2.7's OSS AOTI proxy executor deserializes extern-kernel
+# torch<2.12's OSS AOTI proxy executor deserializes extern-kernel
 # ``as_scalar_type`` args with the raw c10::ScalarType enum, while the inductor
 # serializer writes torch._export.serde ScalarType ids (serde FLOAT=7 vs c10
 # Float=6). Custom ops taking a torch.dtype argument -- e.g.
@@ -577,6 +577,8 @@ def _aoti_compile(exported, out_path):
 # ~3x slower than the algo2/4/6 f32 kernels). Rewrite the ids inside the
 # packaged *.wrapper.json to the c10 values the runtime actually expects.
 # No-op when the package contains no such args (e.g. pure-aten exports).
+# Upstream fix: pytorch/pytorch#173562 (issue #169157), first released in
+# torch 2.12; the raw cast is present in 2.7 through 2.11.
 _SERDE_TO_C10_SCALARTYPE = {1: 0, 2: 1, 3: 2, 4: 3, 5: 4, 6: 5, 7: 6, 8: 7,
                             12: 11, 13: 15}
 
@@ -586,7 +588,7 @@ def _fix_aoti_scalar_type_args(pt2_path) -> int:
 
     Returns the number of patched entries. Controlled by env
     CHORUS_AOTI_SCALARTYPE_FIX: "1"/"0" force on/off, default auto (on for
-    torch 2.x with x <= 7, where the proxy-executor bug is present).
+    torch < 2.12; pytorch/pytorch#173562 fixed the proxy executor in 2.12).
     """
     import os
     import re
@@ -597,7 +599,7 @@ def _fix_aoti_scalar_type_args(pt2_path) -> int:
         return 0
     if mode == "auto":
         mm = re.match(r"^(\d+)\.(\d+)", torch.__version__)
-        if not mm or (int(mm.group(1)), int(mm.group(2))) > (2, 7):
+        if not mm or (int(mm.group(1)), int(mm.group(2))) >= (2, 12):
             return 0
 
     zin = zipfile.ZipFile(pt2_path)
