@@ -3235,7 +3235,9 @@ class CueqConvTensorProductSO3(nn.Module):
         sample = next(iter(x1.values()))
         dtype = sample.dtype
         compute_dtype = self.compute_dtype
-        num_edges = int(edge_src.shape[0])
+        # NOTE: keep this a SymInt — int() would specialize the edge dim and
+        # break torch.export dynamic-shapes (n_edges constraint violation).
+        num_edges = edge_src.shape[0]
 
         g = gates
         if g.shape[-1] == self.num_paths * self.channels:

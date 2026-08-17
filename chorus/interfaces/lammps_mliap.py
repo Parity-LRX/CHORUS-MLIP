@@ -1156,6 +1156,8 @@ class LAMMPS_MLIAP_MFF(MLIAPUnified):
         num_interaction: Optional[int] = None,
         ictd_tp_path_policy: Optional[str] = None,
         ictd_tp_max_rank_other: Optional[int] = None,
+        ictd_fix_product_backend: Optional[str] = None,
+        ictd_tp_backend: Optional[str] = None,
         avg_num_neighbors: Optional[float] = None,
         torchscript: bool = False,
         force_naive: bool = False,
@@ -1729,8 +1731,14 @@ class LAMMPS_MLIAP_MFF(MLIAPUnified):
                     or arch_meta.get("ictd_fix_contraction_combine", "softmax")
                 ),
                 ictd_fix_product_backend=str(
-                    ckpt.get("ictd_fix_product_backend")
+                    ictd_fix_product_backend
+                    or ckpt.get("ictd_fix_product_backend")
                     or arch_meta.get("ictd_fix_product_backend", "ictd-pure-u")
+                ),
+                ictd_tp_backend=str(
+                    ictd_tp_backend
+                    or ckpt.get("ictd_tp_backend")
+                    or arch_meta.get("ictd_tp_backend", "pytorch")
                 ),
                 angular_basis=angular_basis,
                 ictd_fix_use_reduced_cg=bool(
@@ -2449,7 +2457,49 @@ class LAMMPS_MLIAP_MFF(MLIAPUnified):
                 # those derived bridge buffers.
                 model.activate_e3nn_basis_from_folded_state_dict()
 
-        if mode == "spherical-save-cue":
+        checkpoint_product_backend = str(
+            ckpt.get("ictd_fix_product_backend")
+            or arch_meta.get("ictd_fix_product_backend", "ictd-pure-u")
+        )
+        runtime_product_backend = str(
+            getattr(model, "ictd_fix_product_backend", checkpoint_product_backend)
+        )
+        product_backend_switched = (
+            mode == "pure-cartesian-ictd-fix"
+            and runtime_product_backend != checkpoint_product_backend
+        )
+
+        if product_backend_switched:
+            # The authoritative contraction parameters have the same names in
+            # the bridge-U and cuEq product implementations.  Only fixed basis
+            # bridges move by one module level, while cuEq adds frozen mirror
+            # weights that are rebuilt from the authoritative parameters by its
+            # load-state post hook.  Migrate exactly those derived entries and
+            # retain strict validation for every learned tensor.
+            runtime_state = dict(selected_state_dict)
+            target_keys = set(model.state_dict())
+            for key in list(runtime_state):
+                marker = ".symmetric_contractions.basis_bridge."
+                if key.startswith("products.") and marker in key:
+                    migrated_key = key.replace(marker, ".basis_bridge.", 1)
+                    if migrated_key in target_keys:
+                        runtime_state[migrated_key] = runtime_state.pop(key)
+            load_result = model.load_state_dict(runtime_state, strict=False)
+            derived_missing = [
+                key
+                for key in load_result.missing_keys
+                if ".cueq_contractions." in key
+            ]
+            real_missing = [
+                key for key in load_result.missing_keys if key not in derived_missing
+            ]
+            if real_missing or load_result.unexpected_keys:
+                raise RuntimeError(
+                    "Product-backend checkpoint migration changed learned state: "
+                    f"missing={real_missing[:10]}, "
+                    f"unexpected={load_result.unexpected_keys[:10]}"
+                )
+        elif mode == "spherical-save-cue":
             load_result = model.load_state_dict(selected_state_dict, strict=False)
             if load_result.unexpected_keys or load_result.missing_keys:
                 import warnings

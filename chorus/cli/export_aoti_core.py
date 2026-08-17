@@ -763,6 +763,13 @@ def main() -> int:
                         "backend before tracing. This preserves fp32-level numerics and can improve large-N "
                         "throughput, but the resulting .pt2 requires cuEquivariance custom op registration "
                         "before AOTI loading.")
+    p.add_argument("--conv-tp-backend", dest="conv_tp_backend", default=None,
+                   choices=["pytorch", "cueq"],
+                   help="override the interaction conv tensor-product backend when exporting from a "
+                        "checkpoint (default: keep the checkpoint's recorded ictd_tp_backend). 'cueq' "
+                        "rebuilds the interaction blocks with the cuEquivariance ChannelWiseTensorProduct "
+                        "path; the resulting .pt2 requires cuEquivariance custom op registration before "
+                        "AOTI loading, same as --cueq-product.")
     p.add_argument("--fuse-selector-message-linear", action="store_true",
                    help="for eval/AOTI export, precompose interaction message_linear + fixed "
                         "avg-neighbor scaling + element selector (+ per-l output scale when present) "
@@ -813,6 +820,7 @@ def main() -> int:
         obj = LAMMPS_MLIAP_MFF.from_checkpoint(
             checkpoint_path=args.checkpoint, element_types=element_types, device=args.device,
             avg_num_neighbors=args.avg_num_neighbors,
+            ictd_tp_backend=args.conv_tp_backend,
         )
         model = obj.wrapper.model
         model.skip_input_validation = True  # set on the BARE model (the A.max().item() guard lives here,
