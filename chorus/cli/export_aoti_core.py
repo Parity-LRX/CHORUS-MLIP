@@ -567,6 +567,71 @@ def _aoti_compile(exported, out_path):
         return aoti_compile_and_package(exported, out_path)
 
 
+# torch<=2.7's OSS AOTI proxy executor deserializes extern-kernel
+# ``as_scalar_type`` args with the raw c10::ScalarType enum, while the inductor
+# serializer writes torch._export.serde ScalarType ids (serde FLOAT=7 vs c10
+# Float=6). Custom ops taking a torch.dtype argument -- e.g.
+# cuequivariance::tensor_product_uniform_1d_jit's math_dtype -- then silently
+# receive the WRONG dtype at runtime (f32 -> f64), which pushes cueq's
+# kernelcatcher onto its conservative f64 path (segmented_polynomial algo1,
+# ~3x slower than the algo2/4/6 f32 kernels). Rewrite the ids inside the
+# packaged *.wrapper.json to the c10 values the runtime actually expects.
+# No-op when the package contains no such args (e.g. pure-aten exports).
+_SERDE_TO_C10_SCALARTYPE = {1: 0, 2: 1, 3: 2, 4: 3, 5: 4, 6: 5, 7: 6, 8: 7,
+                            12: 11, 13: 15}
+
+
+def _fix_aoti_scalar_type_args(pt2_path) -> int:
+    """Rewrite as_scalar_type ids (serde -> c10 enum) in a .pt2 package.
+
+    Returns the number of patched entries. Controlled by env
+    CHORUS_AOTI_SCALARTYPE_FIX: "1"/"0" force on/off, default auto (on for
+    torch 2.x with x <= 7, where the proxy-executor bug is present).
+    """
+    import os
+    import re
+    import zipfile
+
+    mode = os.environ.get("CHORUS_AOTI_SCALARTYPE_FIX", "auto").strip().lower()
+    if mode == "0":
+        return 0
+    if mode == "auto":
+        mm = re.match(r"^(\d+)\.(\d+)", torch.__version__)
+        if not mm or (int(mm.group(1)), int(mm.group(2))) > (2, 7):
+            return 0
+
+    zin = zipfile.ZipFile(pt2_path)
+    names = zin.namelist()
+    if not any(n.endswith(".wrapper.json") for n in names):
+        zin.close()
+        return 0
+    patched = 0
+    tmp_path = str(pt2_path) + ".scalartype_fix.tmp"
+    with zipfile.ZipFile(tmp_path, "w", zipfile.ZIP_DEFLATED) as zout:
+        for item in zin.infolist():
+            data = zin.read(item.filename)
+            if item.filename.endswith(".wrapper.json"):
+                text = data.decode("utf-8")
+
+                def _repl(m):
+                    nonlocal patched
+                    v = int(m.group(1))
+                    if v in _SERDE_TO_C10_SCALARTYPE:
+                        patched += 1
+                        return f'"as_scalar_type": {_SERDE_TO_C10_SCALARTYPE[v]}'
+                    return m.group(0)
+
+                text = re.sub(r'"as_scalar_type":\s*(\d+)', _repl, text)
+                data = text.encode("utf-8")
+            zout.writestr(item, data)
+    zin.close()
+    if patched:
+        os.replace(tmp_path, pt2_path)
+    else:
+        os.unlink(tmp_path)
+    return patched
+
+
 def _aoti_load(path, device):
     """Load an AOTI .pt2 back into a callable; tolerate API moves."""
     last = None
@@ -1069,6 +1134,10 @@ def main() -> int:
         print(f"[aoti] aoti_compile_and_package FAILED: {type(ex).__name__}: {ex}")
         return 1
     print(f"[aoti] compiled .pt2 -> {pt2}  ({time.perf_counter()-t0:.1f}s)")
+    n_scalar_fixed = _fix_aoti_scalar_type_args(pt2)
+    if n_scalar_fixed:
+        print(f"[aoti] proxy-executor ScalarType workaround: rewrote {n_scalar_fixed} "
+              f"as_scalar_type arg(s) to c10 enum ids (set CHORUS_AOTI_SCALARTYPE_FIX=0 to disable)")
 
     # Sidecar metadata the LAMMPS engine reads: baked atom count N (-> pad ntotal up to it), a valid
     # padding species, and an optional N-flexible TorchScript fallback for ntotal > N spikes.
