@@ -1,0 +1,90 @@
+{
+  "selection_rule": "minimum full-validation Force MAE; test never selects",
+  "selected_epoch": 179,
+  "selected_checkpoint": "/public/home/sps-xia/rxlin/chorus_solid_runs/ms25_20260818/native_mace/zr-o/checkpoints/native_mace_ms25_zr-o_run-20260616_epoch-179.pt",
+  "validation_checkpoint_count": 180,
+  "validation_log_metrics": {
+    "loss": 0.9786321520805359,
+    "mae_e": 3.0603606700897217,
+    "mae_e_per_atom": 0.1745220124721527,
+    "rmse_e": 5.739701747894287,
+    "rmse_e_per_atom": 0.2799241244792938,
+    "q95_e": 8.468029975891113,
+    "mae_f": 0.13747195899486542,
+    "rel_mae_f": 52.00257873535156,
+    "rmse_f": 0.19505847990512848,
+    "rel_rmse_f": 49.71821596654945,
+    "q95_f": 0.40124982595443726,
+    "time": 0.4532926082611084,
+    "mode": "eval",
+    "epoch": 179,
+    "head": "Default"
+  },
+  "independent_validation_envelopes": {
+    "force_mae": {
+      "loss": 0.9786321520805359,
+      "mae_e": 3.0603606700897217,
+      "mae_e_per_atom": 0.1745220124721527,
+      "rmse_e": 5.739701747894287,
+      "rmse_e_per_atom": 0.2799241244792938,
+      "q95_e": 8.468029975891113,
+      "mae_f": 0.13747195899486542,
+      "rel_mae_f": 52.00257873535156,
+      "rmse_f": 0.19505847990512848,
+      "rel_rmse_f": 49.71821596654945,
+      "q95_f": 0.40124982595443726,
+      "time": 0.4532926082611084,
+      "mode": "eval",
+      "epoch": 179,
+      "head": "Default"
+    },
+    "energy_mae": {
+      "loss": 1.0021828413009644,
+      "mae_e": 2.983797788619995,
+      "mae_e_per_atom": 0.17272508144378662,
+      "rmse_e": 5.710062503814697,
+      "rmse_e_per_atom": 0.28379300236701965,
+      "q95_e": 7.92338752746582,
+      "mae_f": 0.13947823643684387,
+      "rel_mae_f": 52.761505126953125,
+      "rmse_f": 0.19745582342147827,
+      "rel_rmse_f": 50.32927190602903,
+      "q95_f": 0.4064905643463135,
+      "time": 0.47240376472473145,
+      "mode": "eval",
+      "epoch": 83,
+      "head": "Default"
+    }
+  },
+  "trainable_parameters": 575936,
+  "energy_calibration": {
+    "frames": 1000,
+    "atomic_numbers": [
+      8,
+      40
+    ],
+    "fit_objective": "least-squares residual energy per atom",
+    "correction_ev_per_element": [
+      0.009507161984355018,
+      -0.0014603479735971906
+    ],
+    "design_rank": 2,
+    "singular_values": [
+      23.27733300854183,
+      10.99204534538352
+    ],
+    "train_residual_mae_ev_per_atom_before": 0.17468333055616217,
+    "train_residual_mae_ev_per_atom_after": 0.17569876212966898
+  },
+  "energy_calibration_fit_split": "train",
+  "test": {
+    "frames": 8920,
+    "raw_energy_mae_ev_per_atom": 0.1600197913106067,
+    "raw_energy_rmse_ev_per_atom": 0.26174786053018695,
+    "energy_mae_ev_per_atom": 0.16109104299061397,
+    "energy_rmse_ev_per_atom": 0.2620070093470233,
+    "force_mae_ev_per_angstrom": 0.1317767338104981,
+    "force_rmse_ev_per_angstrom": 0.18201386160069896
+  },
+  "force_unchanged_by_energy_calibration": true
+}

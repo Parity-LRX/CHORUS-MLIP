@@ -1,0 +1,9 @@
+{
+  "source_checkpoint": "/public/home/sps-xia/rxlin/chorus_solid_runs/ms25_20260818/mace_ictc_family/zr-o/final/checkpoints/ms25_zr-o_final_c128_l2_corr3_r16_final.e151s37848.pth",
+  "augmented_checkpoint": "/public/home/sps-xia/rxlin/chorus_solid_runs/ms25_20260818/mace_ictc_family/zr-o/final/train_only_energy_calibration/final.zero_correction_source.pth",
+  "source_sha256": "0299c358d2ae1f816ddecf45d8071c00220c001feba3164d4d1e5e52b44f6394",
+  "augmented_sha256": "99bdbdd916b2209ccebca4f73df99eb32faa92c3c14dd783c872c19e629c60be",
+  "only_added_state_tensor": "element_energy_correction",
+  "initial_value": "zeros",
+  "num_elements": 2
+}

@@ -19,6 +19,8 @@ MACE_TORCH_PATH="${MACE_TORCH_PATH:-/public/home/sps-xia/rxlin/ablation_core_vs_
 OUT="${OUT:-/public/home/sps-xia/rxlin/chorus_runs/a100_scaling_20260804/mace_family}"
 BENCH="${REPO}/benchmarks/paper/scripts/throughput/bench_cross_model_scaling.py"
 SIZES="${SIZES:-128,256,512,1024,2048,4096}"
+ICTC_PRODUCT_BACKEND="${ICTC_PRODUCT_BACKEND:-checkpoint}"
+ICTC_CONV_TP_BACKEND="${ICTC_CONV_TP_BACKEND:-checkpoint}"
 
 mkdir -p "${OUT}" /public/home/sps-xia/rxlin/chorus_runs/a100_scaling_20260804/logs
 export NVIDIA_TF32_OVERRIDE=0
@@ -35,5 +37,7 @@ esac
 PYTHONPATH="${REPO}:${MACE_TORCH_PATH}:${PYTHONPATH:-}" \
   "${PYTHON_BIN}" "${BENCH}" --engine "${engine}" \
   --checkpoint "${checkpoint}" --sizes "${SIZES}" \
+  --ictc-product-backend "${ICTC_PRODUCT_BACKEND}" \
+  --ictc-conv-tp-backend "${ICTC_CONV_TP_BACKEND}" \
   --output "${OUT}/${label}.json"
 touch "${OUT}/${label}.DONE"

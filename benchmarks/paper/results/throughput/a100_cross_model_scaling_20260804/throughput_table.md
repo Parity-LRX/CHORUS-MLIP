@@ -8,11 +8,11 @@ DPA-4 constructs its neighbor representation inside the timed model call; the MA
 | Model | Parameters | Backend |
 |:--|--:|:--|
 | MACE-SH | 650,944 | CuEq-only (native MACE has no compatible MakeFX force path) |
-| MACE-ICTC | 652,736 | MakeFX/Inductor |
-| CHORUS-Final R8 | 744,070 | MakeFX/Inductor |
-| CHORUS-Final R16 | 792,198 | MakeFX/Inductor |
-| CHORUS-Final R32 | 888,454 | MakeFX/Inductor |
-| CHORUS-Persistent R16 | 1,029,967 | MakeFX/Inductor |
+| MACE-ICTC | 652,736 | MakeFX/Inductor; product=cueq; conv-TP=cueq |
+| CHORUS-Final R8 | 744,070 | MakeFX/Inductor; product=cueq; conv-TP=cueq |
+| CHORUS-Final R16 | 792,198 | MakeFX/Inductor; product=cueq; conv-TP=cueq |
+| CHORUS-Final R32 | 888,454 | MakeFX/Inductor; product=cueq; conv-TP=cueq |
+| CHORUS-Persistent R16 | 1,029,967 | MakeFX/Inductor; product=cueq; conv-TP=cueq |
 | NequIP-SH | 669,866 | OpenEquivariance 0.6.8 precompiled AOTI |
 | NequIP-CHORUS-Final | 921,551 | OpenEquivariance 0.6.8 precompiled AOTI |
 | NequIP-CHORUS-Persistent | 991,991 | OpenEquivariance 0.6.8 precompiled AOTI |
@@ -26,11 +26,11 @@ DPA-4 constructs its neighbor representation inside the timed model call; the MA
 | Model | 128 | 256 | 512 | 1024 | 2048 | 4096 |
 |:--|--:|--:|--:|--:|--:|--:|
 | MACE-SH | 6,969 | 14,053 | 28,053 | 55,953 | 110,791 | 149,849 |
-| MACE-ICTC | 21,451 | 25,105 | 29,119 | 31,308 | 32,199 | 32,478 |
-| CHORUS-Final R8 | 17,285 | 19,775 | 22,673 | 24,111 | 24,383 | 24,414 |
-| CHORUS-Final R16 | 17,446 | 19,512 | 22,258 | 23,553 | 24,012 | 23,840 |
-| CHORUS-Final R32 | 17,117 | 19,179 | 21,922 | 23,257 | 23,729 | 23,554 |
-| CHORUS-Persistent R16 | 14,226 | 17,514 | 20,593 | 22,090 | 22,633 | 22,669 |
+| MACE-ICTC | 14,534 | 24,279 | 30,898 | 36,009 | 37,447 | 37,880 |
+| CHORUS-Final R8 | 12,595 | 18,563 | 22,880 | 26,011 | 26,964 | 26,741 |
+| CHORUS-Final R16 | 12,664 | 18,393 | 22,609 | 25,460 | 26,245 | 26,324 |
+| CHORUS-Final R32 | 12,597 | 18,135 | 22,223 | 25,073 | 25,945 | 25,827 |
+| CHORUS-Persistent R16 | 11,205 | 17,559 | 20,470 | 23,094 | 23,945 | 23,998 |
 | NequIP-SH | 17,084 | 34,104 | 66,679 | 92,882 | 104,130 | 111,681 |
 | NequIP-CHORUS-Final | 12,587 | 25,035 | 39,257 | 46,596 | 50,508 | 52,633 |
 | NequIP-CHORUS-Persistent | 9,259 | 18,389 | 30,915 | 38,534 | 42,175 | 44,088 |
@@ -44,11 +44,11 @@ DPA-4 constructs its neighbor representation inside the timed model call; the MA
 | Model | 128 | 256 | 512 | 1024 | 2048 | 4096 |
 |:--|--:|--:|--:|--:|--:|--:|
 | MACE-SH | 3,076 | 6,183 | 12,414 | 24,711 | 43,636 | 54,336 |
-| MACE-ICTC | 8,317 | 10,269 | 11,738 | 12,196 | 12,386 | 12,377 |
-| CHORUS-Final R8 | 6,256 | 7,766 | 8,794 | 9,007 | 9,082 | OOM |
-| CHORUS-Final R16 | 6,171 | 7,648 | 8,606 | 8,864 | 8,896 | OOM |
-| CHORUS-Final R32 | 6,080 | 7,558 | 8,481 | 8,737 | 8,765 | OOM |
-| CHORUS-Persistent R16 | 5,376 | 6,788 | 7,635 | 8,103 | 8,262 | OOM |
+| MACE-ICTC | 5,689 | 10,661 | 13,985 | 16,126 | 17,003 | 17,265 |
+| CHORUS-Final R8 | 4,326 | 8,234 | 10,575 | 12,070 | 12,555 | 12,801 |
+| CHORUS-Final R16 | 4,763 | 8,130 | 10,402 | 11,824 | 12,415 | 12,519 |
+| CHORUS-Final R32 | 4,609 | 7,988 | 10,208 | 11,548 | 12,060 | 12,223 |
+| CHORUS-Persistent R16 | 3,955 | 7,160 | 9,331 | 10,544 | 11,091 | 11,305 |
 | NequIP-SH | 6,531 | 13,067 | 23,933 | 32,106 | 35,423 | 37,539 |
 | NequIP-CHORUS-Final | 4,725 | 9,437 | 14,631 | 17,053 | 18,470 | 19,233 |
 | NequIP-CHORUS-Persistent | 3,481 | 6,944 | 11,653 | 13,957 | 15,519 | 16,279 |
@@ -62,11 +62,11 @@ DPA-4 constructs its neighbor representation inside the timed model call; the MA
 | Model | 128 | 256 | 512 | 1024 | 2048 | 4096 |
 |:--|--:|--:|--:|--:|--:|--:|
 | MACE-SH | 0.08 | 0.14 | 0.27 | 0.52 | 1.01 | 1.99 |
-| MACE-ICTC | 0.56 | 1.32 | 2.62 | 5.22 | 10.41 | 20.78 |
-| CHORUS-Final R8 | 0.57 | 1.93 | 3.86 | 7.67 | 15.32 | 30.59 |
-| CHORUS-Final R16 | 0.57 | 1.95 | 3.88 | 7.73 | 15.94 | 30.81 |
-| CHORUS-Final R32 | 0.57 | 1.97 | 3.94 | 7.84 | 15.64 | 32.25 |
-| CHORUS-Persistent R16 | 0.61 | 2.09 | 4.17 | 8.30 | 16.56 | 33.07 |
+| MACE-ICTC | 0.32 | 0.96 | 1.86 | 3.67 | 7.27 | 14.48 |
+| CHORUS-Final R8 | 0.37 | 1.58 | 3.09 | 6.09 | 12.14 | 24.26 |
+| CHORUS-Final R16 | 0.37 | 1.59 | 3.12 | 6.18 | 12.29 | 24.51 |
+| CHORUS-Final R32 | 0.41 | 1.59 | 3.14 | 6.28 | 12.50 | 24.94 |
+| CHORUS-Persistent R16 | 0.40 | 1.81 | 3.54 | 7.02 | 13.97 | 27.86 |
 | NequIP-SH | 0.16 | 0.30 | 0.58 | 1.15 | 2.27 | 4.51 |
 | NequIP-CHORUS-Final | 0.23 | 0.44 | 0.85 | 1.67 | 3.32 | 6.59 |
 | NequIP-CHORUS-Persistent | 0.24 | 0.46 | 0.89 | 1.76 | 3.48 | 6.92 |
@@ -80,11 +80,11 @@ DPA-4 constructs its neighbor representation inside the timed model call; the MA
 | Model | 128 | 256 | 512 | 1024 | 2048 | 4096 |
 |:--|--:|--:|--:|--:|--:|--:|
 | MACE-SH | 0.15 | 0.27 | 0.52 | 1.01 | 1.99 | 3.93 |
-| MACE-ICTC | 0.95 | 1.87 | 3.77 | 7.43 | 14.80 | 29.52 |
-| CHORUS-Final R8 | 1.34 | 2.62 | 5.19 | 10.32 | 20.51 | OOM |
-| CHORUS-Final R16 | 1.39 | 2.64 | 5.24 | 10.37 | 20.62 | OOM |
-| CHORUS-Final R32 | 1.37 | 2.66 | 5.28 | 10.49 | 20.84 | OOM |
-| CHORUS-Persistent R16 | 1.52 | 2.92 | 5.78 | 11.44 | 22.75 | OOM |
+| MACE-ICTC | 0.63 | 1.27 | 2.48 | 5.56 | 11.06 | 22.06 |
+| CHORUS-Final R8 | 1.01 | 1.97 | 3.88 | 8.41 | 16.77 | 33.51 |
+| CHORUS-Final R16 | 1.02 | 1.99 | 3.92 | 8.49 | 16.92 | 33.77 |
+| CHORUS-Final R32 | 1.04 | 2.02 | 3.97 | 8.57 | 17.11 | 34.17 |
+| CHORUS-Persistent R16 | 1.14 | 2.23 | 4.40 | 8.72 | 17.32 | 34.56 |
 | NequIP-SH | 0.29 | 0.55 | 1.08 | 2.14 | 4.23 | 8.42 |
 | NequIP-CHORUS-Final | 0.45 | 0.87 | 1.72 | 3.40 | 6.76 | 13.47 |
 | NequIP-CHORUS-Persistent | 0.50 | 0.97 | 1.91 | 3.78 | 7.51 | 14.96 |

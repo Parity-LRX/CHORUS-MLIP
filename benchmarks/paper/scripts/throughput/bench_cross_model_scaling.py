@@ -124,13 +124,32 @@ def build_ictc(args: argparse.Namespace):
     from chorus.training.makefx_compile import trace_and_compile_force
 
     phase = args.engine.startswith("chorus-")
+    product_backend = (
+        None if args.ictc_product_backend == "checkpoint" else args.ictc_product_backend
+    )
+    conv_tp_backend = (
+        None if args.ictc_conv_tp_backend == "checkpoint" else args.ictc_conv_tp_backend
+    )
     loaded = LAMMPS_MLIAP_MFF.from_checkpoint(
         args.checkpoint,
         element_types=["H", "C", "N", "O"],
         device="cuda",
+        ictd_fix_product_backend=product_backend,
+        ictd_tp_backend=conv_tp_backend,
     )
     model = loaded.wrapper.model
-    nparams = sum(p.numel() for p in model.parameters())
+    # The deployment loader freezes the whole model, so ``requires_grad`` no
+    # longer identifies trainable capacity.  Count the checkpoint parameters
+    # while excluding only cuEq's derived frozen mirror weights.
+    nparams = sum(
+        parameter.numel()
+        for name, parameter in model.named_parameters()
+        if ".cueq_contractions." not in name
+    )
+    effective_product_backend = str(
+        getattr(model, "ictd_fix_product_backend", "unknown")
+    )
+    effective_conv_tp_backend = str(getattr(model, "ictd_tp_backend", "unknown"))
 
     def prepare(natoms: int, task: str):
         graph = make_graph(
@@ -191,9 +210,14 @@ def build_ictc(args: argparse.Namespace):
         else "loaded paper checkpoint; C128 L2 correlation3 2 interactions phase-off"
     )
     return model, nparams, prepare, {
-        "backend": "MakeFX/Inductor",
+        "backend": (
+            "MakeFX/Inductor; "
+            f"product={effective_product_backend}; conv-TP={effective_conv_tp_backend}"
+        ),
         "graph_build_in_timing": False,
         "configuration": args.configuration_label or default_configuration,
+        "ictc_product_backend": effective_product_backend,
+        "ictc_conv_tp_backend": effective_conv_tp_backend,
     }
 
 
@@ -472,6 +496,18 @@ def main() -> None:
     )
     parser.add_argument("--checkpoint", default="")
     parser.add_argument("--config", default="")
+    parser.add_argument(
+        "--ictc-product-backend",
+        choices=("checkpoint", "ictd-bridge-u", "cueq"),
+        default="checkpoint",
+        help="Runtime product/symmetric-contraction backend for MACE-ICTC models.",
+    )
+    parser.add_argument(
+        "--ictc-conv-tp-backend",
+        choices=("checkpoint", "pytorch", "cueq"),
+        default="checkpoint",
+        help="Runtime interaction conv-TP backend for MACE-ICTC models.",
+    )
     parser.add_argument(
         "--configuration-label",
         default="",

@@ -1,0 +1,24 @@
+{
+  "description": "Four core test-force endpoints used by the main-text accuracy-cost synthesis; 3BPA is retained as an appendix temperature-transfer study.",
+  "selection_rule": "one checkpoint per model selected on validation Force MAE; test never selects",
+  "units": {"force_mae": "meV/Angstrom", "parameters": "trainable parameters"},
+  "aggregation": {
+    "endpoint_weighting": "equal weight across four core test endpoints",
+    "normalization": "divide each model Force MAE by the lowest observed Force MAE on that endpoint",
+    "summary": "geometric mean of four normalized Force MAEs"
+  },
+  "endpoints": ["T1X-50k", "xxMD MAL", "xxMD STI", "MD22 Buckyball"],
+  "models": {
+    "MACE-SH": [120.901, 228.300, 169.600, 22.282],
+    "MACE-ICTC": [91.888, 166.928, 168.271, 7.355],
+    "CHORUS-Final R16": [82.513, 159.062, 147.830, 6.724],
+    "CHORUS-Persistent R16": [82.342, 156.332, 146.185, 6.297],
+    "NequIP-SH": [140.259, 288.188, 199.049, 24.654],
+    "NequIP-CHORUS-Final": [113.859, 220.775, 166.486, 12.318],
+    "NequIP-CHORUS-Persistent": [96.125, 187.644, 157.413, 9.952],
+    "DPA-4 C32": [88.696, 225.660, 144.155, 5.915],
+    "TECE C36": [94.744, 216.259, 161.573, 12.079],
+    "DPA-4 C48": [80.148, 162.248, 129.724, 4.972],
+    "TECE C48": [88.289, 210.597, 169.212, 11.315]
+  }
+}

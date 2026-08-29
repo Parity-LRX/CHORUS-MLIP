@@ -10,9 +10,10 @@ Takeaway
     CHORUS supplies the lowest aggregate force-error operating points, while
     its Final and Persistent scopes occupy distinct accuracy--cost positions.
 Form
-    Four aligned dot plots at N=2048: force-error gap, inference latency,
-    training latency and trainable parameters. Models are sorted by force
-    error, so every quantitative axis points left toward the preferred region.
+    Four aligned dot plots at N=2048: force-error gap, inference time per
+    structure, training time per optimiser step and trainable parameters.
+    Models are sorted by force error, so every quantitative axis points left
+    toward the preferred region.
 Encoding
     Position carries every metric directly. Neutral backbones, blue CHORUS,
     orange DPA-4 and green TECE; marker shape duplicates identity. Full-opacity
@@ -276,8 +277,8 @@ def plot(
     y_position = {model: len(ordered_models) - 1 - index for index, model in enumerate(ordered_models)}
     metrics = (
         ("force_gap", "Force-error gap", "%", (0, 140), "{:.1f}"),
-        ("inference_latency", "Inference latency", "ms", (0, 180), "{:.1f}"),
-        ("training_latency", "Training latency", "ms", (0, 440), "{:.0f}"),
+        ("inference_latency", "Inference time", "ms per structure", (0, 180), "{:.1f}"),
+        ("training_latency", "Training time", "ms per optimiser step", (0, 440), "{:.0f}"),
         ("parameters", "Parameters", "million", (0, 1.55), "{:.2f}"),
     )
     fig, axes = plt.subplots(

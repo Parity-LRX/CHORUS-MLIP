@@ -1,0 +1,24 @@
+r_max: 5.5
+dataset: MACEGraphHDF5Dataset
+dataset_root: /public/home/sps-xia/rxlin/chorus_solid_data/ms25_20260818/prepared/hea/set1/chorus
+dataset_file_name: /public/home/sps-xia/rxlin/chorus_solid_data/ms25_20260818/prepared/hea/set1/chorus/processed_test.h5
+chemical_symbols:
+- Cr
+- Fe
+- Co
+- Ni
+- Cu
+metrics_components:
+- - forces
+  - mae
+- - forces
+  - rmse
+- - total_energy
+  - mae
+  - PerAtom: true
+- - total_energy
+  - rmse
+  - PerAtom: true
+default_dtype: float32
+model_dtype: float32
+allow_tf32: false

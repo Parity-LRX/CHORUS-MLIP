@@ -1,0 +1,67 @@
+{
+  "checkpoint": "/home/ylzhang/chorus_runs/ms25_external_20260818/dpa4/zr-o/c48_mix3_fp32_compiled/ckpt_steps45000/model.ckpt-44750.pt",
+  "selection_rule": "checkpoint selected by minimum full-validation Force MAE",
+  "calibration_split": "train only",
+  "fit_objective": "least-squares residual energy per atom",
+  "elements": [
+    "O",
+    "Zr"
+  ],
+  "delta_ev_per_element": {
+    "O": 0.0011620869396002608,
+    "Zr": 0.0012844008439303885
+  },
+  "normal_matrix_rank": 2,
+  "singular_values": [
+    23.277333008541813,
+    10.99204534538353
+  ],
+  "forces_changed": false,
+  "splits": {
+    "train": {
+      "num_structures": 1000,
+      "raw": {
+        "energy_mae_ev_per_atom": 0.01696492567168638,
+        "energy_rmse_ev_per_atom": 0.027023707392841167,
+        "energy_mae_mev_per_atom": 16.96492567168638,
+        "energy_rmse_mev_per_atom": 27.023707392841168
+      },
+      "calibrated": {
+        "energy_mae_ev_per_atom": 0.01699434223803388,
+        "energy_rmse_ev_per_atom": 0.02699528719530564,
+        "energy_mae_mev_per_atom": 16.99434223803388,
+        "energy_rmse_mev_per_atom": 26.99528719530564
+      }
+    },
+    "val": {
+      "num_structures": 80,
+      "raw": {
+        "energy_mae_ev_per_atom": 0.022824876850123847,
+        "energy_rmse_ev_per_atom": 0.04927621224314693,
+        "energy_mae_mev_per_atom": 22.824876850123847,
+        "energy_rmse_mev_per_atom": 49.27621224314693
+      },
+      "calibrated": {
+        "energy_mae_ev_per_atom": 0.0227298971322127,
+        "energy_rmse_ev_per_atom": 0.049100577033292625,
+        "energy_mae_mev_per_atom": 22.729897132212702,
+        "energy_rmse_mev_per_atom": 49.10057703329262
+      }
+    },
+    "test": {
+      "num_structures": 8920,
+      "raw": {
+        "energy_mae_ev_per_atom": 0.02137209699443663,
+        "energy_rmse_ev_per_atom": 0.04608980587562085,
+        "energy_mae_mev_per_atom": 21.37209699443663,
+        "energy_rmse_mev_per_atom": 46.089805875620854
+      },
+      "calibrated": {
+        "energy_mae_ev_per_atom": 0.021399436309091427,
+        "energy_rmse_ev_per_atom": 0.04604275102621876,
+        "energy_mae_mev_per_atom": 21.399436309091428,
+        "energy_rmse_mev_per_atom": 46.04275102621876
+      }
+    }
+  }
+}

@@ -1,0 +1,55 @@
+{
+  "checkpoint": "/home/ylzhang/chorus_runs/ms25_external_20260818/tece/zr-o/c48/checkpoints_epoch/TECE-166-41750.ckpt",
+  "selection_rule": "checkpoint selected by minimum validation Force MAE",
+  "calibration_split": "train only",
+  "fit_objective": "least-squares residual energy per atom",
+  "elements": [
+    "O",
+    "Zr"
+  ],
+  "delta_ev_per_element": {
+    "O": -0.0013987789478022783,
+    "Zr": 0.0005223110034726223
+  },
+  "normal_matrix_rank": 2,
+  "singular_values": [
+    23.27733300854183,
+    10.99204534538352
+  ],
+  "forces_changed": false,
+  "splits": {
+    "train": {
+      "num_structures": 1000,
+      "raw": {
+        "energy_mae_mev_per_atom": 31.564978753310506,
+        "energy_rmse_mev_per_atom": 56.76704659575912
+      },
+      "calibrated": {
+        "energy_mae_mev_per_atom": 31.454425757091897,
+        "energy_rmse_mev_per_atom": 56.76457910800368
+      }
+    },
+    "val": {
+      "num_structures": 80,
+      "raw": {
+        "energy_mae_mev_per_atom": 42.071476834998954,
+        "energy_rmse_mev_per_atom": 69.90203461563833
+      },
+      "calibrated": {
+        "energy_mae_mev_per_atom": 41.89193733565377,
+        "energy_rmse_mev_per_atom": 69.84849685761012
+      }
+    },
+    "test": {
+      "num_structures": 8920,
+      "raw": {
+        "energy_mae_mev_per_atom": 35.75956274912067,
+        "energy_rmse_mev_per_atom": 78.17541998869248
+      },
+      "calibrated": {
+        "energy_mae_mev_per_atom": 35.664064607673076,
+        "energy_rmse_mev_per_atom": 78.19890882942889
+      }
+    }
+  }
+}

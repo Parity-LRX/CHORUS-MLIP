@@ -1,0 +1,49 @@
+{
+  "selection_rule": "minimum full-validation Force MAE; earliest step breaks ties",
+  "test_used_for_selection": false,
+  "selected_checkpoint": "/public/home/sps-xia/rxlin/chorus_solid_runs/ms25_20260818/mace_ictc_family/zr-o/final/checkpoints/ms25_zr-o_final_c128_l2_corr3_r16_final.e151s37848.pth",
+  "selected_epoch": 151,
+  "selected_step": 37848,
+  "selected_validation": {
+    "val_energy_mae": 0.039008,
+    "val_energy_rmse": 0.060766,
+    "val_force_mae": 0.073565,
+    "val_force_rmse": 0.147274
+  },
+  "independent_validation_envelopes": {
+    "force_mae": {
+      "epoch": 151,
+      "step": 37848,
+      "simultaneous_metrics": {
+        "val_energy_mae": 0.039008,
+        "val_energy_rmse": 0.060766,
+        "val_force_mae": 0.073565,
+        "val_force_rmse": 0.147274
+      }
+    },
+    "energy_mae": {
+      "epoch": 166,
+      "step": 41583,
+      "simultaneous_metrics": {
+        "val_energy_mae": 0.038818,
+        "val_energy_rmse": 0.060338,
+        "val_force_mae": 0.073651,
+        "val_force_rmse": 0.147632
+      }
+    }
+  },
+  "validation_checkpoint_count": 181,
+  "trainable_parameters": 672134,
+  "test": {
+    "energy_mae_ev_per_atom": 0.033966,
+    "energy_rmse_ev_per_atom": 0.060856,
+    "force_mae_ev_per_angstrom": 0.064801,
+    "force_rmse_ev_per_angstrom": 0.122925
+  },
+  "test_mev": {
+    "energy_mae_mev_per_atom": 33.966,
+    "energy_rmse_mev_per_atom": 60.856,
+    "force_mae_mev_per_angstrom": 64.801,
+    "force_rmse_mev_per_angstrom": 122.92500000000001
+  }
+}

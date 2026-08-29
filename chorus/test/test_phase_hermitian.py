@@ -1145,6 +1145,7 @@ def test_full_l_phase_model_rotation_force_covariance_and_gradients(
 @pytest.mark.parametrize(
     "coefficient,context,density_pairs",
     [
+        ("aligned", "content", "full"),
         ("positive", "content", "full"),
         ("signed", "content", "full"),
         ("cartesian", "content", "full"),
@@ -1186,7 +1187,48 @@ def test_full_l_coefficient_controls_forward_backward(
     if density_pairs == "full":
         phase_grad = interaction.phase_head.weight.grad
         assert phase_grad is not None
-        assert phase_grad.abs().max().item() > 0.0
+        if coefficient == "aligned":
+            assert phase_grad.abs().max().item() == 0.0
+        else:
+            assert phase_grad.abs().max().item() > 0.0
+
+
+def test_aligned_full_is_parameter_matched_and_phase_head_invariant():
+    torch.manual_seed(20260825)
+    polar = _build(
+        phase_mode="final-full-l-residual",
+        phase_amplitude="softplus",
+        phase_coefficient="polar",
+        phase_placement="pre-product-full-l",
+        phase_density_rank=4,
+        phase_density_pairs="full",
+    )
+    aligned = _build(
+        phase_mode="final-full-l-residual",
+        phase_amplitude="softplus",
+        phase_coefficient="aligned",
+        phase_placement="pre-product-full-l",
+        phase_density_rank=4,
+        phase_density_pairs="full",
+    )
+    assert tuple(polar.state_dict()) == tuple(aligned.state_dict())
+    assert sum(p.numel() for p in polar.parameters()) == sum(
+        p.numel() for p in aligned.parameters()
+    )
+    aligned.load_state_dict(polar.state_dict(), strict=True)
+    graph = make_fixed_graph(
+        num_nodes=7,
+        avg_degree=4,
+        dtype=torch.float64,
+        device=DEVICE,
+        seed=20260826,
+    )
+    aligned.eval()
+    before = aligned(*graph)
+    with torch.no_grad():
+        aligned.interactions[-1].phase_head.weight.normal_(mean=0.0, std=5.0)
+    after = aligned(*graph)
+    torch.testing.assert_close(after, before, atol=0.0, rtol=0.0)
 
 
 @pytest.mark.parametrize(

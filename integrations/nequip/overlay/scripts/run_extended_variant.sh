@@ -14,6 +14,7 @@ DATASETS="${DATASETS:-transition1x xxmd_mal xxmd_sti xxmd_dia md22_buckyball 3bp
 EPOCHS_OVERRIDE="${EPOCHS_OVERRIDE:-}"
 CHANNELS="${CHANNELS:-64}"
 CHORUS_RANK="${CHORUS_RANK:-16}"
+CHORUS_DENSITY_PAIRS="${CHORUS_DENSITY_PAIRS:-full}"
 CHORUS_SCOPE="${CHORUS_SCOPE:-final}"
 NUM_LAYERS="${NUM_LAYERS:-3}"
 LMAX="${LMAX:-2}"
@@ -50,6 +51,7 @@ for dataset in ${DATASETS}; do
     --dataset "${dataset}" --backend "${BACKEND}" --chorus "${CHORUS}" \
     --data-root "${DATA_ROOT}" --run-root "${work}" --output-dir "${work}" \
     --channels "${CHANNELS}" --chorus-rank "${CHORUS_RANK}"
+    --chorus-density-pairs "${CHORUS_DENSITY_PAIRS}"
     --chorus-scope "${CHORUS_SCOPE}"
     --num-layers "${NUM_LAYERS}"
     --lmax "${LMAX}"

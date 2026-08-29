@@ -1,0 +1,298 @@
+resume_from_model: null
+finetune_from_model: null
+finetune: null
+misc:
+  project_name: TECE_MS25_zr-o_C36_Seed20260616
+  global_seed: 20260616
+  device: cuda
+  allow_tf32: false
+  ignore_warning: true
+  log_level: debug
+  env:
+    WANDB_MODE: offline
+  LossSkipController:
+    enable: false
+    manual_threshold: 1000000.0
+    start_step: 1000
+    ema_window: 1000
+    multiplier: 1000000.0
+    skip_nan: true
+    skip_large: true
+trainer:
+  _target_: lightning.Trainer
+  num_nodes: 1
+  accelerator: auto
+  devices: auto
+  max_time: '90:00:00:00'
+  max_epochs: 180
+  max_steps: 45000
+  min_epochs: 1
+  precision: 32
+  strategy: auto
+  gradient_clip_val: 10.0
+  enable_progress_bar: true
+  log_every_n_steps: 20
+  enable_model_summary: true
+  enable_checkpointing: true
+  check_val_every_n_epoch: 1
+  detect_anomaly: false
+  inference_mode: false
+  deterministic: false
+callbacks:
+  early_stopping:
+    _target_: lightning.pytorch.callbacks.EarlyStopping
+    verbose: true
+    log_rank_zero_only: true
+    monitor: val/forces_mae
+    patience: 1000
+  checkpoint_epoch:
+    _target_: lightning.pytorch.callbacks.ModelCheckpoint
+    dirpath: checkpoints_epoch
+    filename: TECE-{epoch:03d}-{step}
+    monitor: val/forces_mae
+    save_top_k: -1
+    save_last: true
+    every_n_epochs: 1
+    mode: min
+    save_weights_only: false
+    auto_insert_metric_name: false
+    verbose: false
+dataset:
+  type: ase
+  split_seed: 20260616
+  train_file: /home/ylzhang/chorus_data/ms25_20260818/prepared/zr-o/set1/extxyz/train.extxyz
+  valid_file: /home/ylzhang/chorus_data/ms25_20260818/prepared/zr-o/set1/extxyz/val.extxyz
+  valid_ratio: 0.1
+  valid_from_index: false
+  no_valid_set: false
+  neighborlist_backend: matscipy
+  storage_mode: memory
+  shard_dirs:
+  - graphCache
+  shard_size: 100000
+  cache_size: 1024
+  avg_graph_size_in_KB: 200
+  lmdb_wait_timeout: 86400
+  force_dtype: null
+  keys:
+    fidelity_idx_key: fidelity_idx
+    energy_key: energy
+    forces_key: forces
+    stress_key: stress
+    virials_key: virials
+    charges_key: charges
+    total_charge_key: total_charge
+    direct_forces_key: forces
+    direct_stress_key: stress
+    direct_virials_key: virials
+    polarization_key: polarization
+    direct_dipole_key: dipole
+    conservative_dipole_key: dipole
+    direct_polarizability_key: polarizability
+    conservative_polarizability_key: polarizability
+    born_effective_charges_key: born_effective_charges
+    electric_field_key: electric_field
+    magnetic_field_key: magnetic_field
+    initial_collinear_magmoms_key: initial_collinear_magmoms
+    initial_noncollinear_magmoms_key: initial_noncollinear_magmoms
+    final_collinear_magmoms_key: final_collinear_magmoms
+    final_noncollinear_magmoms_key: final_noncollinear_magmoms
+    total_collinear_magmoms_key: total_collinear_magmoms
+    total_noncollinear_magmoms_key: total_noncollinear_magmoms
+    collinear_magnetic_forces_key: collinear_magnetic_forces
+    noncollinear_magnetic_forces_key: noncollinear_magnetic_forces
+  train_dataloader:
+    _target_: torch_geometric.loader.DataLoader
+    batch_size: 4
+    shuffle: true
+    drop_last: false
+    num_workers: 0
+  valid_dataloader:
+    _target_: torch_geometric.loader.DataLoader
+    batch_size: 4
+    shuffle: false
+    drop_last: false
+    num_workers: 0
+  test_dataloader:
+    _target_: torch_geometric.loader.DataLoader
+    batch_size: 4
+    shuffle: false
+    drop_last: false
+    num_workers: 0
+optimizer:
+  _target_: torch.optim.AdamW
+  lr: 0.001
+  weight_decay: 5.0e-07
+  amsgrad: true
+scheduler:
+  _target_: torch.optim.lr_scheduler.CosineAnnealingLR
+  T_max: 45000
+  eta_min: 1.0e-06
+  extra:
+    interval: step
+    frequency: 1
+synth_metric:
+  monitor_metric_name: val/forces_mae
+  val/energy_mae: 1.0
+  val/energy_per_atom_mae: 5.0
+  val/forces_mae: 5.0
+  val/energy_per_atom_rmse: 1.0
+  val/forces_rmse: 1.0
+loss:
+  _target_: tace.utils.loss.NormalLoss
+  loss_property:
+  - energy
+  - forces
+  loss_function_name:
+  - mse_energy_per_atom
+  - mse_forces
+  loss_property_weights:
+  - 1.0
+  - 100.0
+  loss_huber_delta:
+  - 0.01
+  - 0.01
+model:
+  config:
+    _target_: tace.models.e3nnTACE
+    wrapper:
+      _target_: tace.models.TensorModel
+    cutoff: 6.0
+    max_neighbors: null
+    atomic_numbers: null
+    fidelity:
+    - name: MS25
+      atomic_energy:
+        8: -9.682701619589361
+        40: -8.004380211187806
+    node_embedding:
+      type: linear
+    edge_embedding:
+      type: nonlinear
+    edge_update:
+      type: element2
+    mmax: 2
+    Lmax: 2
+    lmax: 2
+    num_layers: 2
+    num_channel: 36
+    parity: false
+    radial_basis:
+      radial_basis: j0
+      num_radial_basis: 8
+      distance_transform: null
+      cutoff_fn: c2poly
+      polynomial_cutoff: 5
+      gaussian_width: 2.0
+      order: 0
+      trainable: false
+      apply_cutoff: false
+      hidden:
+      - 64
+      - 64
+      bias: true
+      use_dydynamic_cutoff: false
+      dydynamic_cutoff_mu: 40
+      r_min: 0.0
+    resnet:
+      type: BB
+      linear_type: aware
+      use_first_resnet: false
+    layer_norm:
+      pre_norm_type: null
+      final_norm_type: null
+      use_first_pre_norm: false
+    atomic_basis:
+      type:
+      - cgtp
+      - so2
+      l1l2: null
+      scatter_norm: avg_num_neighbors
+      nonlinear: sigmoid_gate
+      edge_nonlinear: so2_sigmoid_gate
+      edge_info_type: mlp
+      node_wise_hidden: null
+      edge_wise_hidden: null
+      edge_ace_hidden: null
+      num_head: 3
+      use_graph_softmax: true
+      use_so2_edge_ace: true
+      so2_l1l3: null
+      so2_linear_type: w1
+      so2_agnostic: true
+      use_temperature: true
+      gate_m0: false
+      scalar_act: null
+      tensor_act: null
+      use_radial_phase: true
+    product_basis:
+      type: cgtp
+      l1l2: null
+      correlation: 3
+      return_components: null
+      num_expert: null
+      num_channel_per_expert: null
+      resolution: null
+      nonlinear: null
+      use_shared_expert: false
+    readout_emlp:
+      bias: false
+      hidden:
+      - 16
+      use_alllayer: false
+      use_uie: false
+    scale_shift:
+      enable: true
+      scale_type: rms_forces
+      shift_type: null
+      scale_trainable: false
+      shift_trainable: false
+      all_atoms: false
+      scale_zbl: false
+    short_range:
+      zbl:
+        enable: false
+        trainable: false
+    long_range:
+      les:
+        enable: false
+        les_arguments:
+          n_layers: 3
+          n_hidden:
+          - 32
+          - 16
+          add_linear_nn: true
+          output_scaling_factor: 0.1
+          sigma: 1.0
+          dl: 2.0
+          remove_self_interaction: true
+          remove_mean: true
+          epsilon_factor: 1.0
+          use_atomwise: false
+          compute_bec: false
+          bec_output_index: null
+    universal_embedding:
+      charges:
+        enable: false
+      total_charge:
+        enable: false
+      spin_multiplicity:
+        enable: false
+        num_embeddings: 3
+      electric_field:
+        enable: false
+        normalizer: 1.0
+      magnetic_field:
+        enable: false
+        normalizer: 1.0
+      initial_noncollinear_magmoms:
+        enable: false
+        normalizer: 1.0
+    special:
+      charges:
+        method: lagrangian
+      hessian:
+        num_samples: 2
+    dropout:
+      use_first_dropout: false
+      stochastic_depth: 0.0

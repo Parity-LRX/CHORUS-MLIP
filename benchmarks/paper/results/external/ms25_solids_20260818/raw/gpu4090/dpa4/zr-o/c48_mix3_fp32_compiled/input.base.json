@@ -1,0 +1,100 @@
+{
+  "_comment": "DPA4-Mini on the matched MD22 Buckyball split; official master at 286f12d3e3cb69eefb33d4716267f6457dffa80b.",
+  "model": {
+    "type": "dpa4",
+    "type_map": ["H", "C"],
+    "descriptor": {
+      "rcut": 6.0,
+      "channels": 32,
+      "n_radial": 16,
+      "edge_norm": false,
+      "use_env_seed": true,
+      "lmax": 2,
+      "mmax": 1,
+      "n_blocks": 2,
+      "mixing_layers": 3,
+      "radial_so2_mode": "degree_channel",
+      "radial_so2_rank": 1,
+      "n_focus": 1,
+      "focus_dim": 0,
+      "n_atten_head": 1,
+      "message_node_so3": true,
+      "ffn_neurons": 0,
+      "ffn_so3_grid": true,
+      "grid_mlp": false,
+      "grid_branch": [0, 0, 1],
+      "ffn_blocks": 1,
+      "so3_readout": "mlp",
+      "use_amp": true,
+      "precision": "float32",
+      "seed": 20260616
+    },
+    "fitting_net": {
+      "neuron": [0],
+      "precision": "float32",
+      "seed": 20260616
+    },
+    "use_compile": false,
+    "enable_tf32": false
+  },
+  "learning_rate": {
+    "type": "wsd",
+    "start_lr": 0.00045,
+    "stop_lr": 0.000001,
+    "warmup_ratio": 0.003,
+    "warmup_start_factor": 0.2,
+    "decay_phase_ratio": 0.65,
+    "decay_type": "cosine"
+  },
+  "loss": {
+    "type": "ener",
+    "loss_func": "mse",
+    "f_use_norm": false,
+    "start_pref_e": 1,
+    "limit_pref_e": 1,
+    "start_pref_f": 100,
+    "limit_pref_f": 100,
+    "start_pref_v": 0,
+    "limit_pref_v": 0
+  },
+  "optimizer": {
+    "type": "HybridMuon",
+    "weight_decay": 0.001
+  },
+  "training": {
+    "stat_file": "./dpa4.hdf5",
+    "stat_file_mode": "update",
+    "training_data": {
+      "systems": ["/home/ylzhang/lrx/md22/dpa4_buckyball_matched_20260724/train"],
+      "batch_size": 4
+    },
+    "validation_data": {
+      "systems": ["/home/ylzhang/lrx/md22/dpa4_buckyball_matched_20260724/val"],
+      "batch_size": 4,
+      "numb_batch": 150
+    },
+    "numb_steps": 45000,
+    "gradient_max_norm": 5.0,
+    "save_freq": 1000,
+    "save_dir": "ckpt",
+    "max_ckpt_keep": 3,
+    "enable_ema": true,
+    "ema_decay": 0.999,
+    "ema_ckpt_keep": 3,
+    "disp_file": "lcurve.out",
+    "disp_freq": 200,
+    "disp_avg": true,
+    "disp_training": true,
+    "time_training": true,
+    "tensorboard": false,
+    "enable_profiler": false,
+    "zero_stage": 1,
+    "seed": 20260616
+  },
+  "validating": {
+    "compiled_infer": false,
+    "tf32_infer": false,
+    "amp_infer": false,
+    "save_best_dir": "ckpt_best"
+  }
+}

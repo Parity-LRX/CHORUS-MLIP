@@ -1,0 +1,23 @@
+r_max: 6.0
+dataset: ASEDataset
+dataset_root: /public/home/sps-xia/rxlin/chorus_solid_data/ms25_20260818/prepared/mgo-2x2/set1/nequip_ase_cache
+dataset_file_name: /public/home/sps-xia/rxlin/chorus_solid_data/ms25_20260818/prepared/mgo-2x2/set1/extxyz/val.extxyz
+dataset_ase_args:
+  format: extxyz
+chemical_symbols:
+- O
+- Mg
+metrics_components:
+- - forces
+  - mae
+- - forces
+  - rmse
+- - total_energy
+  - mae
+  - PerAtom: true
+- - total_energy
+  - rmse
+  - PerAtom: true
+default_dtype: float32
+model_dtype: float32
+allow_tf32: false

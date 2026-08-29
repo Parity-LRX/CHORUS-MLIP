@@ -1,0 +1,62 @@
+{
+  "backend": "MakeFX/Inductor; product=cueq; conv-TP=cueq",
+  "checkpoint": "/public/home/sps-xia/rxlin/a100_scaling_assets_20260804/persistent_t1x.pth",
+  "configuration": "loaded paper checkpoint; C128 L2 correlation3 2 interactions persistent-r16",
+  "engine": "chorus-persistent-r16",
+  "graph_build_in_timing": false,
+  "ictc_conv_tp_backend": "cueq",
+  "ictc_product_backend": "cueq",
+  "parameters": 1029967,
+  "protocol": {
+    "dtype": "float32",
+    "gpu": "NVIDIA A100-SXM4-40GB",
+    "steady_state_excludes_compile_and_prepare": true,
+    "target_neighbors_per_atom": 32,
+    "tasks": {
+      "inference": "energy plus conservative forces",
+      "train": "energy+force loss, backward, optimizer update"
+    },
+    "tf32": false,
+    "torch": "2.7.1+cu128"
+  },
+  "rows": [
+    {
+      "atoms_per_second": 11510.037607391336,
+      "compile_s": 44.908364401198924,
+      "engine": "chorus-persistent-r16",
+      "mean_ms": 11.232948986192545,
+      "median_ms": 11.120728217065334,
+      "natoms": 128,
+      "nedges": 4096,
+      "neighbors_per_atom": 32.0,
+      "p10_ms": 11.06907892972231,
+      "p90_ms": 11.556901037693024,
+      "parameters": 1029967,
+      "peak_memory_gib": 0.39732933044433594,
+      "prepare_s": 44.9137086160481,
+      "status": "ok",
+      "steps_per_second": 89.92216880774481,
+      "task": "inference",
+      "warmup_s": 0.03691453393548727
+    },
+    {
+      "atoms_per_second": 3920.9945106586056,
+      "compile_s": 65.24920416157693,
+      "engine": "chorus-persistent-r16",
+      "mean_ms": 32.64477918855846,
+      "median_ms": 32.64477918855846,
+      "natoms": 128,
+      "nedges": 4096,
+      "neighbors_per_atom": 32.0,
+      "p10_ms": 32.64477918855846,
+      "p90_ms": 32.64477918855846,
+      "parameters": 1029967,
+      "peak_memory_gib": 1.1425108909606934,
+      "prepare_s": 0.001974208280444145,
+      "status": "ok",
+      "steps_per_second": 30.632769614520356,
+      "task": "train",
+      "warmup_s": 65.29092220123857
+    }
+  ]
+}

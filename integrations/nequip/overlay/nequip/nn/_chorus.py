@@ -88,6 +88,7 @@ class HermitianDensityResidual(torch.nn.Module):
         hidden_channels: int = 32,
         avg_num_neighbors: Optional[float] = None,
         scale_init: float = 0.0,
+        density_pairs: str = "full",
     ) -> None:
         super().__init__()
         self.irreps_message = o3.Irreps(irreps_message).simplify()
@@ -95,12 +96,18 @@ class HermitianDensityResidual(torch.nn.Module):
         self.rank = int(rank)
         self.num_elements = int(num_elements)
         self.avg_num_neighbors = avg_num_neighbors
+        self.density_pairs = str(density_pairs).lower()
         if self.rank <= 0:
             raise ValueError("CHORUS rank must be positive")
         if self.num_elements <= 0:
             raise ValueError("CHORUS num_elements must be positive")
         if int(edge_invariant_dim) <= 0:
             raise ValueError("edge_invariant_dim must be positive")
+        if self.density_pairs not in {"full", "diagonal", "aligned"}:
+            raise ValueError(
+                "density_pairs must be 'full', 'diagonal', or 'aligned', "
+                f"got {self.density_pairs!r}"
+            )
 
         message_multiplicities = _validate_natural_layout(self.irreps_message)
         self.lmax = max(message_multiplicities)
@@ -128,8 +135,26 @@ class HermitianDensityResidual(torch.nn.Module):
             torch.nn.SiLU(),
             torch.nn.Linear(int(hidden_channels), 2),
         )
-        torch.nn.init.zeros_(self.phase_network[-1].weight)
-        torch.nn.init.zeros_(self.phase_network[-1].bias)
+        phase_output = self.phase_network[-1]
+        if not isinstance(phase_output, torch.nn.Linear):
+            raise RuntimeError("CHORUS phase network must end in Linear")
+        # Start the positive amplitude at one, but do not initialise every
+        # edge at exactly the same phase.  At Delta theta = 0 the Hermitian
+        # kernel has zero first derivative with respect to phase, so a
+        # zero-initialised phase row is an absorbing aligned solution: Full
+        # becomes bitwise equivalent to the aligned control and the phase head
+        # can never learn.  A small MACE-style random phase row breaks only
+        # that optimisation symmetry while keeping the initial lift close to
+        # the unit-amplitude, phase-aligned state.
+        with torch.no_grad():
+            phase_output.weight[0].zero_()
+            phase_output.bias[0].zero_()
+            torch.nn.init.normal_(
+                phase_output.weight[1],
+                mean=0.0,
+                std=0.1 / math.sqrt(float(hidden_channels)),
+            )
+            phase_output.bias[1].zero_()
 
         # A path is (l1, l2, L, component, cg_buffer_name).  l1 <= l2 avoids
         # storing both Hermitian-conjugate blocks.  For natural parity, the
@@ -208,6 +233,12 @@ class HermitianDensityResidual(torch.nn.Module):
         amplitude_raw, phase_raw = self.phase_network(context).unbind(-1)
         amplitude = torch.nn.functional.softplus(amplitude_raw) / math.log(2.0)
         phase = math.pi * torch.tanh(phase_raw)
+        if self.density_pairs == "aligned":
+            # Retain the complete Hermitian j,k closure and the identical
+            # parameter/state schema, while removing relative phase during
+            # training.  Multiplication by zero keeps the inactive head in the
+            # graph and makes the causal contrast auditable from checkpoints.
+            phase = phase * 0.0
         charged = self.edge_projection(edge_messages)
         return (
             charged * (amplitude * torch.cos(phase)).unsqueeze(-1),
@@ -254,6 +285,14 @@ class HermitianDensityResidual(torch.nn.Module):
     ) -> torch.Tensor:
         """Contract a real U(1) doublet into neutral real irreps."""
         density = self.density_blocks(charged_real, charged_imag)
+        return self.contract_density(density, node_attrs=node_attrs)
+
+    def contract_density(
+        self,
+        density: Dict[int, torch.Tensor],
+        node_attrs: Optional[torch.Tensor] = None,
+    ) -> torch.Tensor:
+        """Map precomputed neutral density blocks to the message layout."""
         output_blocks: Dict[int, torch.Tensor] = {}
         for out_l, block in density.items():
             weight = self.output_weights[str(out_l)]
@@ -284,6 +323,16 @@ class HermitianDensityResidual(torch.nn.Module):
         edge_dst: torch.Tensor,
         num_nodes: int,
     ) -> torch.Tensor:
+        if self.density_pairs == "diagonal":
+            return self.diagonal_from_edges(
+                edge_messages=edge_messages,
+                node_features=node_features,
+                node_attrs=node_attrs,
+                edge_invariants=edge_invariants,
+                edge_src=edge_src,
+                edge_dst=edge_dst,
+                num_nodes=num_nodes,
+            )
         charged_real, charged_imag = self.aggregate_charged(
             edge_messages=edge_messages,
             node_features=node_features,
@@ -297,6 +346,49 @@ class HermitianDensityResidual(torch.nn.Module):
             charged_imag,
             node_attrs=node_attrs,
         )
+
+    def diagonal_from_edges(
+        self,
+        edge_messages: torch.Tensor,
+        node_features: torch.Tensor,
+        node_attrs: torch.Tensor,
+        edge_invariants: torch.Tensor,
+        edge_src: torch.Tensor,
+        edge_dst: torch.Tensor,
+        num_nodes: int,
+    ) -> torch.Tensor:
+        """Build only the same-edge ``j=k`` Hermitian self-density.
+
+        Neutral edge densities are formed before neighbour reduction.  This
+        removes every ``j!=k`` term while retaining the same projections,
+        phase/amplitude network, CG paths, output maps, and parameter count as
+        the full operator.
+        """
+        charged_real, charged_imag = self.charged_edge_messages(
+            edge_messages,
+            node_features,
+            edge_invariants,
+            edge_src,
+            edge_dst,
+        )
+        normalizer = 1.0
+        if self.avg_num_neighbors is not None:
+            normalizer = float(self.avg_num_neighbors) ** 0.5
+        density_edges = self.density_blocks(
+            charged_real / normalizer,
+            charged_imag / normalizer,
+        )
+        density_nodes = {
+            out_l: scatter(
+                block,
+                edge_dst,
+                dim=0,
+                dim_size=int(num_nodes),
+            )
+            for out_l, block in density_edges.items()
+        }
+        neutral = self.contract_density(density_nodes, node_attrs=node_attrs)
+        return neutral / normalizer
 
     def aggregate_charged(
         self,

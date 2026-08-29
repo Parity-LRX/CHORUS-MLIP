@@ -329,3 +329,13 @@ def main():
 
 if __name__ == "__main__":
     main()
+def test_checkpoint_selection_metric_uses_predeclared_validation_scalar():
+    trainer = object.__new__(ForceTrainer)
+    metrics = {"total_loss": 3.0, "force_mae": 0.25}
+
+    trainer.checkpoint_selection_metric = "loss"
+    assert trainer._checkpoint_selection_value(metrics) == 3.0
+
+    trainer.checkpoint_selection_metric = "force_mae"
+    assert trainer._checkpoint_selection_value(metrics) == 0.25
+

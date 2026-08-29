@@ -1,0 +1,9 @@
+{
+  "source_checkpoint": "/public/home/sps-xia/rxlin/chorus_solid_runs/ms25_20260818/mace_ictc_family/zr-o/phaseoff/checkpoints/ms25_zr-o_phaseoff_c128_l2_corr3_r16_final.e157s39342.pth",
+  "augmented_checkpoint": "/public/home/sps-xia/rxlin/chorus_solid_runs/ms25_20260818/mace_ictc_family/zr-o/phaseoff/train_only_energy_calibration/phaseoff.zero_correction_source.pth",
+  "source_sha256": "6a0a8ea08454ec59f4f198bcf67ba2b3193ee010325b370e5834a73490550d7c",
+  "augmented_sha256": "68c97fff7c088e88dbc45db46da663b91142fbe7abb520bc07f13d1e01a39f4e",
+  "only_added_state_tensor": "element_energy_correction",
+  "initial_value": "zeros",
+  "num_elements": 2
+}

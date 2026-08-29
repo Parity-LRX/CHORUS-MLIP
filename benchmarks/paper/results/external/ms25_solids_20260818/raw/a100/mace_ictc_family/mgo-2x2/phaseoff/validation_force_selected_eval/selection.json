@@ -1,0 +1,36 @@
+{
+  "selection_rule": "minimum full-validation Force MAE; earliest step breaks ties",
+  "test_used_for_selection": false,
+  "selected_checkpoint": "/public/home/sps-xia/rxlin/chorus_solid_runs/ms25_20260818/mace_ictc_family/mgo-2x2/phaseoff/checkpoints/ms25_mgo-2x2_phaseoff_c128_l2_corr3_r16_final.e168s42250.pth",
+  "selected_epoch": 168,
+  "selected_step": 42250,
+  "selected_validation": {
+    "val_energy_mae": 0.00019,
+    "val_energy_rmse": 0.000195,
+    "val_force_mae": 0.003946,
+    "val_force_rmse": 0.00511
+  },
+  "independent_validation_envelopes": {
+    "force_mae": {
+      "epoch": 168,
+      "step": 42250,
+      "simultaneous_metrics": {
+        "val_energy_mae": 0.00019,
+        "val_energy_rmse": 0.000195,
+        "val_force_mae": 0.003946,
+        "val_force_rmse": 0.00511
+      }
+    },
+    "energy_mae": {
+      "epoch": 107,
+      "step": 27000,
+      "simultaneous_metrics": {
+        "val_energy_mae": 3e-05,
+        "val_energy_rmse": 3.7e-05,
+        "val_force_mae": 0.004139,
+        "val_force_rmse": 0.005327
+      }
+    }
+  },
+  "validation_checkpoint_count": 180
+}

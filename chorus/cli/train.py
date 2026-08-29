@@ -700,10 +700,11 @@ def build_arg_parser() -> argparse.ArgumentParser:
     ap.add_argument(
         "--phase-coefficient",
         default="polar",
-        choices=["polar", "positive", "signed", "cartesian"],
+        choices=["polar", "aligned", "positive", "signed", "cartesian"],
         help=(
-            "Parameterization of the two-component edge coefficient: polar complex "
-            "phase, positive real gate, signed real gate, or unconstrained Cartesian pair."
+            "Parameterization of the two-component edge coefficient: learned polar "
+            "phase, phase-aligned positive amplitude, positive real gate, signed real "
+            "gate, or unconstrained Cartesian pair."
         ),
     )
     ap.add_argument(
@@ -1050,6 +1051,16 @@ def build_arg_parser() -> argparse.ArgumentParser:
     ap.add_argument("--ddp-find-unused-parameters", action="store_true",
                     help="Pass find_unused_parameters=True to DistributedDataParallel.")
     ap.add_argument("--checkpoint", default="model.pth")
+    ap.add_argument(
+        "--checkpoint-selection-metric",
+        default="loss",
+        choices=["loss", "force_mae"],
+        help=(
+            "Validation scalar used to update --checkpoint. The default keeps "
+            "historical minimum-loss behaviour; force_mae saves the minimum "
+            "validation Force-MAE state."
+        ),
+    )
     ap.add_argument("--resume-checkpoint", default=None,
                     help="Load model weights from a previous MACE-ICTC checkpoint before training.")
     ap.add_argument("--resume-training-state", action="store_true",
@@ -1620,6 +1631,7 @@ def main(argv=None):
         ),
         makefx_max_slots=args.makefx_max_slots,
         train_sampler=sampler, checkpoint_path=args.checkpoint, log_interval=args.log_interval,
+        checkpoint_selection_metric=args.checkpoint_selection_metric,
         evals_per_epoch=args.evals_per_epoch,
         validation_interval_steps=args.validation_interval_steps,
         keep_checkpoints=args.keep_checkpoints,

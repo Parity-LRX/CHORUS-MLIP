@@ -1,0 +1,83 @@
+{
+  "description": "Two-interaction angular-order controls for MACE-ICTC C128 and NequIP-SH C64, with CHORUS rank 16.",
+  "selection_rule": "minimum validation Force MAE; test never selects",
+  "units": {
+    "energy_mae": "meV/atom",
+    "force_mae": "meV/Angstrom",
+    "parameters": "trainable parameters"
+  },
+  "core_test_force_mae": {
+    "MACE-ICTC": {
+      "lmax1": {
+        "Off": [130.028, 226.090, 176.344, 14.248],
+        "Final": [129.635, 230.027, 161.228, 13.059],
+        "Persistent": [122.365, 215.527, 158.204, 12.422]
+      },
+      "lmax2": {
+        "Off": [91.888, 166.928, 168.271, 7.355],
+        "Final": [82.513, 159.062, 147.830, 6.724],
+        "Persistent": [82.342, 156.332, 146.185, 6.297]
+      },
+      "lmax3": {
+        "Off": [81.344, 163.502, 148.233, 6.188],
+        "Final": [75.191, 156.760, 169.149, 5.574],
+        "Persistent": [69.634, 154.626, 157.576, 5.248]
+      }
+    },
+    "NequIP-SH": {
+      "lmax1": {
+        "Off": [151.774, 318.146, 211.996, 35.966],
+        "Final": [140.870, 300.638, 197.414, 24.169],
+        "Persistent": [138.785, 276.227, 217.015, 21.588]
+      },
+      "lmax2": {
+        "Off": [146.255, 297.398, 202.187, 26.853],
+        "Final": [109.687, 214.547, 163.476, 12.970],
+        "Persistent": [98.052, 189.441, 182.262, 10.707]
+      },
+      "lmax3": {
+        "Off": [142.083, 284.277, 190.374, 23.515],
+        "Final": [103.560, 219.306, 145.553, 10.776],
+        "Persistent": [87.836, 181.252, 165.904, 8.213]
+      }
+    }
+  },
+  "core_endpoint_order": [
+    "Transition1x-50k",
+    "xxMD MAL",
+    "xxMD STI",
+    "MD22 Buckyball"
+  ],
+  "parameter_ranges": {
+    "MACE-ICTC": {
+      "lmax1": {"Off": [341696, 411072], "Final": [396996, 482756], "Persistent": [517834, 619978]},
+      "lmax2": {"Off": [578000, 653000], "Final": [672000, 792000], "Persistent": [865000, 1030000]},
+      "lmax3": {"Off": [943168, 1029696], "Final": [1097160, 1277896], "Persistent": [1382228, 1657172]}
+    },
+    "NequIP-SH": {
+      "lmax1": {"Off": [176296, 217384], "Final": [205324, 262796], "Persistent": [221042, 286706]},
+      "lmax2": {"Off": [324000, 389000], "Final": [432000, 581000], "Persistent": [463000, 635000]},
+      "lmax3": {"Off": [540840, 631080], "Final": [861710, 1232526], "Persistent": [919416, 1337336]}
+    }
+  },
+  "three_bpa_force_mae": {
+    "temperature_order_K": [300, 600, 1200],
+    "MACE-ICTC": {
+      "lmax1": {"Off": [17.017, 42.233, 167.921], "Final": [15.335, 38.427, 154.141], "Persistent": [15.347, 38.291, 152.636]},
+      "lmax2": {"Off": [9.455, 25.192, 119.038], "Final": [9.096, 24.216, 119.618], "Persistent": [8.457, 21.982, 120.166]},
+      "lmax3": {"Off": [7.790, 19.726, 80.559], "Final": [7.860, 21.792, 127.425], "Persistent": [7.234, 22.230, 155.853]}
+    },
+    "NequIP-SH": {
+      "lmax1": {"Off": [37.226, 64.493, 131.634], "Final": [25.235, 46.104, 98.326], "Persistent": [22.390, 42.024, 95.993]},
+      "lmax2": {"Off": [29.931, 52.566, 108.772], "Final": [16.276, 30.463, 64.457], "Persistent": [13.796, 26.452, 59.483]},
+      "lmax3": {"Off": [25.447, 45.149, 94.300], "Final": [12.884, 24.957, 56.255], "Persistent": [11.013, 21.699, 50.020]}
+    }
+  },
+  "provenance": [
+    "4090:/home/ylzhang/chorus_runs/table4_lmax_controls_c128_2layer_r16_20260813",
+    "A100:/public/home/sps-xia/rxlin/chorus_table4_lmax_controls_c128_2layer_r16_20260814",
+    "4090:/home/ylzhang/chorus_runs/nequip_lmax_controls_c64_r16_20260815/L1",
+    "A100:/public/home/sps-xia/rxlin/nequip_chorus_runs/lmax_controls_c64_r16_20260815/L3",
+    "4090:/home/ylzhang/chorus_runs/nequip_lmax_controls_c64_r16_20260815/L3/3bpa/e3nn_chorus_on_persistent"
+  ]
+}

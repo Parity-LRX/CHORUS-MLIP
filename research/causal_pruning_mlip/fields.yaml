@@ -1,0 +1,134 @@
+fields:
+  bibliographic_record:
+    type: object
+    required: true
+    description: 标题、作者、年份、场合、DOI/arXiv 版本和开放全文链接
+  evidence_tier:
+    type: enum
+    values: [journal, conference, workshop, preprint, poster]
+    description: 区分证据成熟度，不能把预印本和同行评审期刊视为同级
+  full_text_version_inspected:
+    type: string
+    description: 实际核查的主论文 PDF/HTML 版本；补充材料单独标记
+  causal_semantics_level:
+    type: enum
+    values:
+      - real_world_scm
+      - deterministic_computational_scm
+      - randomized_component_intervention
+      - intervention_distribution_with_associational_score
+      - associational_only
+    description: 明确“因果”指模型计算机制还是现实数据生成机制
+  treatment_and_dependency_closure:
+    type: string
+    description: 被干预对象及必须同步删除的残差维度、irrep bundle、完整 m 分量、共轭/Hermitian 对和下游张量维度
+  intervention_reference_value:
+    type: string
+    description: 置零、均值、最优常数、仿射机制、随机替换或路径切断
+  assignment_design:
+    type: string
+    description: 单组件 knockout、随机掩码、部分因子设计、coalition 或自适应实验
+  estimand_definition:
+    type: string
+    description: 总效应、直接效应、路径效应、条件效应、联合效应或边际效应
+  effect_outcome_metric:
+    type: array
+    description: 分类损失或 MLIP 的能量、力、应力、等变误差、MD 失稳和实测延迟
+  identification_assumptions:
+    type: array
+    description: 替换语义、一致性、无干扰、效应可加、局部二阶或对角曲率等假设
+  interaction_and_order_effects:
+    type: string
+    description: 是否建模协同/拮抗、非对角曲率和删除顺序依赖
+  calibration_distribution:
+    type: string
+    description: 真实结构、MD 帧、合成噪声或 OOD；记录元素、相、温压、密度、缺陷和稀有环境覆盖
+  statistical_protocol:
+    type: string
+    description: 样本数、种子、配对设计、置信区间、多重检验与随机负对照
+  recovery_regime_and_information_budget:
+    type: string
+    description: 零恢复、折叠、原标签微调、rewinding 或从头训练，以及标签量、epoch 和算力
+  pre_vs_post_recovery_metrics:
+    type: object
+    description: 分开报告裁剪即时损伤和恢复后结果，避免微调饱和掩盖评分差异
+  distillation_status:
+    type: enum
+    values: [forbidden, not_used, optional, required]
+    description: 教师 logits/隐藏状态与原始标签必须分开记录
+  symmetry_admissibility:
+    type: string
+    description: 群、奇偶性、irrep、多重度、完整 m 分量、张量积 selection rule 与 Hermitian/共轭闭包
+  equivariance_error_by_stage:
+    type: object
+    description: 原模型、掩码模型、物理抽取模型和恢复后模型的数值等变误差
+  receptive_field_and_body_order:
+    type: string
+    description: 消息层数、cutoff、有效感受野、l_max、相关阶、体阶和三元组变化
+  deployment_realization:
+    type: enum
+    values: [mask_only, sparse_tensor, physically_compacted_dense, operator_replacement, specialized_kernel]
+    description: 只有物理压紧或有效稀疏/专用核通常能兑现稳定加速
+  end_to_end_efficiency_protocol:
+    type: string
+    description: 包含构图、消息传递、能量、力自动微分、应力和通信的计时边界
+  hardware_and_workload_context:
+    type: string
+    description: CPU/GPU、精度、后端、原子数、邻居数、批量、warm-up 和峰值内存
+  rollout_validation:
+    type: string
+    description: 系综、温压、步长、时长、重复、能量漂移、RDF/ADF、扩散和失败率
+  matched_compact_architecture_baseline:
+    type: string
+    description: 同参数、延迟、深度、秩或 irrep 宽度的直接小模型
+  backend_and_precision_baseline:
+    type: string
+    description: e3nn/cuEquivariance/OpenEquivariance、FP32/BF16/FP16、融合核和编译优化
+  operator_equivalence_type:
+    type: enum
+    values: [strict_algebraic_equivalent, numerical_kernel_rewrite, approximate_equivariant, empirical_architecture_replacement]
+    description: 区分精确代数重写、仅改变数值执行顺序、近似等变和经验性替代架构
+  operation_cost_breakdown:
+    type: object
+    description: TP、CG、球谐、radial、scatter/gather、构图、能量到力/应力导数、通信和同步的分项耗时
+  derivative_path_cost:
+    type: object
+    description: energy-only、force backward、stress、Hessian 和训练 double-backward 的独立成本及是否融合
+  algorithmic_vs_implementation_speedup:
+    type: object
+    description: 将架构降阶、代数重写、kernel/backend、编译器和并行运行时收益分开归因
+  compile_and_break_even:
+    type: object
+    description: JIT/AOT、稀疏 CG 预处理、模型转换时间，以及需要多少结构或 MD steps 才回本
+  active_vs_total_parameters:
+    type: object
+    description: 总参数、活跃参数、路由参数、真实算子/FLOPs、显存和模型文件大小
+  conservative_vs_direct_force:
+    type: enum
+    values: [energy_gradient, direct_force, hybrid]
+    description: 记录力路径，并配套 curl、NVE 漂移、应力一致性与 Newton 第三定律检查
+  precision_policy_by_representation:
+    type: string
+    description: 不同 irrep、线性层、TP、累加、energy reduction 和导数分别采用的精度
+  dynamic_scope_and_refresh:
+    type: string
+    description: 模型级、species 级、原子级、edge 级或 MD-step 级；记录 gate/detector 更新频率
+  cutoff_and_graph_continuity:
+    type: string
+    description: cutoff envelope、top-k/阈值跨越、动态图和路由变化时的能量/力连续性
+  partition_and_communication:
+    type: object
+    description: 图/空间分区、halo hop、边界重复、每层通信量、同步次数和重分区成本
+  causal_discovery_overhead:
+    type: string
+    description: 干预次数、前后向次数、校准数据与相对部署节省的 break-even 点
+  CHORUS_dependency_map:
+    type: string
+    description: 低秩因子、irrep multiplicity、Final/Persistent、Hermitian 跨邻居项、残差和 kernel shape 的联动
+  main_limitations:
+    type: array
+    required: true
+    description: 论文没有证明什么，以及向 CHORUS/MLIP 外推时的主要失败模式
+  reproducibility_assets:
+    type: object
+    description: 代码、配置、checkpoint、数据、随机种子、硬件脚本和许可证

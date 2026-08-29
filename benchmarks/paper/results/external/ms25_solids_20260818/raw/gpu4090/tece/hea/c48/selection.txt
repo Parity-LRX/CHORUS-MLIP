@@ -1,0 +1,4 @@
+checkpoints_epoch/TECE-175-44000.ckpt
+val_forces_mae=7.616858959197998
+tensorboard_step=43999
+checkpoint_step=44000

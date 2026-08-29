@@ -37,6 +37,7 @@ def _write_system(
     destination: Path,
     numbers: tuple[int, ...],
     type_map: list[int],
+    periodic: bool,
 ) -> dict[str, object]:
     set_dir = destination / "set.000"
     set_dir.mkdir(parents=True)
@@ -79,7 +80,8 @@ def _write_system(
         "\n".join(chemical_symbols[number] for number in type_map) + "\n",
         encoding="utf-8",
     )
-    (destination / "nopbc").touch()
+    if not periodic:
+        (destination / "nopbc").touch()
     return {
         "frames": n_frames,
         "atoms": n_atoms,
@@ -90,7 +92,7 @@ def _write_system(
 
 
 def _convert_split(
-    source: Path, destination: Path, type_map: list[int]
+    source: Path, destination: Path, type_map: list[int], periodic: bool
 ) -> dict[str, object]:
     with h5py.File(source, "r") as handle:
         keys = sorted(handle.keys(), key=_sample_key)
@@ -111,6 +113,7 @@ def _convert_split(
                 destination=destination / name,
                 numbers=numbers,
                 type_map=type_map,
+                periodic=periodic,
             )
 
     return {
@@ -127,6 +130,12 @@ def main() -> None:
     parser.add_argument("--output-dir", type=Path, required=True)
     parser.add_argument("--type-map", default="1,6,7,8")
     parser.add_argument("--splits", default="train,val,test")
+    parser.add_argument(
+        "--periodic",
+        action=argparse.BooleanOptionalAction,
+        default=False,
+        help="retain periodic boxes; default keeps the historical molecular nopbc output",
+    )
     args = parser.parse_args()
 
     if (args.output_dir / "DONE").is_file():
@@ -147,6 +156,7 @@ def main() -> None:
         "format": "deepmd/npy grouped fixed-topology systems",
         "grouping_only": True,
         "samples_reassigned_between_splits": False,
+        "periodic": args.periodic,
         "type_map_atomic_numbers": type_map,
         "type_map_symbols": [chemical_symbols[number] for number in type_map],
         "splits": {},
@@ -156,6 +166,7 @@ def main() -> None:
             args.source_dir / f"processed_{split}.h5",
             work_dir / split,
             type_map,
+            args.periodic,
         )
 
     (work_dir / "conversion_manifest.json").write_text(

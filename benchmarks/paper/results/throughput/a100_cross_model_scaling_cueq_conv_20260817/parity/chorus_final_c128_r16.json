@@ -1,0 +1,69 @@
+{
+  "candidates": {
+    "conv_tp_only": {
+      "backend": {
+        "conv_tp": "cueq",
+        "product": "checkpoint"
+      },
+      "energy": {
+        "max_abs": 9.5367431640625e-07,
+        "max_rel": 1.37424931381247e-05,
+        "rms_abs": 3.3320009151793784e-07,
+        "rms_relative": 1.193511565134031e-07
+      },
+      "forces": {
+        "max_abs": 2.2649765014648438e-06,
+        "max_rel": 0.0019109497079625726,
+        "rms_abs": 6.936240311006259e-07,
+        "rms_relative": 1.100267354559037e-06
+      }
+    },
+    "dual_cueq": {
+      "backend": {
+        "conv_tp": "cueq",
+        "product": "cueq"
+      },
+      "energy": {
+        "max_abs": 9.5367431640625e-07,
+        "max_rel": 1.37424931381247e-05,
+        "rms_abs": 3.3453022751928074e-07,
+        "rms_relative": 1.198276038394397e-07
+      },
+      "forces": {
+        "max_abs": 2.4940818548202515e-06,
+        "max_rel": 0.0010334980906918645,
+        "rms_abs": 6.628139317399473e-07,
+        "rms_relative": 1.0513945198908914e-06
+      }
+    },
+    "product_only": {
+      "backend": {
+        "conv_tp": "checkpoint",
+        "product": "cueq"
+      },
+      "energy": {
+        "max_abs": 9.5367431640625e-07,
+        "max_rel": 1.37424931381247e-05,
+        "rms_abs": 3.5824820088237175e-07,
+        "rms_relative": 1.2832330753553833e-07
+      },
+      "forces": {
+        "max_abs": 2.3460015654563904e-06,
+        "max_rel": 0.0019453616114333272,
+        "rms_abs": 6.287683049777115e-07,
+        "rms_relative": 9.973894066206412e-07
+      }
+    }
+  },
+  "checkpoint": "/public/home/sps-xia/rxlin/mace_ictc_nequip_matched_checkpoints/chorus_final_r16.pth",
+  "cutoff": 5.0,
+  "degree": 32,
+  "dtype": "float32",
+  "label": "chorus_final_c128_r16",
+  "natoms": 128,
+  "reference_backend": {
+    "conv_tp": "checkpoint",
+    "product": "checkpoint"
+  },
+  "tf32": false
+}

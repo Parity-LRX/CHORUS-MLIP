@@ -1,0 +1,26 @@
+- misc.project_name=TECE_MS25_zr-o_C48_Seed20260616
+- misc.global_seed=20260616
+- misc.allow_tf32=false
+- dataset.split_seed=20260616
+- dataset.train_file=/home/ylzhang/chorus_data/ms25_20260818/prepared/zr-o/set1/extxyz/train.extxyz
+- dataset.valid_file=/home/ylzhang/chorus_data/ms25_20260818/prepared/zr-o/set1/extxyz/val.extxyz
+- dataset.keys.energy_key=energy
+- dataset.keys.forces_key=forces
+- dataset.train_dataloader.batch_size=4
+- dataset.valid_dataloader.batch_size=4
+- trainer.max_steps=45000
+- trainer.max_epochs=180
+- scheduler.T_max=45000
+- model.config.cutoff=6.0
+- model.config.fidelity.0.name=MS25
+- 'model.config.fidelity.0.atomic_energy={8: -9.6827016195893609, 40: -8.0043802111878062}'
+- model.config.num_channel=48
+- model.config.mmax=2
+- model.config.Lmax=2
+- model.config.lmax=2
+- model.config.num_layers=2
+- model.config.product_basis.correlation=3
+- synth_metric.monitor_metric_name=val/forces_mae
+- callbacks.checkpoint_epoch.monitor=val/forces_mae
+- callbacks.checkpoint_epoch.save_top_k=-1
+- ~callbacks.ema

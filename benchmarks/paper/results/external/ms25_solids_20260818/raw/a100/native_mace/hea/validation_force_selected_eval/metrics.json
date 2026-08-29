@@ -1,0 +1,72 @@
+{
+  "selection_rule": "minimum full-validation Force MAE; test never selects",
+  "selected_epoch": 179,
+  "selected_checkpoint": "/public/home/sps-xia/rxlin/chorus_solid_runs/ms25_20260818/native_mace/hea/checkpoints/native_mace_ms25_hea_run-20260616_epoch-179.pt",
+  "validation_checkpoint_count": 180,
+  "validation_log_metrics": {
+    "loss": 0.020392147824168205,
+    "mae_e": 1.5907630920410156,
+    "mae_e_per_atom": 0.014729288406670094,
+    "rmse_e": 1.9686952829360962,
+    "rmse_e_per_atom": 0.01822865940630436,
+    "q95_e": 3.581137180328369,
+    "mae_f": 0.02159297652542591,
+    "rel_mae_f": 3.3680784702301025,
+    "rmse_f": 0.028501983731985092,
+    "rel_rmse_f": 3.340391120684907,
+    "q95_f": 0.05664568394422531,
+    "time": 1.010227918624878,
+    "mode": "eval",
+    "epoch": 179,
+    "head": "Default"
+  },
+  "independent_validation_envelopes": {
+    "force_mae": {
+      "loss": 0.020392147824168205,
+      "mae_e": 1.5907630920410156,
+      "mae_e_per_atom": 0.014729288406670094,
+      "rmse_e": 1.9686952829360962,
+      "rmse_e_per_atom": 0.01822865940630436,
+      "q95_e": 3.581137180328369,
+      "mae_f": 0.02159297652542591,
+      "rel_mae_f": 3.3680784702301025,
+      "rmse_f": 0.028501983731985092,
+      "rel_rmse_f": 3.340391120684907,
+      "q95_f": 0.05664568394422531,
+      "time": 1.010227918624878,
+      "mode": "eval",
+      "epoch": 179,
+      "head": "Default"
+    },
+    "energy_mae": {
+      "loss": 0.055450402200222015,
+      "mae_e": 1.3439632654190063,
+      "mae_e_per_atom": 0.012444104067981243,
+      "rmse_e": 1.7221003770828247,
+      "rmse_e_per_atom": 0.015945374965667725,
+      "q95_e": 3.0582275390625,
+      "mae_f": 0.03571849316358566,
+      "rel_mae_f": 5.571380615234375,
+      "rmse_f": 0.047068819403648376,
+      "rel_rmse_f": 5.516397310290581,
+      "q95_f": 0.09257872402667999,
+      "time": 1.3963415622711182,
+      "mode": "eval",
+      "epoch": 8,
+      "head": "Default"
+    }
+  },
+  "trainable_parameters": 688448,
+  "energy_calibration": null,
+  "energy_calibration_fit_split": null,
+  "test": {
+    "frames": 8920,
+    "raw_energy_mae_ev_per_atom": 0.018117597483400274,
+    "raw_energy_rmse_ev_per_atom": 0.022577941216665027,
+    "energy_mae_ev_per_atom": 0.018117597483400274,
+    "energy_rmse_ev_per_atom": 0.022577941216665027,
+    "force_mae_ev_per_angstrom": 0.021750711986344772,
+    "force_rmse_ev_per_angstrom": 0.028570925701421696
+  },
+  "force_unchanged_by_energy_calibration": true
+}

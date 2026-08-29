@@ -18,6 +18,8 @@ MACE_TORCH_PATH="${MACE_TORCH_PATH:-/public/home/sps-xia/rxlin/ablation_core_vs_
 OUT="${OUT:-/public/home/sps-xia/rxlin/chorus_runs/a100_scaling_20260804/mace_family}"
 BENCH="${REPO}/benchmarks/paper/scripts/throughput/bench_cross_model_scaling.py"
 SIZES="${SIZES:-128,256,512,1024,2048,4096}"
+ICTC_PRODUCT_BACKEND="${ICTC_PRODUCT_BACKEND:-checkpoint}"
+ICTC_CONV_TP_BACKEND="${ICTC_CONV_TP_BACKEND:-checkpoint}"
 
 OFF="/public/home/sps-xia/rxlin/mace_ictc_nequip_matched_checkpoints/phase_off.pth"
 FINAL="/public/home/sps-xia/rxlin/mace_ictc_nequip_matched_checkpoints/chorus_final_r16.pth"
@@ -43,6 +45,12 @@ args=(
 )
 if [[ -n "${checkpoint}" ]]; then
   args+=(--checkpoint "${checkpoint}")
+fi
+if [[ "${engine}" != "native-mace" ]]; then
+  args+=(
+    --ictc-product-backend "${ICTC_PRODUCT_BACKEND}"
+    --ictc-conv-tp-backend "${ICTC_CONV_TP_BACKEND}"
+  )
 fi
 
 PYTHONPATH="${REPO}:${MACE_TORCH_PATH}:${PYTHONPATH:-}" \

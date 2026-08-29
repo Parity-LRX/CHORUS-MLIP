@@ -140,15 +140,21 @@ def main() -> None:
         loaded[split] = read_pair(source, output, elements)
 
     train_reference, train_prediction, train_counts = loaded["train"]
+    train_natoms = train_counts.sum(axis=1)
+    train_fractions = train_counts / train_natoms[:, None]
+    train_residual_per_atom = (
+        train_reference - train_prediction
+    ) / train_natoms
     delta, _, matrix_rank, singular_values = np.linalg.lstsq(
-        train_counts,
-        train_reference - train_prediction,
+        train_fractions,
+        train_residual_per_atom,
         rcond=None,
     )
     result: dict[str, object] = {
         "checkpoint": str(args.checkpoint),
         "selection_rule": "checkpoint selected by minimum validation Force MAE",
         "calibration_split": "train only",
+        "fit_objective": "least-squares residual energy per atom",
         "elements": list(elements),
         "delta_ev_per_element": {
             element: float(value) for element, value in zip(elements, delta)

@@ -1,0 +1,118 @@
+topic: causal_pruning_for_equivariant_mlip
+title: 因果干预驱动的等变 MLIP 结构化裁剪与真实加速
+created_at: 2026-08-22
+updated_at: 2026-08-23
+time_range:
+  policy: 不限年份，重点覆盖 2021-2026
+  reason: 直接因果裁剪文献很少，需要保留早期因果归因工作，同时纳入最新 MLIP 裁剪证据
+scope:
+  include:
+    - 对网络内部组件进行显式干预、机制替换或因果效应估计的剪枝方法
+    - 可编译为更小稠密网络的结构化剪枝与依赖闭包方法
+    - GNN、等变网络和 MLIP 的参数、消息传递层、基函数及低秩压缩
+    - 不使用教师输出或隐藏状态的零恢复、原标签微调和系数重拟合
+    - 报告端到端延迟、吞吐、内存或 MD step time 的部署证据
+  exclude:
+    - 只做输入特征解释、没有连接到模型缩减的工作
+    - 只报告参数量或理论 FLOPs、无法形成可执行小模型的非结构化掩码
+    - 将相关性打分直接称为现实世界因果发现的工作
+research_questions:
+  - 因果方法相对随机、幅值、曲率和组合优化基线是否有稳定增益？
+  - 不做蒸馏时，零恢复、机制折叠、原标签微调和从头训练小模型应如何公平比较？
+  - 哪些裁剪对象能保持 O(3)、irrep、Hermitian 和张量积依赖闭包？
+  - 参数减少能否转化为 CHORUS 在目标硬件上的能量-力端到端加速？
+  - 静态能量/力误差之外，裁剪是否维持 MD 稳定性和物理观测量？
+items:
+  - id: direct_component_intervention
+    label: 组件级因果干预与机制替换
+    priority: core
+    anchor_papers:
+      - C-SWAP (BMVC 2025)
+      - Causal Mechanism Reduction (arXiv 2026)
+      - Causal Analysis for Robust Interpretability (WACV 2024)
+      - CAP (ICLR 2026 workshop)
+  - id: weak_causal_heuristics
+    label: 输入干预、互信息和其他弱因果启发式
+    priority: core_negative
+    anchor_papers:
+      - On Causal Inference for Data-free Structured Pruning (2022 workshop)
+  - id: structured_pruning_controls
+    label: 结构化裁剪、组合选择与随机负对照
+    priority: core
+    anchor_papers:
+      - Revisiting Random Channel Pruning (CVPR 2022)
+      - DepGraph (CVPR 2023)
+      - OSSCAR (ICML 2024)
+  - id: gnn_and_symmetry
+    label: GNN 表达能力、图结构裁剪与对称闭包
+    priority: supporting
+    anchor_papers:
+      - A Unified Lottery Ticket Hypothesis for GNNs (ICML 2021)
+      - Pruning for GNNs (ICML 2025)
+      - Symmetry-Preserving Pruning of Group Equivariant CNNs (2026)
+  - id: mlip_pruning
+    label: MLIP 消息传递层、基函数和低秩压缩
+    priority: core
+    anchor_papers:
+      - Scalable Foundation Interatomic Potentials via MPDP (npj Comput Mater 2026)
+      - Accelerating MTPs Through Post-Training Pruning (arXiv 2025)
+      - Low-rank Matrix and Tensor Approximations for MLIPs (JCP 2025)
+  - id: no_distillation_recovery
+    label: 无蒸馏恢复制度
+    priority: core
+    regimes:
+      - zero_recovery
+      - exact_bias_or_mechanism_folding
+      - original_label_finetuning
+      - linear_coefficient_refit
+      - weight_rewinding
+      - compact_model_training_from_scratch
+  - id: deployment_validation
+    label: 真实加速与物理可靠性
+    priority: core
+    metrics:
+      - end_to_end_energy_force_latency
+      - atoms_per_second
+      - md_step_time
+      - peak_memory
+      - equivariance_error
+      - long_rollout_stability
+      - rdf_adf_diffusion_and_energy_drift
+  - id: exact_operator_acceleration
+    label: 精确张量积 kernel、图编译与导数路径融合
+    priority: core
+    anchor_papers:
+      - FlashTP (ICML 2025)
+      - OpenEquivariance sparse kernel generator (SIAM ACDA 2025)
+      - High-performance equivariant interatomic potentials (arXiv 2025)
+  - id: algebraic_operator_replacement
+    label: CP/Gaunt/SO(2) 张量积代数替换
+    priority: core_alternative
+    anchor_papers:
+      - Tensor Decomposition Networks (NeurIPS 2025)
+      - Gaunt Tensor Products (ICLR 2024)
+      - Reducing SO(3) Convolutions to SO(2) (ICML 2023)
+  - id: efficient_architecture_replacement
+    label: edge-to-node、scalar-vector、Cartesian 与局部标架架构
+    priority: supporting_control
+    anchor_papers:
+      - NEMP (2025/2026)
+      - E2GNN (npj Comput Mater 2025)
+      - CACE (npj Comput Mater 2024)
+      - AlphaNet (npj Comput Mater 2025)
+  - id: conditional_and_spatial_compute
+    label: 元素条件静态容量与空间自适应保真度
+    priority: exploratory
+    anchor_papers:
+      - Adaptive-precision potentials (JCP 2025)
+  - id: derivative_and_precision_tradeoffs
+    label: 混合精度、保守力导数路径与直接力替代
+    priority: risk_control
+    anchor_papers:
+      - Low-precision MACE (2025)
+      - E2GNN direct-force experiments (2025)
+execution:
+  batch_size: 1
+  items_per_agent: 5
+  output_dir: ./results
+  status: expanded_full_text_review_complete

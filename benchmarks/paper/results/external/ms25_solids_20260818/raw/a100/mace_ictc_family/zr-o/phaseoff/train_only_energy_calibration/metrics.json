@@ -1,0 +1,68 @@
+{
+  "selection_rule": "minimum full-validation Force MAE; earliest step breaks ties",
+  "selected_checkpoint": "/public/home/sps-xia/rxlin/chorus_solid_runs/ms25_20260818/mace_ictc_family/zr-o/phaseoff/checkpoints/ms25_zr-o_phaseoff_c128_l2_corr3_r16_final.e157s39342.pth",
+  "selected_step": 39342,
+  "test_used_for_selection": false,
+  "calibration_fit_split": "train only",
+  "calibration_target": "model-specific residual energy",
+  "elements": [
+    "O",
+    "Zr"
+  ],
+  "forces_changed": false,
+  "force_metric_max_abs_recompute_difference_ev_per_angstrom": 0.0,
+  "checkpoint_audit": {
+    "source_checkpoint": "/public/home/sps-xia/rxlin/chorus_solid_runs/ms25_20260818/mace_ictc_family/zr-o/phaseoff/checkpoints/ms25_zr-o_phaseoff_c128_l2_corr3_r16_final.e157s39342.pth",
+    "augmented_checkpoint": "/public/home/sps-xia/rxlin/chorus_solid_runs/ms25_20260818/mace_ictc_family/zr-o/phaseoff/train_only_energy_calibration/phaseoff.zero_correction_source.pth",
+    "source_sha256": "6a0a8ea08454ec59f4f198bcf67ba2b3193ee010325b370e5834a73490550d7c",
+    "augmented_sha256": "68c97fff7c088e88dbc45db46da663b91142fbe7abb520bc07f13d1e01a39f4e",
+    "only_added_state_tensor": "element_energy_correction",
+    "initial_value": "zeros",
+    "num_elements": 2
+  },
+  "calibrated_checkpoint": "/public/home/sps-xia/rxlin/chorus_solid_runs/ms25_20260818/mace_ictc_family/zr-o/phaseoff/train_only_energy_calibration/phaseoff.train_only_calibrated.pth",
+  "fit_report": {
+    "num_structures": 1000,
+    "raw_train_energy_mae_per_atom": 0.029118415977905897,
+    "raw_train_energy_rmse_per_atom": 0.049203233504573625,
+    "delta": [
+      0.004969206867430236,
+      -0.0010628733005865415
+    ],
+    "old_correction": [
+      0.0,
+      0.0
+    ],
+    "new_correction": [
+      0.004969206638634205,
+      -0.0010628732852637768
+    ],
+    "normal_matrix_rank": 2
+  },
+  "validation_calibrated": {
+    "energy_mae_ev_per_atom": 0.03676,
+    "energy_rmse_ev_per_atom": 0.057356,
+    "force_mae_ev_per_angstrom": 0.076215,
+    "force_rmse_ev_per_angstrom": 0.149174,
+    "energy_mae_mev_per_atom": 36.76,
+    "energy_rmse_mev_per_atom": 57.355999999999995,
+    "force_mae_mev_per_angstrom": 76.215,
+    "force_rmse_mev_per_angstrom": 149.174
+  },
+  "test_raw": {
+    "energy_mae_ev_per_atom": 0.033907,
+    "energy_rmse_ev_per_atom": 0.063328,
+    "force_mae_ev_per_angstrom": 0.068118,
+    "force_rmse_ev_per_angstrom": 0.129183
+  },
+  "test_calibrated": {
+    "energy_mae_ev_per_atom": 0.034,
+    "energy_rmse_ev_per_atom": 0.063261,
+    "force_mae_ev_per_angstrom": 0.068118,
+    "force_rmse_ev_per_angstrom": 0.129183,
+    "energy_mae_mev_per_atom": 34.0,
+    "energy_rmse_mev_per_atom": 63.260999999999996,
+    "force_mae_mev_per_angstrom": 68.118,
+    "force_rmse_mev_per_angstrom": 129.183
+  }
+}

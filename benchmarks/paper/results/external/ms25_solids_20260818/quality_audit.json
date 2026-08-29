@@ -1,0 +1,27 @@
+{
+  "benchmark": "MS25 solid-state external-model comparison",
+  "status": "PASS",
+  "record_grain": "one dataset/model pair selected by full-validation Force MAE",
+  "record_count": 33,
+  "unique_dataset_model_pairs": 33,
+  "records_by_dataset": {
+    "hea": 11,
+    "mgo-2x2": 11,
+    "zr-o": 11
+  },
+  "zr_o_train_only_calibrations": 11,
+  "mgo_size_transfer_records": 11,
+  "checks": {
+    "complete_model_matrix": true,
+    "unique_grain": true,
+    "uniform_selection_rule": true,
+    "finite_nonnegative_metrics": true,
+    "rmse_not_below_mae": true,
+    "source_files_present": true,
+    "invalid_nequip_history_excluded": true,
+    "zr_o_calibration_train_only": true,
+    "mgo_transfer_complete": true
+  },
+  "errors": [],
+  "warnings": []
+}

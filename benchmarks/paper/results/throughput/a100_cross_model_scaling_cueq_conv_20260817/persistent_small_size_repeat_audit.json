@@ -1,0 +1,113 @@
+{
+  "policy": "For audited small sizes, timing fields use the observed row at the run-level median steady-state atoms/s independently for inference and training; peak memory remains from the complete sequential scan.",
+  "sizes": {
+    "128": {
+      "inference": {
+        "runs": [
+          {
+            "atoms_per_second": 11135.28952941417,
+            "mean_ms": 11.360510221372047,
+            "source": "repeat2"
+          },
+          {
+            "atoms_per_second": 11205.114922152841,
+            "mean_ms": 11.479885410517454,
+            "source": "main"
+          },
+          {
+            "atoms_per_second": 11510.037607391336,
+            "mean_ms": 11.232948986192545,
+            "source": "repeat1"
+          }
+        ],
+        "selected_atoms_per_second": 11205.114922152841,
+        "selected_source": "main"
+      },
+      "train": {
+        "runs": [
+          {
+            "atoms_per_second": 3920.9945106586056,
+            "mean_ms": 32.64477918855846,
+            "source": "repeat1"
+          },
+          {
+            "atoms_per_second": 3954.897532198095,
+            "mean_ms": 32.36493460523585,
+            "source": "main"
+          },
+          {
+            "atoms_per_second": 3997.5084936831536,
+            "mean_ms": 32.01994447348019,
+            "source": "repeat2"
+          }
+        ],
+        "selected_atoms_per_second": 3954.897532198095,
+        "selected_source": "main"
+      }
+    },
+    "256": {
+      "inference": {
+        "runs": [
+          {
+            "atoms_per_second": 16002.955338006932,
+            "mean_ms": 16.009185882285237,
+            "source": "main"
+          },
+          {
+            "atoms_per_second": 17499.64066473039,
+            "mean_ms": 14.63818489573896,
+            "source": "repeat256_1"
+          },
+          {
+            "atoms_per_second": 17559.228075687057,
+            "mean_ms": 14.595947694033384,
+            "source": "repeat256_2"
+          },
+          {
+            "atoms_per_second": 17644.882415169373,
+            "mean_ms": 14.51585735194385,
+            "source": "repeat256_3"
+          },
+          {
+            "atoms_per_second": 17652.329933215336,
+            "mean_ms": 14.512045960873365,
+            "source": "repeat256_4"
+          }
+        ],
+        "selected_atoms_per_second": 17559.228075687057,
+        "selected_source": "repeat256_2"
+      },
+      "train": {
+        "runs": [
+          {
+            "atoms_per_second": 2338.9588530274673,
+            "mean_ms": 109.45040767546743,
+            "source": "repeat256_1"
+          },
+          {
+            "atoms_per_second": 2582.453246686895,
+            "mean_ms": 99.1305458592251,
+            "source": "main"
+          },
+          {
+            "atoms_per_second": 7160.458501001966,
+            "mean_ms": 35.75190051924437,
+            "source": "repeat256_4"
+          },
+          {
+            "atoms_per_second": 7165.068848943048,
+            "mean_ms": 35.72889603674412,
+            "source": "repeat256_2"
+          },
+          {
+            "atoms_per_second": 7169.804123420622,
+            "mean_ms": 35.70529900025576,
+            "source": "repeat256_3"
+          }
+        ],
+        "selected_atoms_per_second": 7160.458501001966,
+        "selected_source": "repeat256_4"
+      }
+    }
+  }
+}

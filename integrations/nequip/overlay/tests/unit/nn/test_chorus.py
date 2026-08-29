@@ -56,6 +56,126 @@ def test_hermitian_contraction_is_u1_invariant():
     )
 
 
+def test_full_aligned_and_diagonal_are_parameter_matched():
+    kwargs = dict(
+        irreps_message="3x0e + 2x1o + 1x2e",
+        irreps_node="4x0e + 4x1o + 4x2e",
+        edge_invariant_dim=4,
+        num_elements=2,
+        rank=2,
+        scale_init=1.0,
+    )
+    full = HermitianDensityResidual(**kwargs, density_pairs="full")
+    aligned = HermitianDensityResidual(**kwargs, density_pairs="aligned")
+    diagonal = HermitianDensityResidual(**kwargs, density_pairs="diagonal")
+    assert tuple(full.state_dict()) == tuple(aligned.state_dict())
+    assert tuple(full.state_dict()) == tuple(diagonal.state_dict())
+    assert sum(p.numel() for p in full.parameters()) == sum(
+        p.numel() for p in aligned.parameters()
+    ) == sum(p.numel() for p in diagonal.parameters())
+
+
+def test_phase_initialisation_breaks_the_aligned_stationary_point():
+    torch.manual_seed(31)
+    module = HermitianDensityResidual(
+        irreps_message="2x0e + 2x1o",
+        irreps_node="2x0e + 2x1o",
+        edge_invariant_dim=3,
+        num_elements=1,
+        rank=2,
+        scale_init=1.0,
+        density_pairs="full",
+    ).double()
+    output = module.phase_network[-1]
+    torch.testing.assert_close(output.weight[0], torch.zeros_like(output.weight[0]))
+    torch.testing.assert_close(output.bias, torch.zeros_like(output.bias))
+    assert output.weight[1].abs().sum() > 0.0
+
+    edge_messages = torch.randn(4, module.irreps_message.dim, dtype=torch.float64)
+    node_features = torch.randn(3, module.irreps_node.dim, dtype=torch.float64)
+    edge_invariants = torch.randn(4, 3, dtype=torch.float64)
+    edge_src = torch.tensor([1, 2, 0, 2])
+    edge_dst = torch.tensor([0, 0, 1, 1])
+    node_attrs = torch.ones(3, 1, dtype=torch.float64)
+    kwargs = dict(
+        edge_messages=edge_messages,
+        node_features=node_features,
+        node_attrs=node_attrs,
+        edge_invariants=edge_invariants,
+        edge_src=edge_src,
+        edge_dst=edge_dst,
+        num_nodes=3,
+    )
+    full = module(**kwargs)
+    module.density_pairs = "aligned"
+    aligned = module(**kwargs)
+    assert not torch.allclose(full, aligned, atol=1.0e-12, rtol=1.0e-12)
+
+
+def test_diagonal_removes_cross_edge_terms_and_independent_phases():
+    torch.manual_seed(23)
+    module = HermitianDensityResidual(
+        irreps_message="2x0e + 2x1o",
+        irreps_node="2x0e + 2x1o",
+        edge_invariant_dim=3,
+        num_elements=1,
+        rank=2,
+        scale_init=1.0,
+        density_pairs="diagonal",
+    ).double()
+    edge_messages = torch.randn(5, module.irreps_message.dim, dtype=torch.float64)
+    node_features = torch.randn(3, module.irreps_node.dim, dtype=torch.float64)
+    edge_invariants = torch.randn(5, 3, dtype=torch.float64)
+    edge_src = torch.tensor([1, 2, 0, 2, 0])
+    edge_dst = torch.tensor([0, 0, 1, 1, 2])
+    node_attrs = torch.ones(3, 1, dtype=torch.float64)
+    charged_real, charged_imag = module.charged_edge_messages(
+        edge_messages,
+        node_features,
+        edge_invariants,
+        edge_src,
+        edge_dst,
+    )
+    angles = torch.randn(5, 1, dtype=torch.float64)
+    rotated_real = torch.cos(angles) * charged_real - torch.sin(angles) * charged_imag
+    rotated_imag = torch.sin(angles) * charged_real + torch.cos(angles) * charged_imag
+    original_density = module.density_blocks(charged_real, charged_imag)
+    rotated_density = module.density_blocks(rotated_real, rotated_imag)
+    for out_l in original_density:
+        torch.testing.assert_close(
+            original_density[out_l], rotated_density[out_l], atol=2e-11, rtol=2e-11
+        )
+
+
+def test_aligned_ignores_phase_head_but_retains_amplitude_head():
+    torch.manual_seed(29)
+    module = HermitianDensityResidual(
+        irreps_message="2x0e + 2x1o",
+        irreps_node="2x0e + 2x1o",
+        edge_invariant_dim=3,
+        num_elements=1,
+        rank=2,
+        scale_init=1.0,
+        density_pairs="aligned",
+    ).double()
+    edge_messages = torch.randn(4, module.irreps_message.dim, dtype=torch.float64)
+    node_features = torch.randn(3, module.irreps_node.dim, dtype=torch.float64)
+    edge_invariants = torch.randn(4, 3, dtype=torch.float64)
+    edge_src = torch.tensor([1, 2, 0, 2])
+    edge_dst = torch.tensor([0, 0, 1, 1])
+    before = module.charged_edge_messages(
+        edge_messages, node_features, edge_invariants, edge_src, edge_dst
+    )
+    with torch.no_grad():
+        module.phase_network[-1].weight[1].normal_(mean=3.0, std=2.0)
+        module.phase_network[-1].bias[1].fill_(4.0)
+    after = module.charged_edge_messages(
+        edge_messages, node_features, edge_invariants, edge_src, edge_dst
+    )
+    torch.testing.assert_close(before[0], after[0], atol=2e-12, rtol=2e-12)
+    torch.testing.assert_close(before[1], after[1], atol=2e-12, rtol=2e-12)
+
+
 @pytest.mark.parametrize(
     ("backend", "expected_type"),
     (("e3nn", InteractionBlock), ("ictc", ICTCInteractionBlock)),
@@ -229,6 +349,8 @@ def test_channelwise_chorus_backward_is_finite():
     for parameter in module.parameters():
         assert parameter.grad is not None
         assert torch.isfinite(parameter.grad).all()
+    phase_gradient = module.phase_network[-1].weight.grad[1]
+    assert phase_gradient.abs().sum() > 0.0
     assert torch.isfinite(edge_messages.grad).all()
     assert torch.isfinite(node_features.grad).all()
     assert torch.isfinite(edge_invariants.grad).all()

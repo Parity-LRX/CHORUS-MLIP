@@ -1,0 +1,30 @@
+{
+  "backend": "MakeFX/Inductor",
+  "checkpoint": "/public/home/sps-xia/rxlin/chorus_lmax_depth_extended_assets_20260818/lmax3_final_t1x.pth",
+  "configuration": "MACE-ICTC C128, lmax=3, two interactions, correlation=3, CHORUS-Final R16",
+  "engine": "chorus-final-r16",
+  "graph_build_in_timing": false,
+  "parameters": 1277896,
+  "protocol": {
+    "dtype": "float32",
+    "gpu": "NVIDIA A100-SXM4-40GB",
+    "steady_state_excludes_compile_and_prepare": true,
+    "target_neighbors_per_atom": 32,
+    "tasks": {
+      "inference": "energy plus conservative forces",
+      "train": "energy+force loss, backward, optimizer update"
+    },
+    "tf32": false,
+    "torch": "2.7.1+cu128"
+  },
+  "rows": [
+    {
+      "engine": "chorus-final-r16",
+      "error": "RuntimeError: train_makefx_compile is required for this run, but tracing/compilation failed",
+      "natoms": 2048,
+      "parameters": 1277896,
+      "status": "error",
+      "task": "train"
+    }
+  ]
+}

@@ -84,6 +84,7 @@ class ICTCInteractionBlock(GraphModuleMixin, torch.nn.Module):
         chorus_rank: int = 8,
         chorus_hidden_channels: int = 32,
         chorus_scale_init: float = 0.0,
+        chorus_density_pairs: str = "full",
         chorus_persistent: bool = False,
         chorus_update_enabled: bool = True,
         chorus_clear_state: bool = False,
@@ -219,6 +220,7 @@ class ICTCInteractionBlock(GraphModuleMixin, torch.nn.Module):
                 hidden_channels=chorus_hidden_channels,
                 avg_num_neighbors=avg_num_neighbors,
                 scale_init=chorus_scale_init,
+                density_pairs=chorus_density_pairs,
             )
             if self.chorus_persistent and bool(chorus_update_enabled):
                 self.chorus_update = PersistentChargedUpdate(

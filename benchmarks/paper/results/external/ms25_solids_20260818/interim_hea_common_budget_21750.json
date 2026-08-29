@@ -1,0 +1,43 @@
+{
+  "benchmark": "MS25 HEA Set1 common-budget validation envelopes",
+  "interim": true,
+  "optimizer_step_cap": 21750,
+  "validation_interval_steps": 250,
+  "selection_note": "Energy-MAE and Force-MAE envelopes are independent; companion metrics are from the same checkpoint and are not stitched.",
+  "units": {
+    "energy": "meV/atom",
+    "force": "meV/angstrom"
+  },
+  "models": [
+    {
+      "model": "MACE-ICTC C128",
+      "trainable_parameters": 690240,
+      "energy_mae_envelope": {"step": 21250, "energy_mae": 9.597, "energy_rmse": 12.537, "force_mae": 7.284, "force_rmse": 9.955},
+      "force_mae_envelope": {"step": 21500, "energy_mae": 10.171, "energy_rmse": 12.448, "force_mae": 7.247, "force_rmse": 9.917}
+    },
+    {
+      "model": "MACE-CHORUS-Final C128 R16",
+      "trainable_parameters": 852230,
+      "energy_mae_envelope": {"step": 17250, "energy_mae": 9.312, "energy_rmse": 11.631, "force_mae": 7.495, "force_rmse": 10.160},
+      "force_mae_envelope": {"step": 21750, "energy_mae": 9.678, "energy_rmse": 11.945, "force_mae": 7.151, "force_rmse": 9.723}
+    },
+    {
+      "model": "MACE-CHORUS-Persistent C128 R16",
+      "trainable_parameters": 1112527,
+      "energy_mae_envelope": {"step": 12000, "energy_mae": 9.554, "energy_rmse": 11.954, "force_mae": 8.276, "force_rmse": 11.189},
+      "force_mae_envelope": {"step": 21750, "energy_mae": 10.210, "energy_rmse": 12.462, "force_mae": 7.214, "force_rmse": 9.847}
+    },
+    {
+      "model": "DPA-4 C32",
+      "trainable_parameters": 650818,
+      "energy_mae_envelope": {"step": 20750, "energy_mae": 7.901040, "energy_rmse": 10.336330, "force_mae": 10.382520, "force_rmse": 14.146460},
+      "force_mae_envelope": {"step": 21750, "energy_mae": 15.218000, "energy_rmse": 17.929030, "force_mae": 8.986295, "force_rmse": 12.313260}
+    },
+    {
+      "model": "DPA-4 C48",
+      "trainable_parameters": 1297210,
+      "energy_mae_envelope": {"step": 13250, "energy_mae": 7.701437, "energy_rmse": 10.469530, "force_mae": 10.036920, "force_rmse": 13.691430},
+      "force_mae_envelope": {"step": 21250, "energy_mae": 10.153270, "energy_rmse": 12.874890, "force_mae": 8.232534, "force_rmse": 11.345900}
+    }
+  ]
+}

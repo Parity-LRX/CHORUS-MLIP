@@ -4,7 +4,8 @@ set -euo pipefail
 REPO="${REPO:-/home/ylzhang/CHORUS-MLIP-attention-test}"
 PYTHON_BIN="${PYTHON_BIN:-/home/ylzhang/micromamba/envs/FSCETP/bin/python}"
 MACE_TORCH_PATH="${MACE_TORCH_PATH:-/tmp/mace_torch_0_3_16}"
-ROOT="${ROOT:-/home/ylzhang/chorus_runs/chorus_c64_l2_corr3_rank16_all_20260728}"
+CORRELATION="${CORRELATION:-3}"
+ROOT="${ROOT:-/home/ylzhang/chorus_runs/chorus_c64_l2_corr${CORRELATION}_rank16_all_20260728}"
 STATUS="${STATUS:-${ROOT}/queue_status.log}"
 SEED="${SEED:-20260616}"
 CHANNELS="${CHANNELS:-64}"
@@ -158,7 +159,7 @@ run_system() {
   local batch_size="$8"
   local keep_checkpoints="$9"
 
-  local tag="${system}_${MODE_TAG}_c${CHANNELS}_l${HIDDEN_LMAX}_L${MAX_ELL}_corr3_rank${RANK}"
+  local tag="${system}_${MODE_TAG}_c${CHANNELS}_l${HIDDEN_LMAX}_L${MAX_ELL}_corr${CORRELATION}_rank${RANK}"
   local out="${ROOT}/${system}"
   local checkpoint="${out}/checkpoints/${tag}_final.pth"
   local train_log="${out}/logs/train.log"
@@ -178,7 +179,7 @@ run_system() {
     "${PYTHON_BIN}" -m chorus.cli.train \
       --data-dir "${data_dir}" --train-prefix train --val-prefix val \
       --channels "${CHANNELS}" --lmax "${HIDDEN_LMAX}" --max-ell "${MAX_ELL}" \
-      --num-interaction "${NUM_INTERACTIONS}" --correlation 3 \
+      --num-interaction "${NUM_INTERACTIONS}" --correlation "${CORRELATION}" \
       --product-backend ictd-bridge-u --angular-basis ictd --use-reduced-cg \
       --first-layer-self-connection --mace-compatible-random-init \
       --readout-hidden-channels 64 \
@@ -216,7 +217,7 @@ run_system() {
     "${PYTHON_BIN}" -m chorus.cli.train \
       --data-dir "${data_dir}" --train-prefix train --val-prefix test \
       --channels "${CHANNELS}" --lmax "${HIDDEN_LMAX}" --max-ell "${MAX_ELL}" \
-      --num-interaction "${NUM_INTERACTIONS}" --correlation 3 \
+      --num-interaction "${NUM_INTERACTIONS}" --correlation "${CORRELATION}" \
       --product-backend ictd-bridge-u --angular-basis ictd --use-reduced-cg \
       --first-layer-self-connection --mace-compatible-random-init \
       --readout-hidden-channels 64 \
@@ -253,7 +254,7 @@ run_system() {
         CHANNELS="${CHANNELS}" PHASE_DENSITY_RANK="${RANK}" \
         HIDDEN_LMAX="${HIDDEN_LMAX}" MAX_ELL="${MAX_ELL}" \
         PHASE_CONTEXT="${PHASE_CONTEXT}" \
-        NUM_INTERACTIONS="${NUM_INTERACTIONS}" \
+        NUM_INTERACTIONS="${NUM_INTERACTIONS}" CORRELATION="${CORRELATION}" \
         RUN_BASELINE=1 RUN_CHORUS=0 BASELINE_NAME="phaseoff_c${CHANNELS}" \
         BASELINE_SOURCE="${selected}" \
         bash "${REPO}/benchmarks/paper/scripts/training/calibrate_t1x_large_mae_checkpoints.sh"
@@ -264,7 +265,7 @@ run_system() {
         CHANNELS="${CHANNELS}" PHASE_DENSITY_RANK="${RANK}" \
         HIDDEN_LMAX="${HIDDEN_LMAX}" MAX_ELL="${MAX_ELL}" \
         PHASE_CONTEXT="${PHASE_CONTEXT}" \
-        NUM_INTERACTIONS="${NUM_INTERACTIONS}" \
+        NUM_INTERACTIONS="${NUM_INTERACTIONS}" CORRELATION="${CORRELATION}" \
         CHORUS_SCOPE="${PHASE_SCOPE}" \
         RUN_BASELINE=0 RUN_CHORUS=1 CHORUS_NAME="chorus_c${CHANNELS}_rank${RANK}" \
         CHORUS_SOURCE="${selected}" \
@@ -328,11 +329,11 @@ if should_run 3bpa; then
     HIDDEN_LMAX="${HIDDEN_LMAX}" MAX_ELL="${MAX_ELL}" \
     DATA_DIR="${THREE_BPA_DATA_DIR}" \
     SEED="${SEED}" \
-    NUM_INTERACTIONS="${NUM_INTERACTIONS}" \
+    NUM_INTERACTIONS="${NUM_INTERACTIONS}" CORRELATION="${CORRELATION}" \
     MODES="${THREE_BPA_MODES}" MAX_STEPS=45000 BATCH_SIZE=16 \
     bash "${REPO}/benchmarks/paper/scripts/training/run_3bpa_chorus_phaseoff.sh"
   mark "DONE_3BPA"
 fi
 
 touch "${ROOT}/ALL_DONE"
-mark "ALL_${MODE_TAG}_C${CHANNELS}_RANK${RANK}_TASKS_DONE"
+mark "ALL_${MODE_TAG}_C${CHANNELS}_CORR${CORRELATION}_RANK${RANK}_TASKS_DONE"

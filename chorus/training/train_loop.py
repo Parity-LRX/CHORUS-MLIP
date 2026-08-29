@@ -133,6 +133,7 @@ class ForceTrainer:
         evals_per_epoch: int = 1,
         validation_interval_steps: int = 0,
         checkpoint_path: str | None = None,
+        checkpoint_selection_metric: str = "loss",
         keep_checkpoints: int = 0,
         checkpoint_interval_steps: int = 0,
         extra_hparams: dict | None = None,
@@ -215,6 +216,15 @@ class ForceTrainer:
         self.log_interval = int(log_interval)
         self.evals_per_epoch = max(1, int(evals_per_epoch))
         self.validation_interval_steps = max(0, int(validation_interval_steps))
+        self.checkpoint_selection_metric = str(
+            checkpoint_selection_metric or "loss"
+        ).lower().replace("-", "_")
+        if self.checkpoint_selection_metric not in {"loss", "force_mae"}:
+            raise ValueError(
+                "checkpoint_selection_metric must be 'loss' or 'force_mae'"
+            )
+        # Kept under the historical attribute name for checkpoint/resume API
+        # compatibility. Its value follows checkpoint_selection_metric.
         self.best_validation_loss = math.inf
         self.checkpoint_path = checkpoint_path
         self.keep_checkpoints = max(0, int(keep_checkpoints))
@@ -1514,6 +1524,23 @@ class ForceTrainer:
                         group[key] = value.to(self.device)
             self.global_step = int(ckpt.get("global_step", 0))
             start_epoch = int(ckpt.get("epoch", -1)) + 1
+            saved_selection_metric = str(
+                ckpt.get(
+                    "checkpoint_selection_metric",
+                    ckpt.get("training_hyperparameters", {}).get(
+                        "checkpoint_selection_metric", "loss"
+                    ),
+                )
+            )
+            if saved_selection_metric != self.checkpoint_selection_metric:
+                raise ValueError(
+                    "cannot resume with a different checkpoint selection metric: "
+                    f"checkpoint={saved_selection_metric!r}, "
+                    f"requested={self.checkpoint_selection_metric!r}"
+                )
+            self.best_validation_loss = float(
+                ckpt.get("best_validation_value", self.best_validation_loss)
+            )
             if isinstance(ckpt.get("e3trans_ema_state_dict"), dict):
                 self._ema_state = {
                     k: v.to(self.device) if torch.is_tensor(v) else v
@@ -1564,7 +1591,7 @@ class ForceTrainer:
                         f"Frmse={va['force_rmse']:.6f} Ermse={va['energy_rmse_avg']:.6f} "
                         f"Fmae={va['force_mae']:.6f} Emae={va['energy_mae_avg']:.6f}")
                 self._append_loss_csv(epoch, self.global_step, "epoch", va, tr)
-                cur = va["total_loss"]
+                cur = self._checkpoint_selection_value(va)
             else:
                 cur = tr["total_loss"]
             cur = self._broadcast_float(cur)
@@ -1590,7 +1617,7 @@ class ForceTrainer:
     def _validate_and_checkpoint(self, epoch: int, *, label: str) -> dict:
         """Validate one model state and make it eligible for global best selection."""
         va = self._val_pass()
-        cur = self._broadcast_float(va["total_loss"])
+        cur = self._broadcast_float(self._checkpoint_selection_value(va))
         if self.main_process:
             log.info(
                 "epoch %d step %d %s-VAL loss=%.6g Frmse=%.6g Ermse=%.6g Fmae=%.6g Emae=%.6g",
@@ -1606,6 +1633,12 @@ class ForceTrainer:
             self._save_rolling_checkpoint(epoch)
         self.best_validation_loss = self._broadcast_float(self.best_validation_loss)
         return va
+
+    def _checkpoint_selection_value(self, metrics: dict) -> float:
+        """Return the predeclared validation scalar used to save checkpoints."""
+        if self.checkpoint_selection_metric == "force_mae":
+            return float(metrics["force_mae"])
+        return float(metrics["total_loss"])
 
     @torch.no_grad()
     def fit_element_energy_correction_from_training_set(self) -> dict:
@@ -1942,6 +1975,7 @@ class ForceTrainer:
             "swa_anneal_strategy": self.swa_anneal_strategy,
             "swa_n_averaged": self._swa_n,
             "checkpoint_state_source": self.checkpoint_state_source,
+            "checkpoint_selection_metric": self.checkpoint_selection_metric,
             "train_makefx_compile": self.train_makefx_compile,
             "makefx_max_slots": self._makefx_max_slots,
             "element_energy_calibration": self.element_energy_calibration_report,
@@ -1982,6 +2016,8 @@ class ForceTrainer:
             "a": self.a, "b": self.b, "c": self.c,
             "training_hyperparameters": self._training_metadata(),
             "default_state_source": default_state_source,
+            "checkpoint_selection_metric": self.checkpoint_selection_metric,
+            "best_validation_value": float(self.best_validation_loss),
         }
         if isinstance(self._ema_state, dict):
             ckpt["e3trans_ema_state_dict"] = self._ema_state

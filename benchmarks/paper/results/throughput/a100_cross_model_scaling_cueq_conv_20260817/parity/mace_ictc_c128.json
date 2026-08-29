@@ -1,0 +1,69 @@
+{
+  "candidates": {
+    "conv_tp_only": {
+      "backend": {
+        "conv_tp": "cueq",
+        "product": "checkpoint"
+      },
+      "energy": {
+        "max_abs": 1.9073486328125e-06,
+        "max_rel": 2.547358690208057e-06,
+        "rms_abs": 4.529560726496129e-07,
+        "rms_relative": 2.420136411274143e-07
+      },
+      "forces": {
+        "max_abs": 5.165114998817444e-06,
+        "max_rel": 0.007004465442150831,
+        "rms_abs": 1.2687603430094896e-06,
+        "rms_relative": 6.137201467026898e-07
+      }
+    },
+    "dual_cueq": {
+      "backend": {
+        "conv_tp": "cueq",
+        "product": "cueq"
+      },
+      "energy": {
+        "max_abs": 1.430511474609375e-06,
+        "max_rel": 2.307742079210584e-06,
+        "rms_abs": 4.529560726496129e-07,
+        "rms_relative": 2.420136411274143e-07
+      },
+      "forces": {
+        "max_abs": 5.815178155899048e-06,
+        "max_rel": 0.008405358530580997,
+        "rms_abs": 1.2979957091374672e-06,
+        "rms_relative": 6.278617661337194e-07
+      }
+    },
+    "product_only": {
+      "backend": {
+        "conv_tp": "checkpoint",
+        "product": "cueq"
+      },
+      "energy": {
+        "max_abs": 1.9073486328125e-06,
+        "max_rel": 2.38810252994881e-06,
+        "rms_abs": 4.846887691201118e-07,
+        "rms_relative": 2.5896838451444637e-07
+      },
+      "forces": {
+        "max_abs": 5.282461643218994e-06,
+        "max_rel": 0.004069728311151266,
+        "rms_abs": 1.3191976222515223e-06,
+        "rms_relative": 6.381174557645863e-07
+      }
+    }
+  },
+  "checkpoint": "/public/home/sps-xia/rxlin/mace_ictc_nequip_matched_checkpoints/phase_off.pth",
+  "cutoff": 5.0,
+  "degree": 32,
+  "dtype": "float32",
+  "label": "mace_ictc_c128",
+  "natoms": 128,
+  "reference_backend": {
+    "conv_tp": "checkpoint",
+    "product": "checkpoint"
+  },
+  "tf32": false
+}

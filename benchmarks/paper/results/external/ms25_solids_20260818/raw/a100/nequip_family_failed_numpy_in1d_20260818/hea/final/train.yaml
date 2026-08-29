@@ -1,0 +1,103 @@
+root: /public/home/sps-xia/rxlin/chorus_solid_runs/ms25_20260818/nequip_family/hea/final
+run_name: run
+seed: 20260616
+dataset_seed: 20260616
+append: true
+default_dtype: float32
+model_dtype: float32
+allow_tf32: false
+model_builders:
+- EnergyModel
+- PerSpeciesRescale
+- ForceOutput
+- RescaleEnergyEtc
+chemical_embedding_irreps_out: 84x0e
+irreps_edge_sh: 0e + 1o + 2e
+feature_irreps_hidden: 84x0e + 84x1o + 84x2e
+conv_to_output_hidden_irreps_out: 42x0e
+interaction_backend: e3nn
+openequivariance_enabled: true
+chorus_enabled: true
+chorus_scope: final
+chorus_rank: 16
+chorus_hidden_channels: 32
+chorus_scale_init: 0.05
+r_max: 5.5
+num_layers: 2
+num_basis: 8
+BesselBasis_trainable: true
+PolynomialCutoff_p: 6
+nonlinearity_type: gate
+nonlinearity_scalars:
+  e: silu
+  o: tanh
+nonlinearity_gates:
+  e: silu
+  o: tanh
+invariant_layers: 2
+invariant_neurons: 168
+avg_num_neighbors: 56.110314814814814
+use_sc: true
+dataset: ASEDataset
+dataset_root: /public/home/sps-xia/rxlin/chorus_solid_data/ms25_20260818/prepared/hea/set1/nequip_ase_cache
+dataset_file_name: /public/home/sps-xia/rxlin/chorus_solid_data/ms25_20260818/prepared/hea/set1/extxyz/train.extxyz
+dataset_ase_args:
+  format: extxyz
+validation_dataset: ASEDataset
+validation_dataset_root: /public/home/sps-xia/rxlin/chorus_solid_data/ms25_20260818/prepared/hea/set1/nequip_ase_cache
+validation_dataset_file_name: /public/home/sps-xia/rxlin/chorus_solid_data/ms25_20260818/prepared/hea/set1/extxyz/val.extxyz
+validation_dataset_ase_args:
+  format: extxyz
+chemical_symbols:
+- Cr
+- Fe
+- Co
+- Ni
+- Cu
+n_train: 1000
+n_val: 80
+batch_size: 4
+validation_batch_size: 4
+dataloader_num_workers: 0
+max_epochs: 180
+train_val_split: sequential
+shuffle: true
+loss_coeffs:
+  forces: 100.0
+  total_energy:
+  - 1.0
+  - PerAtomMSELoss
+metrics_components:
+- - forces
+  - mae
+- - forces
+  - rmse
+- - total_energy
+  - mae
+  - PerAtom: true
+- - total_energy
+  - rmse
+  - PerAtom: true
+metrics_key: validation_f_mae
+optimizer_name: Adam
+optimizer_amsgrad: true
+learning_rate: 0.003
+lr_scheduler_name: ReduceLROnPlateau
+lr_scheduler_patience: 8
+lr_scheduler_factor: 0.5
+early_stopping_patiences:
+  validation_loss: 181
+early_stopping_lower_bounds:
+  LR: 1.0e-06
+early_stopping_upper_bounds:
+  validation_loss: 100000.0
+use_ema: false
+report_init_validation: true
+log_batch_freq: 200
+log_epoch_freq: 1
+save_checkpoint_freq: 1
+save_ema_checkpoint_freq: -1
+wandb: false
+verbose: info
+per_species_rescale_shifts: dataset_per_atom_total_energy_mean
+per_species_rescale_scales: null

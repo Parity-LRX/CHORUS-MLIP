@@ -91,6 +91,11 @@ def main() -> None:
     parser.add_argument("--epochs-override", type=int)
     parser.add_argument("--channels", type=int, default=64)
     parser.add_argument("--chorus-rank", type=int, default=16)
+    parser.add_argument(
+        "--chorus-density-pairs",
+        choices=("full", "diagonal", "aligned"),
+        default="full",
+    )
     parser.add_argument("--num-layers", type=int, default=3)
     parser.add_argument("--lmax", type=int, default=2)
     parser.add_argument("--openequivariance", action="store_true")
@@ -154,6 +159,7 @@ def main() -> None:
         "chorus_rank": int(args.chorus_rank),
         "chorus_hidden_channels": 32,
         "chorus_scale_init": 0.05,
+        "chorus_density_pairs": args.chorus_density_pairs,
         "r_max": 5.0,
         "num_layers": int(args.num_layers),
         "num_basis": 8,

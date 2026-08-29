@@ -1,0 +1,67 @@
+{
+  "selected_checkpoint": "/public/home/sps-xia/rxlin/chorus_solid_runs/ms25_20260818/nequip_family/zr-o/persistent/run/best_model.pth",
+  "selection_rule": "minimum full-validation Force MAE; test never selects",
+  "calibration_fit_split": "train only",
+  "fit_objective": "least-squares residual energy per atom",
+  "elements": [
+    "O",
+    "Zr"
+  ],
+  "delta_ev_per_element": {
+    "O": 0.0009293159428720695,
+    "Zr": -0.006816804903776997
+  },
+  "design_rank": 2,
+  "singular_values": [
+    23.27733300854183,
+    10.99204534538352
+  ],
+  "forces_changed": false,
+  "splits": {
+    "train": {
+      "num_structures": 1000,
+      "raw": {
+        "energy_mae_ev_per_atom": 0.04678135899483286,
+        "energy_rmse_ev_per_atom": 0.07878437267678484,
+        "energy_mae_mev_per_atom": 46.78135899483286,
+        "energy_rmse_mev_per_atom": 78.78437267678484
+      },
+      "calibrated": {
+        "energy_mae_ev_per_atom": 0.04511704437291817,
+        "energy_rmse_ev_per_atom": 0.07866185837626491,
+        "energy_mae_mev_per_atom": 45.11704437291817,
+        "energy_rmse_mev_per_atom": 78.6618583762649
+      }
+    },
+    "val": {
+      "num_structures": 80,
+      "raw": {
+        "energy_mae_ev_per_atom": 0.057613377149828934,
+        "energy_rmse_ev_per_atom": 0.10653773492167666,
+        "energy_mae_mev_per_atom": 57.613377149828935,
+        "energy_rmse_mev_per_atom": 106.53773492167666
+      },
+      "calibrated": {
+        "energy_mae_ev_per_atom": 0.05565131644666373,
+        "energy_rmse_ev_per_atom": 0.10669732729875436,
+        "energy_mae_mev_per_atom": 55.651316446663735,
+        "energy_rmse_mev_per_atom": 106.69732729875436
+      }
+    },
+    "test": {
+      "num_structures": 8920,
+      "raw": {
+        "energy_mae_ev_per_atom": 0.04672487478529829,
+        "energy_rmse_ev_per_atom": 0.07573804056261459,
+        "energy_mae_mev_per_atom": 46.72487478529829,
+        "energy_rmse_mev_per_atom": 75.73804056261459
+      },
+      "calibrated": {
+        "energy_mae_ev_per_atom": 0.045001433489082567,
+        "energy_rmse_ev_per_atom": 0.07549376359764481,
+        "energy_mae_mev_per_atom": 45.001433489082565,
+        "energy_rmse_mev_per_atom": 75.49376359764481
+      }
+    }
+  }
+}

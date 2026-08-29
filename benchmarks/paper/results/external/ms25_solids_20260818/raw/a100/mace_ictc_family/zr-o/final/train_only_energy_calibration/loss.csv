@@ -1,0 +1,2 @@
+epoch,step,kind,train_loss,train_force_rmse,val_loss,val_energy_loss,val_force_loss,val_force_rmse,val_energy_rmse,val_force_mae,val_energy_mae
+0,0,element-calibration,,,2.172640,0.003670,0.021690,0.147274,0.060580,0.073565,0.039060

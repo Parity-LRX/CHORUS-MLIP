@@ -10,6 +10,8 @@ import re
 import subprocess
 from pathlib import Path
 
+import torch
+
 
 METRICS = {
     "energy_mae_ev_per_atom": re.compile(r"Energy MAE/Natoms\s*:\s*([0-9.eE+-]+)"),
@@ -46,6 +48,17 @@ def checkpoint_step(path: Path) -> int:
     if match is None:
         raise ValueError(f"cannot parse checkpoint step from {path}")
     return int(match.group(1))
+
+
+def trainable_parameters(checkpoint: Path) -> int:
+    state = torch.load(checkpoint, map_location="cpu", weights_only=False)
+    model = state.get("model") if isinstance(state, dict) else None
+    if not isinstance(model, dict):
+        raise RuntimeError(f"missing model state dictionary in {checkpoint}")
+    tensors = [value for value in model.values() if torch.is_tensor(value)]
+    if not tensors:
+        raise RuntimeError(f"empty model state dictionary in {checkpoint}")
+    return sum(value.numel() for value in tensors)
 
 
 def evaluate(
@@ -109,6 +122,13 @@ def main() -> None:
             "evaluate every Nth saved checkpoint; the final checkpoint is "
             "always included"
         ),
+    )
+    parser.add_argument(
+        "--extra-test-system",
+        action="append",
+        default=[],
+        metavar="NAME=PATH",
+        help="evaluate the validation-selected checkpoint on an additional test system",
     )
     args = parser.parse_args()
     if args.checkpoint_every < 1:
@@ -183,10 +203,35 @@ def main() -> None:
         "selection_rule": "minimum full-validation Force MAE; test never selects",
         "checkpoint_every": args.checkpoint_every,
         "checkpoint_count": len(checkpoints),
+        "trainable_parameters": trainable_parameters(selected_checkpoint),
         "validation_scan": validation_rows,
         "selected": selected,
         "test": {"step": selected["step"], **test_metrics},
     }
+    extra_tests = {}
+    for specification in args.extra_test_system:
+        if "=" not in specification:
+            parser.error("--extra-test-system must use NAME=PATH")
+        name, path_text = specification.split("=", maxsplit=1)
+        if not name:
+            parser.error("--extra-test-system requires a non-empty name")
+        system = Path(path_text)
+        log_path = args.out / f"test_{name}_{selected['step']}.log"
+        try:
+            metrics = parse_metrics(log_path)
+        except (FileNotFoundError, RuntimeError):
+            log_path.unlink(missing_ok=True)
+            evaluate(
+                dp=args.dp,
+                checkpoint=selected_checkpoint,
+                system=system,
+                log_path=log_path,
+                detail_prefix=args.out / f"test_{name}_{selected['step']}",
+            )
+            metrics = parse_metrics(log_path)
+        extra_tests[name] = {"step": selected["step"], **metrics}
+    if extra_tests:
+        result["extra_tests"] = extra_tests
     (args.out / "metrics.json").write_text(
         json.dumps(result, indent=2) + "\n", encoding="utf-8"
     )

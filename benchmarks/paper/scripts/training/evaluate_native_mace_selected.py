@@ -28,6 +28,7 @@ def build_matching_model(
     state_dict: dict[str, torch.Tensor],
     atomic_numbers: list[int],
     avg_num_neighbors: float,
+    r_max: float,
 ) -> torch.nn.Module:
     from e3nn import o3
     from mace.modules import ScaleShiftMACE, gate_dict, interaction_classes
@@ -39,7 +40,7 @@ def build_matching_model(
     scale = float(state_dict["scale_shift.scale"].detach().cpu())
     shift = float(state_dict["scale_shift.shift"].detach().cpu())
     return ScaleShiftMACE(
-        r_max=5.0,
+        r_max=r_max,
         num_bessel=8,
         num_polynomial_cutoff=6,
         max_ell=2,
@@ -78,7 +79,7 @@ def select_validation_checkpoint(
     checkpoint_dir: Path,
     name: str,
     seed: int,
-) -> tuple[dict[str, object], Path, int]:
+) -> tuple[dict[str, object], Path, list[dict[str, object]]]:
     rows = [json.loads(line) for line in results_file.read_text().splitlines()]
     validation = [
         row
@@ -95,7 +96,7 @@ def select_validation_checkpoint(
     checkpoint = checkpoint_dir / f"{name}_run-{seed}_epoch-{epoch}.pt"
     if not checkpoint.is_file():
         raise FileNotFoundError(checkpoint)
-    return selected, checkpoint, len(validation)
+    return selected, checkpoint, validation
 
 
 def predict_frame(
@@ -143,8 +144,10 @@ def fit_train_only_element_correction(
         counts.append([int(np.sum(numbers == z)) for z in atomic_numbers])
         residuals.append(target_energy - prediction_energy)
         frames += 1
-    design = np.asarray(counts, dtype=np.float64)
-    target = np.asarray(residuals, dtype=np.float64)
+    counts_array = np.asarray(counts, dtype=np.float64)
+    natoms = counts_array.sum(axis=1)
+    design = counts_array / natoms[:, None]
+    target = np.asarray(residuals, dtype=np.float64) / natoms
     correction, _, rank, singular_values = np.linalg.lstsq(
         design, target, rcond=None
     )
@@ -152,13 +155,14 @@ def fit_train_only_element_correction(
     return {
         "frames": frames,
         "atomic_numbers": atomic_numbers,
+        "fit_objective": "least-squares residual energy per atom",
         "correction_ev_per_element": correction.tolist(),
         "design_rank": int(rank),
         "singular_values": singular_values.tolist(),
-        "train_residual_mae_ev_per_structure_before": float(
+        "train_residual_mae_ev_per_atom_before": float(
             np.mean(np.abs(target))
         ),
-        "train_residual_mae_ev_per_structure_after": float(
+        "train_residual_mae_ev_per_atom_after": float(
             np.mean(np.abs(target - fitted))
         ),
     }
@@ -216,6 +220,7 @@ def main() -> None:
     parser.add_argument("--name", required=True)
     parser.add_argument("--atomic-numbers", required=True)
     parser.add_argument("--avg-num-neighbors", type=float, required=True)
+    parser.add_argument("--r-max", type=float, default=5.0)
     parser.add_argument("--seed", type=int, default=20260616)
     parser.add_argument("--device", default="cuda")
     parser.add_argument("--calibration-train-file", type=Path)
@@ -226,7 +231,7 @@ def main() -> None:
     results_file = (
         args.run_dir / "results" / f"{args.name}_run-{args.seed}_train.txt"
     )
-    selected, checkpoint, validation_count = select_validation_checkpoint(
+    selected, checkpoint, validation_rows = select_validation_checkpoint(
         results_file,
         args.run_dir / "checkpoints",
         args.name,
@@ -237,6 +242,7 @@ def main() -> None:
         state["model"],
         atomic_numbers,
         args.avg_num_neighbors,
+        args.r_max,
     )
     model.load_state_dict(state["model"], strict=True)
     model.to(args.device)
@@ -271,12 +277,24 @@ def main() -> None:
         atomic_numbers,
         correction,
     )
+    force_envelope = min(
+        validation_rows,
+        key=lambda row: (float(row["mae_f"]), int(row["epoch"])),
+    )
+    energy_envelope = min(
+        validation_rows,
+        key=lambda row: (float(row["mae_e_per_atom"]), int(row["epoch"])),
+    )
     result = {
         "selection_rule": "minimum full-validation Force MAE; test never selects",
         "selected_epoch": int(selected["epoch"]),
         "selected_checkpoint": str(checkpoint),
-        "validation_checkpoint_count": validation_count,
+        "validation_checkpoint_count": len(validation_rows),
         "validation_log_metrics": selected,
+        "independent_validation_envelopes": {
+            "force_mae": force_envelope,
+            "energy_mae": energy_envelope,
+        },
         "trainable_parameters": parameter_count,
         "energy_calibration": calibration,
         "energy_calibration_fit_split": (
