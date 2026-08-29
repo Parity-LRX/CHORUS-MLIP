@@ -1,0 +1,41 @@
+{
+  "campaign": "NequIP CHORUS Pearl three-rung causal replication",
+  "created": "2026-08-26",
+  "implementation_revision": "v2: nonzero phase-row initialisation; Full/Aligned separation and nonzero phase-gradient tests required",
+  "backbone": {
+    "family": "NequIP",
+    "implementation": "e3nn reference backend",
+    "channels": 64,
+    "layers": 2,
+    "lmax": 2,
+    "chorus_rank": 16,
+    "chorus_scope": "final",
+    "precision": "strict float32",
+    "ema": false,
+    "tf32": false
+  },
+  "datasets": ["xxmd_mal", "md22_buckyball", "3bpa", "zr-o"],
+  "seeds": [20260616, 20260617, 20260618, 20260619, 20260620],
+  "modes": {
+    "off": "Unmodified NequIP aggregation; no CHORUS parameters.",
+    "diagonal": "CHORUS parameter schema retained, but only j=k Hermitian self-density terms are contracted.",
+    "aligned": "Complete j,k Hermitian closure with all learned phases set to zero; parameter schema is identical to Full.",
+    "full": "Complete j,k Hermitian closure with learned U(1)-structured phases."
+  },
+  "primary_outcome": "validation Force MAE envelope",
+  "checkpoint_rule": "minimum complete-validation Force MAE",
+  "test_rule": "evaluate only the checkpoint selected by validation Force MAE",
+  "energy_calibration": "train-only elemental residual for zr-o; no validation or test fitting",
+  "paired_estimands": [
+    "diagonal - off: self-density augmentation (parameter count is a documented co-intervention)",
+    "aligned - diagonal: cross-neighbour Hermitian closure without learned phase contrast",
+    "full - aligned: learned U(1) phase contrast at identical parameter schema"
+  ],
+  "confirmatory_matrix_size": 80,
+  "notes": [
+    "The earlier Slurm array 57448 was invalidated because zero phase initialisation trapped Full at the Aligned stationary point; none of its outputs are used.",
+    "Energy and Force validation envelopes are reported independently and are never presented as one checkpoint.",
+    "OpenEquivariance is intentionally disabled in this mechanism experiment so every mode uses the same reference backend.",
+    "Production throughput comparisons remain based on the optimized OpenEquivariance implementation."
+  ]
+}

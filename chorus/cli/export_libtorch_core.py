@@ -618,6 +618,7 @@ def _export_single_core(
     trace_num_edges: int | None = None,
     jit_mode: str = "trace",
     avg_num_neighbors: Optional[float] = None,
+    phase_intervention: Optional[str] = None,
 ) -> dict:
     from chorus.interfaces.lammps_mliap import (
         LAMMPS_MLIAP_MFF,
@@ -716,6 +717,20 @@ def _export_single_core(
         obj.wrapper.model = obj.wrapper.model.to(dtype=force_dtype)
 
     model_eager = obj.wrapper.model
+    if phase_intervention is not None and phase_intervention != "none":
+        baked = 0
+        for interaction in model_eager.interactions:
+            if getattr(interaction, "phase_head", None) is None:
+                continue
+            if str(getattr(interaction, "phase_coefficient", "")) != "polar":
+                raise RuntimeError(
+                    "phase-intervention export requires polar phase coefficients"
+                )
+            interaction.phase_intervention = phase_intervention
+            baked += 1
+        if baked == 0:
+            raise RuntimeError("checkpoint has no active learned phase head")
+        print(f"[libtorch-core] baked phase_intervention={phase_intervention!r} into {baked} interaction(s)")
     metadata_model = model_eager
     from chorus.models.dispersion import (
         dispersion_deployment_graph_rule,
@@ -1012,6 +1027,7 @@ def export_core(
     trace_buckets: str | None = None,
     jit_mode: str | None = None,
     avg_num_neighbors: Optional[float] = None,
+    phase_intervention: Optional[str] = None,
 ) -> None:
     ckpt_peek = torch.load(checkpoint, map_location="cpu", weights_only=False)
     mode = tensor_product_mode if tensor_product_mode is not None else ckpt_peek.get("tensor_product_mode", None)
@@ -1048,6 +1064,7 @@ def export_core(
             trace_num_edges=trace_num_edges,
             jit_mode=effective_jit_mode,
             avg_num_neighbors=avg_num_neighbors,
+            phase_intervention=phase_intervention,
         )
         return
 
@@ -1131,6 +1148,11 @@ def main() -> None:
                    help="Backward-compatible alias. E0 embedding is now enabled by default unless --no-embed-e0 is passed. "
                         "When enabled, E0 is taken from --e0-csv if provided, else from checkpoint when available.")
     p.add_argument("--no-embed-e0", action="store_true", help="Do not embed E0 into TorchScript (export network energy only)")
+    p.add_argument("--phase-intervention", type=str, default=None,
+                   help="bake a same-checkpoint phase intervention into the exported core: "
+                        "aligned|dose_<lambda>|common_shift. Mirrors the audited "
+                        "PhaseInterventionHooks of phase_specific_20260825 bit-exactly; "
+                        "permute variants require eager evaluation and are not exportable.")
     p.add_argument("--e0-csv", type=str, default=None,
                    help="E0 CSV path (Atom,E0 columns). Highest priority override for E0; "
                         "if not set, prefer checkpoint E0 when available.")
@@ -1191,6 +1213,7 @@ def main() -> None:
         trace_buckets=args.trace_buckets,
         jit_mode=(str(args.jit_mode) if args.jit_mode is not None else None),
         avg_num_neighbors=(float(args.avg_num_neighbors) if args.avg_num_neighbors is not None else None),
+        phase_intervention=(str(args.phase_intervention) if getattr(args, "phase_intervention", None) else None),
     )
 
 

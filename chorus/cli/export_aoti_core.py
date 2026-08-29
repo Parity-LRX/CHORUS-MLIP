@@ -782,6 +782,12 @@ def main() -> int:
     p.add_argument("--mbd-anisotropic", dest="mbd_anisotropic_arg", action="store_true",
                    help="synthetic combined export: anisotropic (l=2 tensor) polarizability -> [N,8] MBD source.")
     p.add_argument("--out", default="/tmp/fscetp_aoti.pt2")
+    p.add_argument("--phase-intervention", default="none",
+                   help="bake a same-checkpoint phase intervention into the exported core: "
+                        "none|aligned|dose_<lambda>|common_shift|permute_roll. Mirrors the audited "
+                        "PhaseInterventionHooks of phase_specific_20260825 bit-exactly for "
+                        "aligned/dose_*/common_shift (verified by verify_intervention_patch.py); "
+                        "permute_roll is the export-compatible within-centre rotation.")
     p.add_argument("--fallback", default=None,
                    help="path to an N-flexible TorchScript core (.pt) the LAMMPS engine should fall back to "
                         "when ntotal exceeds this .pt2's baked N (a ghost-count spike). Written into <out>.meta.")
@@ -890,6 +896,20 @@ def main() -> int:
             ictd_tp_backend=args.conv_tp_backend,
         )
         model = obj.wrapper.model
+        if args.phase_intervention != "none":
+            baked = 0
+            for interaction in model.interactions:
+                if getattr(interaction, "phase_head", None) is None:
+                    continue
+                if str(getattr(interaction, "phase_coefficient", "")) != "polar":
+                    raise RuntimeError(
+                        "phase-intervention export requires polar phase coefficients"
+                    )
+                interaction.phase_intervention = args.phase_intervention
+                baked += 1
+            if baked == 0:
+                raise RuntimeError("checkpoint has no active learned phase head")
+            print(f"[aoti] baked phase_intervention={args.phase_intervention!r} into {baked} interaction(s)")
         model.skip_input_validation = True  # set on the BARE model (the A.max().item() guard lives here,
                                             # not on the E0 wrapper) so make_fx tracing stays data-independent
         model.assume_edges_within_radius = bool(args.assume_cutoff_edges)

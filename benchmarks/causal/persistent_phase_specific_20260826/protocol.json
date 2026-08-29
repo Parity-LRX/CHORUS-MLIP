@@ -1,0 +1,46 @@
+{
+  "campaign": "persistent_phase_specific_causal_20260826",
+  "status": "submitted",
+  "scientific_question": "Does propagating the charged CHORUS state across both interaction layers change the causal contribution of relative edge phase?",
+  "scope_contrast": {
+    "reference": "The completed Final-scope causal campaigns.",
+    "treatment": "Persistent CHORUS at every interaction layer.",
+    "comparison_rule": "Estimate Full-versus-Aligned within each scope before forming the Persistent-minus-Final interaction contrast."
+  },
+  "modes": {
+    "aligned": "Full Hermitian neighbour-pair closure with the relative phase fixed to zero; parameter schema retained.",
+    "full": "Full Hermitian neighbour-pair closure with learned relative phase."
+  },
+  "datasets": ["mal", "bucky", "3bpa", "zro"],
+  "seeds": [20260616, 20260617, 20260618, 20260619, 20260620],
+  "mace_ictc": {
+    "channels": 64,
+    "hidden_lmax": 1,
+    "max_ell": 2,
+    "interactions": 2,
+    "correlation": 2,
+    "rank": 8,
+    "phase_scope": "persistent",
+    "steps": 45000,
+    "dtype": "float32",
+    "ema": false,
+    "tf32": false,
+    "makefx": true
+  },
+  "nequip": {
+    "channels": 64,
+    "lmax": 2,
+    "layers": 2,
+    "rank": 16,
+    "phase_scope": "persistent",
+    "dtype": "float32",
+    "ema": false,
+    "tf32": false,
+    "backend": "e3nn reference"
+  },
+  "primary_estimand": "Paired log Force-MAE ratio Full versus Aligned within dataset and seed.",
+  "scope_interaction": "log(FMAE_PersistentAligned/FMAE_PersistentFull) - log(FMAE_FinalAligned/FMAE_FinalFull)",
+  "selection": "Minimum complete-validation Force MAE; test never selects a checkpoint.",
+  "fixed_checkpoint_interventions": "For MACE-ICTC Persistent-Full, replay the selected checkpoint under aligned, dose, local phase permutation, and common-shift interventions.",
+  "claim_boundary": "The learned phase is an internal variable. The experiment identifies predictive use of relative phase and its interaction with propagation scope."
+}

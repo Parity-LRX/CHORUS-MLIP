@@ -1,0 +1,17 @@
+digraph PhaseCausal {
+  rankdir=LR;
+  node [shape=box, style="rounded"];
+  D [label="dataset / split D"];
+  S [label="seed S"];
+  H [label="frozen protocol H"];
+  T [label="trained phase policy T"];
+  W [label="optimisation W"];
+  K [label="validation-selected checkpoint K"];
+  I [label="same-checkpoint phase intervention I"];
+  Phi [label="relative phase Phi"];
+  R [label="Hermitian density R"];
+  Y [label="held-out error Y"];
+  D -> W; S -> W; H -> W; T -> W; W -> K; K -> Y;
+  K -> Phi; I -> Phi; Phi -> R; R -> Y;
+  H -> R; D -> Y;
+}

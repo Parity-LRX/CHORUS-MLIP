@@ -1,0 +1,93 @@
+{
+  "campaign": "chorus_phase_specific_causal_20260825",
+  "status": "frozen_before_submission",
+  "scope": "Secondary phase-specific mechanism study designed after the aggregate U1/Hermitian campaign was complete; it is not pooled with that primary campaign.",
+  "scientific_question": "Does learned relative edge phase contribute to held-out generalisation when the positive amplitude, full Hermitian neighbour-pair density, architecture, data, and optimisation protocol are controlled?",
+  "estimands": [
+    {
+      "name": "controlled_functional_phase_use",
+      "treatment": "factual learned phase at a frozen Full checkpoint",
+      "control": "per-centre aligned phase at that same checkpoint",
+      "role": "same-checkpoint mechanism estimand"
+    },
+    {
+      "name": "phase_edge_assignment",
+      "treatment": "factual phase-edge assignment",
+      "control": "deterministic within-centre phase permutations",
+      "role": "same-checkpoint assignment estimand"
+    },
+    {
+      "name": "end_to_end_phase_learning",
+      "treatment": "Full model trained with learned relative phase",
+      "control": "parameter-matched Aligned-Full model trained without relative phase",
+      "role": "learning-algorithm estimand"
+    }
+  ],
+  "post_training_interventions": {
+    "aligned": "Replace each local phase by its per-centre, per-channel circular mean while retaining amplitudes and all model weights.",
+    "dose": "Scale wrapped relative phase about the local circular mean by lambda in {0, 0.25, 0.50, 0.75, 1}.",
+    "permutation": "Permute phase vectors within each centre while retaining the local phase multiset, amplitudes, graph, and weights; average four deterministic repeats.",
+    "common_shift": "Add 1.234 radians to every local phase as a negative-control test of U(1) invariance."
+  },
+  "trained_control": {
+    "name": "Aligned-Full",
+    "coefficient": "positive amplitude on the real auxiliary component and exact zero on the imaginary component",
+    "full_hermitian_density": true,
+    "phase_head_retained": true,
+    "phase_head_gradient": "exactly zero by construction",
+    "parameter_count": "must equal paired Full checkpoint exactly"
+  },
+  "datasets": ["mal", "bucky", "3bpa", "zro"],
+  "seeds": [20260616, 20260617, 20260618, 20260619, 20260620],
+  "model": {
+    "backbone": "MACE-ICTC",
+    "channels": 64,
+    "hidden_lmax": 1,
+    "max_ell": 2,
+    "interactions": 2,
+    "correlation": 2,
+    "phase_density_rank": 8,
+    "phase_scope": "final",
+    "phase_context": "content",
+    "phase_amplitude": "softplus",
+    "phase_hidden_channels": 32,
+    "phase_scale_init": 0.05
+  },
+  "optimisation": {
+    "optimizer": "AdamW with MACE parameter groups",
+    "steps": 45000,
+    "learning_rate": 0.001,
+    "minimum_learning_rate": 0.000001,
+    "scheduler": "optimizer-step cosine",
+    "loss": "MSE",
+    "energy_force_weights": "1:100",
+    "ema": false,
+    "tf32": false,
+    "dtype": "float32",
+    "makefx": true
+  },
+  "selection": {
+    "checkpoint": "minimum full-validation Force MAE; earliest validation breaks exact ties",
+    "test_used_for_selection": false,
+    "primary_outcome": "test Force MAE",
+    "3bpa_primary_test": "300K",
+    "3bpa_secondary_tests": ["600K", "1200K"]
+  },
+  "analysis": {
+    "pairing": "dataset and seed",
+    "effect_scale": "paired log Force-MAE ratio and relative error reduction",
+    "aggregation": "dataset effects first, followed by an equal-weight macro average across the four fixed datasets",
+    "uncertainty": "deterministic hierarchical paired bootstrap over datasets and seeds",
+    "common_shift_tolerance_mev_per_angstrom": 0.05,
+    "native_replay_force_mae_tolerance_mev_per_angstrom": 0.1,
+    "physical_claim_boundary": "The learned phase is an internal model variable without an assigned molecular observable. The interventions identify phase use by this trained predictor, not a physical causal phase in the material."
+  },
+  "execution": {
+    "cluster": "A100 Slurm",
+    "maximum_concurrent_gpus": 4,
+    "probe_array_tasks": 20,
+    "aligned_training_array_tasks": 20,
+    "transient_retry_limit": 2,
+    "concurrent_walltime_or_throughput_is_reportable": false
+  }
+}

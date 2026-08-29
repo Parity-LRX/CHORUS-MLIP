@@ -1,0 +1,6 @@
+Base source: current CHORUS-MLIP deployment on 2026-08-26.
+Persistent causal extension: identical frozen Final protocol with phase_scope=persistent.
+Audited campaign patch: phase-aligned coefficient control and validation Force-MAE checkpoint selection.
+chorus/cli/train.py sha256=4bfaa42c2281a6b5ddfef746c19366ff9ff2acf6b2b684eae43e55f0d1d761be
+chorus/training/train_loop.py sha256=a64a4d9b33c0dcc55b8d6a99d0e91295ef3faf13394d68d1a039cfe94da1f82c
+chorus/models/pure_cartesian_ictd_fix.py sha256=cb545a83c2c2b9b6ca6b2d959acde771734b475df6bc9ed9011aca5733f7d288

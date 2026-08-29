@@ -1,0 +1,3 @@
+base_commit=4066158beca5de13ffa474f2e4814dfd797e9d7d
+campaign=u1_hermitian_causal_20260824
+source_policy=frozen deployment archive containing only the base tree plus the audited checkpoint-selection and campaign files

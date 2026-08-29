@@ -1,0 +1,33 @@
+digraph CHORUS_Causal_DAG {
+  graph [rankdir=LR, bgcolor="transparent", pad="0.15", nodesep="0.38", ranksep="0.55"];
+  node [shape=box, style="rounded,filled", fillcolor="#F7F8FA", color="#8792A2", fontname="Helvetica", fontsize=10];
+  edge [color="#687386", arrowsize=0.7];
+
+  T [label="Intervention T\nOff / j=k / Charge2 / Full", fillcolor="#E8F1FB", color="#4D78A8"];
+  R [label="Quadratic representation R\nHermitian/U(1) closure and pair terms"];
+  P [label="Parameterisation and\ncompute path P"];
+  S [label="Seed S", fillcolor="#FFF4DC", color="#B88731"];
+  Xtr [label="Training split X_train", fillcolor="#FFF4DC", color="#B88731"];
+  H [label="Frozen architecture, optimiser,\nprecision and step budget H", fillcolor="#FFF4DC", color="#B88731"];
+  W [label="Optimisation trajectory W"];
+  Xval [label="Validation split X_val", fillcolor="#FFF4DC", color="#B88731"];
+  V [label="Validation Force-MAE path V"];
+  K [label="Selected checkpoint K"];
+  Xtest [label="Held-out test split X_test", fillcolor="#FFF4DC", color="#B88731"];
+  Y [label="Test error Y", fillcolor="#E9F5EC", color="#4E8A5D"];
+
+  T -> R;
+  T -> P;
+  R -> W;
+  P -> W;
+  S -> W;
+  Xtr -> W;
+  H -> P;
+  H -> W;
+  W -> V;
+  Xval -> V;
+  V -> K;
+  W -> K;
+  K -> Y;
+  Xtest -> Y;
+}

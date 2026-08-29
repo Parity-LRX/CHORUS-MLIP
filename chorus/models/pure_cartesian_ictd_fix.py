@@ -1099,9 +1099,7 @@ class PhaseHermitianFullLResidual(nn.Module):
                 # independent of basis/CG special cases. The retained path set
                 # is identical to the Hermitian operator, so parameter count and
                 # output layout are exactly matched.
-                pair_value = torch.einsum(
-                    "...arm,...brn,mnk->...abrk", left, right, cg
-                )
+                pair_value = _traced_contract_pair_kernel(left, right, cg)
                 real_value = (
                     pair_value[..., 0, 0, :, :]
                     - pair_value[..., 1, 1, :, :]
@@ -1127,17 +1125,13 @@ class PhaseHermitianFullLResidual(nn.Module):
                     )
             elif l1 == l2:
                 # Sum over the shared doublet index: xx + yy.
-                real_value = torch.einsum(
-                    "...arm,...arn,mnk->...rk", left, right, cg
-                )
+                real_value = _traced_contract_diagonal_kernel(left, right, cg)
                 pair_value = None
             else:
                 # Compute xx, xy, yx, yy together.  Their Hermitian real and
                 # imaginary combinations are selected below without new CG
                 # contractions.
-                pair_value = torch.einsum(
-                    "...arm,...brn,mnk->...abrk", left, right, cg
-                )
+                pair_value = _traced_contract_pair_kernel(left, right, cg)
                 real_value = pair_value[..., 0, 0, :, :] + pair_value[..., 1, 1, :, :]
             for _, cg_name, start, end in slices:
                 coupled_values[(cg_name, "real")] = real_value[..., start:end]
@@ -3299,6 +3293,41 @@ class CueqConvTensorProductSO3(nn.Module):
         return blocks
 
 
+def _traced_contract_pair_kernel(left: torch.Tensor, right: torch.Tensor,
+                                  cg: torch.Tensor) -> torch.Tensor:
+    """out[..., a, b, r, k] = sum_{m,n} left[...,a,r,m] right[...,b,r,n] cg[m,n,k].
+
+    Trace-friendly equivalent of einsum('...arm,...brn,mnk->...abrk'): einsum's
+    decomposition bakes hint literals for leading batch dims under
+    make_fx(..., _allow_non_fake_inputs=True) symbolification (the cause of
+    the N-specialized nodes that blocked N-dynamic AOTI export).  This form
+    uses single-symbol reductions only, keeping N/E symbolic.  It differs from
+    einsum only by float reassociation (verified <= 2.1e-07 relative).
+    """
+    m_dim, n_dim, k_dim = cg.shape
+    c_n_mk = cg.permute(1, 0, 2).reshape(n_dim, m_dim * k_dim)      # (n, m*k)
+    u = torch.matmul(right, c_n_mk)                                  # (..., b, r, m*k)
+    u = u.reshape(*u.shape[:-1], m_dim, k_dim).transpose(-1, -2)     # (..., b, r, k, m)
+    l6 = left.unsqueeze(-3).unsqueeze(-2)                            # (..., a, 1, r, 1, m)
+    u6 = u.unsqueeze(-5)                                             # (..., 1, b, r, k, m)
+    return (l6 * u6).sum(dim=-1)                                     # (..., a, b, r, k)
+
+
+def _traced_contract_diagonal_kernel(left: torch.Tensor, right: torch.Tensor,
+                                     cg: torch.Tensor) -> torch.Tensor:
+    """out[..., r, k] = sum_{a,m,n} left[...,a,r,m] right[...,a,r,n] cg[m,n,k].
+
+    Trace-friendly equivalent of einsum('...arm,...arn,mnk->...rk'); see
+    _traced_contract_pair_kernel for why einsum is avoided here.
+    """
+    m_dim, n_dim, k_dim = cg.shape
+    c_n_mk = cg.permute(1, 0, 2).reshape(n_dim, m_dim * k_dim)      # (n, m*k)
+    u = torch.matmul(right, c_n_mk)                                  # (..., a, r, m*k)
+    u = u.reshape(*u.shape[:-1], m_dim, k_dim)                       # (..., a, r, m, k)
+    t = left.unsqueeze(-1) * u                                       # (..., a, r, m, k)
+    return t.sum(dim=(-4, -2))                                       # (..., r, k)
+
+
 class ICTDResidualInteractionBlock(nn.Module):
     """
     ICTC-SO3 interaction block with MACE-like interface.
@@ -3499,6 +3528,12 @@ class ICTDResidualInteractionBlock(nn.Module):
         self.phase_hidden_channels = int(phase_hidden_channels)
         self.phase_amplitude = str(phase_amplitude)
         self.phase_coefficient = str(phase_coefficient)
+        # Frozen-deployment causal intervention switch for the phase head.
+        # "none"/"native" leaves the learned phase untouched; the other modes
+        # reproduce the audited same-checkpoint interventions of
+        # benchmarks/causal/phase_specific_20260825/evaluate_phase_interventions.py
+        # inside the forward pass, so they survive TorchScript/AOTI export.
+        self.phase_intervention = "none"
         self.phase_context = str(phase_context)
         self.phase_normalization = str(phase_normalization)
         self.phase_angular_channels = bool(phase_angular_channels)
@@ -3516,10 +3551,16 @@ class ICTDResidualInteractionBlock(nn.Module):
             raise ValueError(
                 f"phase_amplitude must be 'unit' or 'softplus', got {self.phase_amplitude!r}"
             )
-        if self.phase_coefficient not in {"polar", "positive", "signed", "cartesian"}:
+        if self.phase_coefficient not in {
+            "polar",
+            "aligned",
+            "positive",
+            "signed",
+            "cartesian",
+        }:
             raise ValueError(
-                "phase_coefficient must be 'polar', 'positive', 'signed', or "
-                f"'cartesian', got {self.phase_coefficient!r}"
+                "phase_coefficient must be 'polar', 'aligned', 'positive', "
+                f"'signed', or 'cartesian', got {self.phase_coefficient!r}"
             )
         if self.phase_context not in {
             "content",
@@ -3902,6 +3943,39 @@ class ICTDResidualInteractionBlock(nn.Module):
         )
         return torch.stack((edge_block, charged_real, charged_imag), dim=1)
 
+    def _apply_phase_intervention(self, theta: torch.Tensor, edge_dst: torch.Tensor,
+                                  node_feats0: torch.Tensor) -> torch.Tensor:
+        """Same-checkpoint phase interventions, trace/export-safe.
+
+        Modes mirror the audited PhaseInterventionHooks of
+        benchmarks/causal/phase_specific_20260825/evaluate_phase_interventions.py
+        exactly for aligned / dose_* / common_shift.  The per-centre accumulation
+        buffers are built with zeros_like on a node-feature slice so the atom
+        count stays dynamic under torch.jit.trace / torch.export.  permute_roll
+        (the export-compatible within-centre rotation) requires an arange over
+        edges and is therefore only available in eager evaluation.
+        """
+        mode = self.phase_intervention
+        k = theta.shape[1]  # constant channel dimension
+        node_buf = node_feats0[:, :k].reshape(-1, k)  # (N, k) with N dynamic
+        sin_sum = torch.zeros_like(node_buf)
+        cos_sum = torch.zeros_like(node_buf)
+        sin_sum.index_add_(0, edge_dst, torch.sin(theta))
+        cos_sum.index_add_(0, edge_dst, torch.cos(theta))
+        centre_all = torch.atan2(sin_sum, cos_sum)
+        centre = centre_all.index_select(0, edge_dst)
+        if mode == "aligned":
+            return centre
+        if mode == "common_shift":
+            return theta + 1.234
+        if mode.startswith("dose_"):
+            dose = float(mode.split("_", 1)[1])
+            relative = torch.atan2(
+                torch.sin(theta - centre), torch.cos(theta - centre)
+            )
+            return centre + dose * relative
+        raise RuntimeError(f"phase_intervention {mode!r} is not available in traced/exported cores")
+
     def forward(
         self,
         *,
@@ -3977,6 +4051,8 @@ class ICTDResidualInteractionBlock(nn.Module):
             )
             phase_hidden = self.phase_trunk(phase_context)
             theta = self.phase_head(phase_hidden)
+            if self.phase_intervention not in ("none", "native"):
+                theta = self._apply_phase_intervention(theta, edge_dst, x1[0])
             if self.phase_amplitude_head is None:
                 amplitude = torch.ones_like(theta)
                 amplitude_raw = None
@@ -3986,6 +4062,14 @@ class ICTDResidualInteractionBlock(nn.Module):
             if self.phase_coefficient == "polar":
                 phase_cos = amplitude.mul(torch.cos(theta)).unsqueeze(-1)
                 phase_sin = amplitude.mul(torch.sin(theta)).unsqueeze(-1)
+            elif self.phase_coefficient == "aligned":
+                # Phase-specific causal control: retain the learned positive
+                # amplitude and the complete Hermitian j,k density, but align
+                # every edge in the auxiliary U(1) plane.  The zero multiple
+                # keeps the phase head in the identical parameter/computation
+                # graph while making its gradient exactly zero.
+                phase_cos = amplitude.unsqueeze(-1)
+                phase_sin = theta.mul(0.0).unsqueeze(-1)
             elif self.phase_coefficient == "positive":
                 if amplitude_raw is None:
                     raise RuntimeError("positive coefficient requires an amplitude head")
@@ -4716,13 +4800,15 @@ class PureCartesianICTDFix(nn.Module):
             )
         if self.ictd_fix_phase_coefficient not in {
             "polar",
+            "aligned",
             "positive",
             "signed",
             "cartesian",
         }:
             raise ValueError(
-                "ictd_fix_phase_coefficient must be 'polar', 'positive', 'signed', "
-                f"or 'cartesian', got {self.ictd_fix_phase_coefficient!r}"
+                "ictd_fix_phase_coefficient must be 'polar', 'aligned', "
+                "'positive', 'signed', or 'cartesian', got "
+                f"{self.ictd_fix_phase_coefficient!r}"
             )
         if self.ictd_fix_phase_context not in {
             "content",

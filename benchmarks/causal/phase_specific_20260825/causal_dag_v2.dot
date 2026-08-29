@@ -1,0 +1,34 @@
+digraph chorus_causal_v2 {
+  graph [rankdir=LR, bgcolor="transparent", pad=0.15, nodesep=0.28, ranksep=0.55];
+  node [shape=box, style="rounded,filled", fillcolor="#F5F7FA", color="#67758A", fontname="Helvetica", fontsize=10];
+  edge [color="#67758A", arrowsize=0.7, penwidth=1.1];
+
+  D [label="dataset / split D"];
+  S [label="seed S"];
+  B [label="backbone configuration B"];
+  P [label="propagation scope P"];
+  T [label="phase policy T"];
+  H [label="training protocol H"];
+  Xtr [label="training data"];
+  W [label="optimisation trajectory W", fillcolor="#EAF1F8"];
+  Xv [label="validation data"];
+  K [label="selected checkpoint K", fillcolor="#EAF1F8"];
+  Xt [label="held-out examples"];
+  Y [label="error Y", fillcolor="#F4E8DF"];
+
+  D -> W; S -> W; B -> W; P -> W; T -> W; H -> W; Xtr -> W;
+  W -> K; Xv -> K; K -> Y; Xt -> Y;
+
+  subgraph cluster_frozen {
+    label="frozen-checkpoint intervention";
+    color="#B8C3D1";
+    style="rounded,dashed";
+    I [label="phase intervention I", fillcolor="#E7F2ED"];
+    Phi [label="relative phase Phi_I", fillcolor="#E7F2ED"];
+    R [label="Hermitian density R_I", fillcolor="#E7F2ED"];
+    YI [label="prediction / error Y_I", fillcolor="#F4E8DF"];
+    C [label="fixed K, messages, amplitudes,\ngraph and examples", fillcolor="#FFFFFF"];
+    I -> Phi -> R -> YI;
+    C -> R; C -> YI;
+  }
+}

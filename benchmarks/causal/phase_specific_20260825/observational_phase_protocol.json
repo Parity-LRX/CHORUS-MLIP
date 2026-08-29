@@ -1,0 +1,33 @@
+{
+  "campaign": "chorus_phase_observational_extension_20260825",
+  "status": "post_hoc_observational_extension",
+  "purpose": "Complete Pearl rung 1 with phase-organisation measurements from the same validation-selected Full checkpoints used by the frozen intervention campaign.",
+  "claim_scope": "Descriptive association only. These measurements do not identify a causal effect and are not pooled with the predeclared intervention estimands.",
+  "datasets": ["mal", "bucky", "3bpa", "zro"],
+  "seeds": [20260616, 20260617, 20260618, 20260619, 20260620],
+  "checkpoint": "Full checkpoint selected by complete validation Force MAE in the parent campaign",
+  "split": {
+    "mal": "test",
+    "bucky": "test",
+    "3bpa": "test_300K",
+    "zro": "test"
+  },
+  "observed_variables": {
+    "relative_phase": "wrapped theta_ij - theta_ik for unordered edge pairs with the same receiving centre",
+    "pair_weight": "a_ij a_ik from the learned positive amplitude branch",
+    "destructive_kernel_fraction": "sum a_ij a_ik max(-cos Delta theta, 0) divided by total absolute signed-kernel mass",
+    "weighted_mean_cos_delta": "amplitude-pair-weighted mean cos Delta theta"
+  },
+  "association_targets": [
+    "frozen-checkpoint error increase after phase alignment",
+    "end-to-end Full-versus-Aligned paired test effect"
+  ],
+  "execution": {
+    "dtype": "float32",
+    "tf32": false,
+    "weights_frozen": true,
+    "training": false,
+    "all_frames": true,
+    "maximum_concurrent_gpus": 4
+  }
+}

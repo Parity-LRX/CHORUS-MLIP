@@ -1,0 +1,121 @@
+{
+  "campaign": "u1_hermitian_causal_20260824",
+  "status": "frozen_before_submission",
+  "scientific_question": "Within a fixed CHORUS-Final architecture, does U(1)-neutral Hermitian closure improve generalisation beyond a parameter-matched non-Hermitian quadratic control?",
+  "estimand_scope": "The causal effect of the configured quadratic closure within this architecture, optimiser, data split, and training budget; not a universal necessity claim for every equivariant model.",
+  "interventions": {
+    "off": "MACE-ICTC backbone without the CHORUS density residual",
+    "diagonal": "Hermitian j=k self-density only",
+    "charge2": "parameter-matched non-Hermitian z tensor z control",
+    "full": "U(1)-neutral Hermitian z tensor z-star density"
+  },
+  "predeclared_contrasts": [
+    {
+      "name": "u1_hermitian_closure",
+      "treatment": "full",
+      "control": "charge2",
+      "role": "primary"
+    },
+    {
+      "name": "cross_neighbour_interference",
+      "treatment": "full",
+      "control": "diagonal",
+      "role": "secondary"
+    },
+    {
+      "name": "stable_self_density",
+      "treatment": "diagonal",
+      "control": "off",
+      "role": "secondary"
+    }
+  ],
+  "datasets": [
+    "mal",
+    "bucky",
+    "3bpa",
+    "zro"
+  ],
+  "dataset_roles": {
+    "mal": "xxMD malonaldehyde temporal split",
+    "bucky": "MD22 buckyball catcher, 600-frame training split and large held-out test",
+    "3bpa": "3BPA 450/50 training/validation with 300 K, 600 K, and 1200 K tests",
+    "zro": "MS25 Zr-O solid set 1"
+  },
+  "seeds": [
+    20260616,
+    20260617,
+    20260618,
+    20260619,
+    20260620
+  ],
+  "model": {
+    "backbone": "MACE-ICTC",
+    "channels": 64,
+    "hidden_lmax": 1,
+    "max_ell": 2,
+    "interactions": 2,
+    "correlation": 2,
+    "phase_density_rank": 8,
+    "phase_scope": "final",
+    "phase_context": "content",
+    "phase_amplitude": "softplus",
+    "phase_hidden_channels": 32,
+    "phase_scale_init": 0.05,
+    "cutoff_angstrom": "5.0 for molecular datasets; 6.0 for Zr-O"
+  },
+  "optimisation": {
+    "optimizer": "AdamW with MACE parameter groups",
+    "steps": 45000,
+    "learning_rate": 0.001,
+    "minimum_learning_rate": 0.000001,
+    "scheduler": "optimizer-step cosine",
+    "loss": "MSE",
+    "energy_force_weights": "1:100",
+    "ema": false,
+    "tf32": false,
+    "dtype": "float32",
+    "makefx": true
+  },
+  "selection": {
+    "checkpoint": "minimum full-validation Force MAE; earliest validation breaks exact ties",
+    "test_used_for_selection": false,
+    "primary_outcome": "test Force MAE",
+    "secondary_outcomes": [
+      "test Force RMSE",
+      "test Energy MAE per atom",
+      "test Energy RMSE per atom"
+    ],
+    "3bpa_primary_test": "300K",
+    "3bpa_secondary_tests": [
+      "600K",
+      "1200K"
+    ]
+  },
+  "analysis": {
+    "pairing": "dataset and seed",
+    "effect_scale": "paired log error ratio and relative error reduction",
+    "aggregation": "dataset-level effects first, then equal-weight macro average across datasets",
+    "uncertainty": "deterministic hierarchical paired bootstrap",
+    "causal_dag": "causal_dag.md and causal_dag.dot in this directory",
+    "identification": "Every intervention is executed within every dataset-by-seed stratum. Dataset, split, seed, architecture, optimiser, precision, step budget, and checkpoint rule are fixed or blocked by pairing.",
+    "primary_causal_estimand": "The paired algorithmic intervention effect of replacing charge-2 z tensor z closure with U(1)-neutral Hermitian z tensor z-star closure on held-out Force MAE, including optimisation and validation-based checkpoint selection as downstream mediators.",
+    "non_identified_decomposition": "Full versus Charge2 identifies the joint Hermitian-plus-U(1)-neutral closure. It does not separately identify Hermiticity and charge neutrality because no valid intervention changes one while holding the other fixed.",
+    "optional_stopping": false,
+    "existing_runs": "context and pilot evidence only; not pooled into the new primary estimand",
+    "dataset_sampling_scope": "The four systems are a predeclared mechanism-probing panel informed by prior experiments, not a random sample of chemical systems. Macro effects therefore apply to this panel rather than to all MLIPs or all materials."
+  },
+  "execution": {
+    "cluster": "A100 Slurm",
+    "maximum_concurrent_gpus": 2,
+    "array_tasks": 80,
+    "transient_retry_limit": 2,
+    "frozen_fields_may_not_change_after_submission": [
+      "datasets",
+      "seeds",
+      "interventions",
+      "model",
+      "optimisation",
+      "selection"
+    ]
+  }
+}
