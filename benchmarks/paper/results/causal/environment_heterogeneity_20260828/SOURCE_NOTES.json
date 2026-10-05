@@ -1,0 +1,28 @@
+{
+  "schema_version": 1,
+  "analysis_date": "2026-08-28",
+  "raw_source": {
+    "remote_root": "/public/home/sps-xia/rxlin/chorus_phase_causal_20260825",
+    "required_cells": "4 datasets x 5 seeds x one validation-selected MACE-Final Full checkpoint",
+    "atomic_file": "paired_atomic_outcomes.parquet",
+    "frame_file": "paired_frame_outcomes.parquet"
+  },
+  "selection": "minimum complete-validation Force MAE; test never selects a checkpoint",
+  "intervention": "align or permute relative phase at a frozen Full checkpoint while retaining messages, amplitudes, graph, examples, and weights",
+  "causal_unit": "independently trained dataset-by-seed predictor",
+  "nested_repeated_outcomes": [
+    "atoms",
+    "frames"
+  ],
+  "generators": {
+    "analyse_environment_heterogeneity.py": "4ef8a8da2e2f24ac08241a7d6addd3a6cccb6b3047bdb33e7bd141eb49a5919f",
+    "validate_environment_heterogeneity.py": "017c884aa6f155cc280b0a1d4ebe76ed25cfb82c9d0acbb326303092e379377c",
+    "causal_dag_v2.md": "5d19c8df0419dea1f555bd5c431f8a68003587da27f314a1febe194066c0ee39",
+    "analyse_scope_backbone_interactions.py": "c23074828c73ff59e0981fdf34dd1e952f83789719029a15489f8751496ce1b0"
+  },
+  "pending_synthesis": {
+    "completion_gate": "MACE-Persistent, NequIP-Final, and NequIP-Persistent must all be complete",
+    "slurm_job": 58127,
+    "partial_interactions_reported": false
+  }
+}

@@ -1,0 +1,13 @@
+{
+  "aligned_checkpoint_sha256": "1e6f083d586d8412f4e32c3e9157b081159c2935fad9dde7f6bf8d7f2db982ea",
+  "aligned_state_elements": 181131,
+  "aligned_state_tensor_count": 73,
+  "deterministic_algorithms_forced": false,
+  "full_checkpoint_sha256": "a13e506bd6166184dc891fc863cf64f0ee9adb786cbf1ff1da29b354c70dcfd4",
+  "full_state_elements": 181131,
+  "full_state_tensor_count": 73,
+  "inactive_aligned_phase_head_elements": 32,
+  "interpretation": "Nominal architecture and state schema are matched. Aligned-Full makes the 32-element phase head functionally inactive; CUDA deterministic algorithms were not forced, so the paired retraining is a learning-system potential-outcome estimate rather than bitwise replay.",
+  "phase_head_key": "interactions.1.phase_head.weight",
+  "same_state_tensor_schema": true
+}

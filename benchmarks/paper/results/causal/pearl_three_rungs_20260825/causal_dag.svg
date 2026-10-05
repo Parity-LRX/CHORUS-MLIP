@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1040" height="430" viewBox="0 0 1040 430">
+<defs><marker id="arrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#53616b"/></marker></defs>
+<rect width="1040" height="430" fill="white"/>
+<style>.n{fill:#f7f8f7;stroke:#6c7a82;stroke-width:1.2;rx:8}.t{font:14px Arial,sans-serif;fill:#1f2a30;text-anchor:middle}.s{font:13px Arial,sans-serif;fill:#52616a}.e{stroke:#53616b;stroke-width:1.3;fill:none;marker-end:url(#arrow)}</style>
+<text x="28" y="34" class="s" font-weight="600">End-to-end learning system</text>
+<rect class="n" x="38" y="62" width="150" height="48"/><text class="t" x="113" y="91">dataset / seed / protocol</text>
+<rect class="n" x="248" y="62" width="145" height="48"/><text class="t" x="320" y="83">phase policy</text><text class="t" x="320" y="100">Full or Aligned</text>
+<rect class="n" x="453" y="62" width="145" height="48"/><text class="t" x="525" y="91">optimisation path</text>
+<rect class="n" x="658" y="62" width="150" height="48"/><text class="t" x="733" y="83">validation-selected</text><text class="t" x="733" y="100">checkpoint</text>
+<rect class="n" x="868" y="62" width="130" height="48"/><text class="t" x="933" y="91">test error</text>
+<path class="e" d="M188 86 H244"/><path class="e" d="M393 86 H449"/><path class="e" d="M598 86 H654"/><path class="e" d="M808 86 H864"/>
+<text x="28" y="185" class="s" font-weight="600">Frozen-predictor intervention</text>
+<rect class="n" x="38" y="215" width="150" height="52"/><text class="t" x="113" y="236">fixed checkpoint,</text><text class="t" x="113" y="254">messages and amplitudes</text>
+<rect class="n" x="248" y="215" width="145" height="52"/><text class="t" x="320" y="236">do(phase)</text><text class="t" x="320" y="254">align / dose / permute</text>
+<rect class="n" x="453" y="215" width="145" height="52"/><text class="t" x="525" y="236">relative phase</text><text class="t" x="525" y="254">Δθ</text>
+<rect class="n" x="658" y="215" width="150" height="52"/><text class="t" x="733" y="236">Hermitian</text><text class="t" x="733" y="254">density update</text>
+<rect class="n" x="868" y="215" width="130" height="52"/><text class="t" x="933" y="245">prediction error</text>
+<path class="e" d="M188 241 H244"/><path class="e" d="M393 241 H449"/><path class="e" d="M598 241 H654"/><path class="e" d="M808 241 H864"/>
+<path class="e" d="M113 267 V318 H733 V271"/>
+<text x="28" y="360" class="s">The trained contrast includes optimisation and checkpoint selection as mediators. The frozen contrast holds them fixed.</text>
+<text x="28" y="388" class="s">A common phase shift is the U(1) negative control; phase statistics are observational descendants of the fitted model.</text>
+</svg>

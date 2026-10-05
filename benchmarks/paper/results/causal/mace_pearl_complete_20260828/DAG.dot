@@ -1,0 +1,39 @@
+digraph MACEPearl {
+  graph [rankdir=LR, bgcolor="white", pad="0.15", nodesep="0.35", ranksep="0.58", fontname="Helvetica"];
+  node [shape=box, style="rounded,filled", fillcolor="#F4F6F8", color="#66727E", fontname="Helvetica", fontsize=10, margin="0.10,0.07"];
+  edge [color="#68737D", penwidth=1.1, arrowsize=0.7, fontname="Helvetica", fontsize=9];
+
+  subgraph cluster_train {
+    label="Rung 2 · independently retrained policies";
+    color="#CBD2D9";
+    style="rounded";
+    D [label="Dataset and split D"];
+    S [label="Seed S"];
+    H [label="Fixed protocol H"];
+    P [label="Scope P\nFinal / Persistent", fillcolor="#F7EDE9", color="#B25B45"];
+    T [label="Policy T\nOff / Diagonal / Aligned / Full", fillcolor="#EAF1F5", color="#356C8C"];
+    W [label="Optimisation trajectory W"];
+    K [label="Validation-selected checkpoint K"];
+    Y [label="Held-out error Y", fillcolor="#F2F0E8"];
+    D -> W; S -> W; H -> W; P -> W; T -> W; W -> K; K -> Y;
+  }
+
+  subgraph cluster_frozen {
+    label="Rung 3 · same-checkpoint potential outcomes";
+    color="#CBD2D9";
+    style="rounded";
+    I [label="Phase intervention I", fillcolor="#F7EDE9", color="#B25B45"];
+    Phi [label="Relative phase Φ(I)"];
+    R [label="Hermitian density R(I)"];
+    F [label="Prediction f_K(I, X)"];
+    YI [label="Potential outcome Y_K(I)", fillcolor="#F2F0E8"];
+    I -> Phi -> R -> F -> YI;
+  }
+
+  K -> F [label="fixed weights"];
+  X [label="Same held-out input X", fillcolor="#FFFFFF"];
+  X -> F;
+  O [label="Rung 1 · fitted-model associations", shape=ellipse, fillcolor="#FFFFFF", color="#8B949E"];
+  K -> O [style=dashed];
+  YI -> O [style=dashed];
+}

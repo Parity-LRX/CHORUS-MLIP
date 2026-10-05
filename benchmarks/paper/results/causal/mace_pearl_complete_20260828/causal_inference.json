@@ -1,0 +1,774 @@
+{
+  "analysis_config": {
+    "association_permutations": 100000,
+    "causal_unit": "independently trained dataset-by-seed model or frozen predictor",
+    "hierarchical_bootstrap_replicates": 100000,
+    "outcome": "test Force MAE after validation-Force-MAE checkpoint selection",
+    "rng_seed": 20260828
+  },
+  "claim_boundary": {
+    "counterfactual": "same fitted predictor and held-out input under model-internal phase intervention",
+    "phase": "Full versus Aligned retains matched parameter schema and nominal count",
+    "scope": "fixed MACE-ICTC/CHORUS configuration and four-dataset mechanism panel",
+    "self_density": "Diagonal versus Off is a total module effect with active capacity co-intervention",
+    "theta": "internal learned variable without assigned physical observable"
+  },
+  "input_validation": {
+    "all_run_metrics_finite_positive": true,
+    "final_cells_expected_80": true,
+    "full_aligned_parameter_counts_equal_within_scope": true,
+    "passed": true,
+    "persistent_cells_expected_40": true,
+    "probe_cells_expected_40": true,
+    "test_never_used_for_selection": true
+  },
+  "pearl_rungs": {
+    "doing": {
+      "propagation_scope_interaction": {
+        "benefit_ratio_change_95pct_hierarchical_bootstrap_ci_percent": [
+          -0.8137725194701011,
+          1.4334850013732248
+        ],
+        "benefit_ratio_change_percent": 0.3025345048319604,
+        "control": "zero",
+        "dataset_relative_error_reduction_percent": {
+          "3bpa": 0.8454740518606063,
+          "bucky": 0.4387363951158907,
+          "mal": 1.0842246752029716,
+          "zro": -1.1774825737839834
+        },
+        "dataset_wins_of_five": {
+          "3bpa": 3,
+          "bucky": 3,
+          "mal": 4,
+          "zro": 0
+        },
+        "exact_two_sided_sign_flip_p": 0.4905548095703125,
+        "macro_95pct_hierarchical_bootstrap_ci_percent": [
+          -0.8185569066219589,
+          1.4149122688475013
+        ],
+        "macro_mean_log_benefit": 0.003020777901134409,
+        "macro_relative_error_reduction_percent": 0.30162199422526514,
+        "name": "Persistent-minus-Final trained phase interaction",
+        "paired_units": 20,
+        "scope": "Persistent-minus-Final",
+        "treatment": "scope interaction",
+        "two_sided_binomial_sign_p": 1.0,
+        "two_sided_wilcoxon_p": 0.6476554870605469,
+        "wins": 10
+      },
+      "trained_effects": [
+        {
+          "control": "off",
+          "dataset_relative_error_reduction_percent": {
+            "3bpa": 10.26661545698503,
+            "bucky": 11.315329044118517,
+            "mal": 11.592833104953215,
+            "zro": 2.8426041196623175
+          },
+          "dataset_wins_of_five": {
+            "3bpa": 5,
+            "bucky": 5,
+            "mal": 5,
+            "zro": 5
+          },
+          "exact_two_sided_sign_flip_p": 1.9073486328125e-06,
+          "macro_95pct_hierarchical_bootstrap_ci_percent": [
+            4.8941803453389054,
+            11.917125856254662
+          ],
+          "macro_mean_log_benefit": 0.09511636688690019,
+          "macro_relative_error_reduction_percent": 9.073288027239856,
+          "name": "final_self_density",
+          "paired_units": 20,
+          "plot_label": "Final: self-density",
+          "scope": "Final",
+          "treatment": "diagonal",
+          "two_sided_binomial_sign_p": 1.9073486328125e-06,
+          "two_sided_wilcoxon_p": 1.9073486328125e-06,
+          "wins": 20
+        },
+        {
+          "control": "diagonal",
+          "dataset_relative_error_reduction_percent": {
+            "3bpa": 4.245365214025099,
+            "bucky": 5.57398142695652,
+            "mal": -3.8509119426723304,
+            "zro": 0.054487973875860796
+          },
+          "dataset_wins_of_five": {
+            "3bpa": 5,
+            "bucky": 5,
+            "mal": 1,
+            "zro": 3
+          },
+          "exact_two_sided_sign_flip_p": 0.16126251220703125,
+          "macro_95pct_hierarchical_bootstrap_ci_percent": [
+            -2.3922240037085762,
+            5.147791453278683
+          ],
+          "macro_mean_log_benefit": 0.01587339173961172,
+          "macro_relative_error_reduction_percent": 1.574807340878015,
+          "name": "final_cross_neighbour",
+          "paired_units": 20,
+          "plot_label": "Final: cross-neighbour closure",
+          "scope": "Final",
+          "treatment": "aligned",
+          "two_sided_binomial_sign_p": 0.11531829833984375,
+          "two_sided_wilcoxon_p": 0.20244979858398438,
+          "wins": 14
+        },
+        {
+          "control": "aligned",
+          "dataset_relative_error_reduction_percent": {
+            "3bpa": 0.6418025159525942,
+            "bucky": 0.4491198909669314,
+            "mal": 0.07526153252537249,
+            "zro": 1.2737249448294574
+          },
+          "dataset_wins_of_five": {
+            "3bpa": 3,
+            "bucky": 4,
+            "mal": 4,
+            "zro": 5
+          },
+          "exact_two_sided_sign_flip_p": 0.06556129455566406,
+          "macro_95pct_hierarchical_bootstrap_ci_percent": [
+            -0.1194910401413285,
+            1.299690466815362
+          ],
+          "macro_mean_log_benefit": 0.006127996558537458,
+          "macro_relative_error_reduction_percent": 0.6109258682378105,
+          "name": "final_learned_phase",
+          "paired_units": 20,
+          "plot_label": "Final: learned phase",
+          "scope": "Final",
+          "treatment": "full",
+          "two_sided_binomial_sign_p": 0.01181793212890625,
+          "two_sided_wilcoxon_p": 0.039989471435546875,
+          "wins": 16
+        },
+        {
+          "control": "aligned",
+          "dataset_relative_error_reduction_percent": {
+            "3bpa": 1.4818502940766254,
+            "bucky": 0.8858858336634468,
+            "mal": 1.15867020362177,
+            "zro": 0.11124026030878698
+          },
+          "dataset_wins_of_five": {
+            "3bpa": 3,
+            "bucky": 3,
+            "mal": 4,
+            "zro": 1
+          },
+          "exact_two_sided_sign_flip_p": 0.03052520751953125,
+          "macro_95pct_hierarchical_bootstrap_ci_percent": [
+            0.07651053030074406,
+            1.8094823592069709
+          ],
+          "macro_mean_log_benefit": 0.009148774459671867,
+          "macro_relative_error_reduction_percent": 0.9107051756760631,
+          "name": "persistent_learned_phase",
+          "paired_units": 20,
+          "plot_label": "Persistent: learned phase",
+          "scope": "Persistent",
+          "treatment": "full",
+          "two_sided_binomial_sign_p": 0.8238029479980469,
+          "two_sided_wilcoxon_p": 0.06372261047363281,
+          "wins": 11
+        }
+      ]
+    },
+    "imagining": {
+      "counterfactual_outcome_audit": [
+        {
+          "all_values_finite": true,
+          "atomic_outcomes": 4964675,
+          "frame_outcomes": 112455,
+          "inference_rule": "descriptive only at atom/frame grain; uncertainty uses model-level clusters",
+          "model_units": 20,
+          "scope": "Final"
+        },
+        {
+          "all_values_finite": true,
+          "atomic_outcomes": 4964675,
+          "frame_outcomes": 112455,
+          "inference_rule": "descriptive only at atom/frame grain; uncertainty uses model-level clusters",
+          "model_units": 20,
+          "scope": "Persistent"
+        }
+      ],
+      "dose_macro_monotonic": {
+        "Final": true,
+        "Persistent": true
+      },
+      "dose_response": [
+        {
+          "dataset": "mal",
+          "force_mae_ratio_to_factual": 1.0911096784806735,
+          "lambda": 0.0,
+          "scope": "Final"
+        },
+        {
+          "dataset": "bucky",
+          "force_mae_ratio_to_factual": 2.4833206965183976,
+          "lambda": 0.0,
+          "scope": "Final"
+        },
+        {
+          "dataset": "3bpa",
+          "force_mae_ratio_to_factual": 3.013833432171804,
+          "lambda": 0.0,
+          "scope": "Final"
+        },
+        {
+          "dataset": "zro",
+          "force_mae_ratio_to_factual": 1.4851441174653843,
+          "lambda": 0.0,
+          "scope": "Final"
+        },
+        {
+          "dataset": "macro",
+          "force_mae_ratio_to_factual": 1.8661530778510946,
+          "lambda": 0.0,
+          "scope": "Final"
+        },
+        {
+          "dataset": "mal",
+          "force_mae_ratio_to_factual": 1.0556309038808822,
+          "lambda": 0.25,
+          "scope": "Final"
+        },
+        {
+          "dataset": "bucky",
+          "force_mae_ratio_to_factual": 2.016972969633515,
+          "lambda": 0.25,
+          "scope": "Final"
+        },
+        {
+          "dataset": "3bpa",
+          "force_mae_ratio_to_factual": 2.4057388952044296,
+          "lambda": 0.25,
+          "scope": "Final"
+        },
+        {
+          "dataset": "zro",
+          "force_mae_ratio_to_factual": 1.3584720185246768,
+          "lambda": 0.25,
+          "scope": "Final"
+        },
+        {
+          "dataset": "macro",
+          "force_mae_ratio_to_factual": 1.6241563717871148,
+          "lambda": 0.25,
+          "scope": "Final"
+        },
+        {
+          "dataset": "mal",
+          "force_mae_ratio_to_factual": 1.0272658682592977,
+          "lambda": 0.5,
+          "scope": "Final"
+        },
+        {
+          "dataset": "bucky",
+          "force_mae_ratio_to_factual": 1.5790543579084555,
+          "lambda": 0.5,
+          "scope": "Final"
+        },
+        {
+          "dataset": "3bpa",
+          "force_mae_ratio_to_factual": 1.8287366956856197,
+          "lambda": 0.5,
+          "scope": "Final"
+        },
+        {
+          "dataset": "zro",
+          "force_mae_ratio_to_factual": 1.210083760711693,
+          "lambda": 0.5,
+          "scope": "Final"
+        },
+        {
+          "dataset": "macro",
+          "force_mae_ratio_to_factual": 1.3764537961335348,
+          "lambda": 0.5,
+          "scope": "Final"
+        },
+        {
+          "dataset": "mal",
+          "force_mae_ratio_to_factual": 1.0078141138361576,
+          "lambda": 0.75,
+          "scope": "Final"
+        },
+        {
+          "dataset": "bucky",
+          "force_mae_ratio_to_factual": 1.1954750666899394,
+          "lambda": 0.75,
+          "scope": "Final"
+        },
+        {
+          "dataset": "3bpa",
+          "force_mae_ratio_to_factual": 1.297094796455257,
+          "lambda": 0.75,
+          "scope": "Final"
+        },
+        {
+          "dataset": "zro",
+          "force_mae_ratio_to_factual": 1.0722207027783364,
+          "lambda": 0.75,
+          "scope": "Final"
+        },
+        {
+          "dataset": "macro",
+          "force_mae_ratio_to_factual": 1.1377431150504218,
+          "lambda": 0.75,
+          "scope": "Final"
+        },
+        {
+          "dataset": "mal",
+          "force_mae_ratio_to_factual": 1.0,
+          "lambda": 1.0,
+          "scope": "Final"
+        },
+        {
+          "dataset": "bucky",
+          "force_mae_ratio_to_factual": 1.0,
+          "lambda": 1.0,
+          "scope": "Final"
+        },
+        {
+          "dataset": "3bpa",
+          "force_mae_ratio_to_factual": 1.0,
+          "lambda": 1.0,
+          "scope": "Final"
+        },
+        {
+          "dataset": "zro",
+          "force_mae_ratio_to_factual": 1.0,
+          "lambda": 1.0,
+          "scope": "Final"
+        },
+        {
+          "dataset": "macro",
+          "force_mae_ratio_to_factual": 1.0,
+          "lambda": 1.0,
+          "scope": "Final"
+        },
+        {
+          "dataset": "mal",
+          "force_mae_ratio_to_factual": 1.171077967608302,
+          "lambda": 0.0,
+          "scope": "Persistent"
+        },
+        {
+          "dataset": "bucky",
+          "force_mae_ratio_to_factual": 6.392057983471206,
+          "lambda": 0.0,
+          "scope": "Persistent"
+        },
+        {
+          "dataset": "3bpa",
+          "force_mae_ratio_to_factual": 12.57481835598495,
+          "lambda": 0.0,
+          "scope": "Persistent"
+        },
+        {
+          "dataset": "zro",
+          "force_mae_ratio_to_factual": 1.6479382622580017,
+          "lambda": 0.0,
+          "scope": "Persistent"
+        },
+        {
+          "dataset": "macro",
+          "force_mae_ratio_to_factual": 3.529127050673865,
+          "lambda": 0.0,
+          "scope": "Persistent"
+        },
+        {
+          "dataset": "mal",
+          "force_mae_ratio_to_factual": 1.0996406921342043,
+          "lambda": 0.25,
+          "scope": "Persistent"
+        },
+        {
+          "dataset": "bucky",
+          "force_mae_ratio_to_factual": 5.01740102233287,
+          "lambda": 0.25,
+          "scope": "Persistent"
+        },
+        {
+          "dataset": "3bpa",
+          "force_mae_ratio_to_factual": 8.715796958551818,
+          "lambda": 0.25,
+          "scope": "Persistent"
+        },
+        {
+          "dataset": "zro",
+          "force_mae_ratio_to_factual": 1.483689580618675,
+          "lambda": 0.25,
+          "scope": "Persistent"
+        },
+        {
+          "dataset": "macro",
+          "force_mae_ratio_to_factual": 2.9063301143983127,
+          "lambda": 0.25,
+          "scope": "Persistent"
+        },
+        {
+          "dataset": "mal",
+          "force_mae_ratio_to_factual": 1.046038616293369,
+          "lambda": 0.5,
+          "scope": "Persistent"
+        },
+        {
+          "dataset": "bucky",
+          "force_mae_ratio_to_factual": 3.411293303852106,
+          "lambda": 0.5,
+          "scope": "Persistent"
+        },
+        {
+          "dataset": "3bpa",
+          "force_mae_ratio_to_factual": 4.963903300190193,
+          "lambda": 0.5,
+          "scope": "Persistent"
+        },
+        {
+          "dataset": "zro",
+          "force_mae_ratio_to_factual": 1.3110163940367483,
+          "lambda": 0.5,
+          "scope": "Persistent"
+        },
+        {
+          "dataset": "macro",
+          "force_mae_ratio_to_factual": 2.195202322979379,
+          "lambda": 0.5,
+          "scope": "Persistent"
+        },
+        {
+          "dataset": "mal",
+          "force_mae_ratio_to_factual": 1.0121249607644225,
+          "lambda": 0.75,
+          "scope": "Persistent"
+        },
+        {
+          "dataset": "bucky",
+          "force_mae_ratio_to_factual": 1.79871770772705,
+          "lambda": 0.75,
+          "scope": "Persistent"
+        },
+        {
+          "dataset": "3bpa",
+          "force_mae_ratio_to_factual": 2.617947633114776,
+          "lambda": 0.75,
+          "scope": "Persistent"
+        },
+        {
+          "dataset": "zro",
+          "force_mae_ratio_to_factual": 1.1098062875687307,
+          "lambda": 0.75,
+          "scope": "Persistent"
+        },
+        {
+          "dataset": "macro",
+          "force_mae_ratio_to_factual": 1.5165310981078692,
+          "lambda": 0.75,
+          "scope": "Persistent"
+        },
+        {
+          "dataset": "mal",
+          "force_mae_ratio_to_factual": 1.0,
+          "lambda": 1.0,
+          "scope": "Persistent"
+        },
+        {
+          "dataset": "bucky",
+          "force_mae_ratio_to_factual": 1.0,
+          "lambda": 1.0,
+          "scope": "Persistent"
+        },
+        {
+          "dataset": "3bpa",
+          "force_mae_ratio_to_factual": 1.0,
+          "lambda": 1.0,
+          "scope": "Persistent"
+        },
+        {
+          "dataset": "zro",
+          "force_mae_ratio_to_factual": 1.0,
+          "lambda": 1.0,
+          "scope": "Persistent"
+        },
+        {
+          "dataset": "macro",
+          "force_mae_ratio_to_factual": 1.0,
+          "lambda": 1.0,
+          "scope": "Persistent"
+        }
+      ],
+      "frozen_effects": [
+        {
+          "control": "aligned",
+          "dataset_relative_error_reduction_percent": {
+            "3bpa": 66.8196659667622,
+            "bucky": 59.73133871102534,
+            "mal": 8.350185162644696,
+            "zro": 32.66646729836252
+          },
+          "dataset_wins_of_five": {
+            "3bpa": 5,
+            "bucky": 5,
+            "mal": 5,
+            "zro": 5
+          },
+          "exact_two_sided_sign_flip_p": 1.9073486328125e-06,
+          "macro_95pct_hierarchical_bootstrap_ci_percent": [
+            19.097862571629378,
+            64.06623200749213
+          ],
+          "macro_mean_log_benefit": 0.6238791343504174,
+          "macro_relative_error_reduction_percent": 46.41382789714571,
+          "name": "final_frozen_alignment",
+          "paired_units": 20,
+          "scope": "Final",
+          "treatment": "native",
+          "two_sided_binomial_sign_p": 1.9073486328125e-06,
+          "two_sided_wilcoxon_p": 1.9073486328125e-06,
+          "wins": 20
+        },
+        {
+          "control": "aligned",
+          "dataset_relative_error_reduction_percent": {
+            "3bpa": 92.0475988464354,
+            "bucky": 84.35558621987109,
+            "mal": 14.608589038498899,
+            "zro": 39.318115071264735
+          },
+          "dataset_wins_of_five": {
+            "3bpa": 5,
+            "bucky": 5,
+            "mal": 5,
+            "zro": 5
+          },
+          "exact_two_sided_sign_flip_p": 1.9073486328125e-06,
+          "macro_95pct_hierarchical_bootstrap_ci_percent": [
+            26.629190129589396,
+            90.69795912099912
+          ],
+          "macro_mean_log_benefit": 1.2610505459362296,
+          "macro_relative_error_reduction_percent": 71.66438086129384,
+          "name": "persistent_frozen_alignment",
+          "paired_units": 20,
+          "scope": "Persistent",
+          "treatment": "native",
+          "two_sided_binomial_sign_p": 1.9073486328125e-06,
+          "two_sided_wilcoxon_p": 1.9073486328125e-06,
+          "wins": 20
+        },
+        {
+          "control": "permute_mean",
+          "dataset_relative_error_reduction_percent": {
+            "3bpa": 87.55323055774376,
+            "bucky": 83.57770437404925,
+            "mal": 16.569224660774395,
+            "zro": 48.60952607943424
+          },
+          "dataset_wins_of_five": {
+            "3bpa": 5,
+            "bucky": 5,
+            "mal": 5,
+            "zro": 5
+          },
+          "exact_two_sided_sign_flip_p": 1.9073486328125e-06,
+          "macro_95pct_hierarchical_bootstrap_ci_percent": [
+            31.904094756267742,
+            86.06107181378373
+          ],
+          "macro_mean_log_benefit": 1.1842774157882092,
+          "macro_relative_error_reduction_percent": 69.40328133006264,
+          "name": "final_frozen_permutation",
+          "paired_units": 20,
+          "scope": "Final",
+          "treatment": "native",
+          "two_sided_binomial_sign_p": 1.9073486328125e-06,
+          "two_sided_wilcoxon_p": 1.9073486328125e-06,
+          "wins": 20
+        },
+        {
+          "control": "permute_mean",
+          "dataset_relative_error_reduction_percent": {
+            "3bpa": 95.97892609551907,
+            "bucky": 94.71357667345147,
+            "mal": 26.174590134284138,
+            "zro": 64.69078940920147
+          },
+          "dataset_wins_of_five": {
+            "3bpa": 5,
+            "bucky": 5,
+            "mal": 5,
+            "zro": 5
+          },
+          "exact_two_sided_sign_flip_p": 1.9073486328125e-06,
+          "macro_95pct_hierarchical_bootstrap_ci_percent": [
+            46.026735142747555,
+            95.77175807471599
+          ],
+          "macro_mean_log_benefit": 1.8745357516248031,
+          "macro_relative_error_reduction_percent": 84.6573821832294,
+          "name": "persistent_frozen_permutation",
+          "paired_units": 20,
+          "scope": "Persistent",
+          "treatment": "native",
+          "two_sided_binomial_sign_p": 1.9073486328125e-06,
+          "two_sided_wilcoxon_p": 1.9073486328125e-06,
+          "wins": 20
+        }
+      ],
+      "frozen_scope_interaction": {
+        "benefit_ratio_change_95pct_hierarchical_bootstrap_ci_percent": [
+          7.439788169751026,
+          317.68122521285005
+        ],
+        "benefit_ratio_change_percent": 89.11240951024833,
+        "control": "zero",
+        "dataset_relative_error_reduction_percent": {
+          "3bpa": 76.0327875373454,
+          "bucky": 61.14990347490823,
+          "mal": 6.828605040785485,
+          "zro": 9.878655561377458
+        },
+        "dataset_wins_of_five": {
+          "3bpa": 5,
+          "bucky": 5,
+          "mal": 4,
+          "zro": 4
+        },
+        "exact_two_sided_sign_flip_p": 0.0005855560302734375,
+        "macro_95pct_hierarchical_bootstrap_ci_percent": [
+          6.993115387160431,
+          76.29918535309899
+        ],
+        "macro_mean_log_benefit": 0.6371714115858124,
+        "macro_relative_error_reduction_percent": 47.12139713148712,
+        "name": "Persistent-minus-Final frozen alignment interaction",
+        "paired_units": 20,
+        "scope": "Persistent-minus-Final",
+        "treatment": "scope interaction",
+        "two_sided_binomial_sign_p": 0.0004024505615234375,
+        "two_sided_wilcoxon_p": 0.0003223419189453125,
+        "wins": 18
+      },
+      "maximum_common_shift_force_change_mev_per_angstrom": 0.0057220458984375
+    },
+    "seeing": {
+      "final_phase_organisation_associations": [
+        {
+          "outcome": "trained_full_vs_aligned_log_benefit",
+          "phase_statistic": "destructive_kernel_fraction",
+          "status": "post-hoc descriptive association; not an identified causal effect",
+          "two_sided_within_dataset_permutation_p": 0.4426455735442645,
+          "units": 20,
+          "within_dataset_rank_correlation": 0.2076348836249804
+        },
+        {
+          "outcome": "frozen_alignment_log_harm",
+          "phase_statistic": "destructive_kernel_fraction",
+          "status": "post-hoc descriptive association; not an identified causal effect",
+          "two_sided_within_dataset_permutation_p": 0.3728762712372876,
+          "units": 20,
+          "within_dataset_rank_correlation": 0.2395787118749775
+        },
+        {
+          "outcome": "frozen_permutation_log_harm",
+          "phase_statistic": "destructive_kernel_fraction",
+          "status": "post-hoc descriptive association; not an identified causal effect",
+          "two_sided_within_dataset_permutation_p": 0.1572884271157288,
+          "units": 20,
+          "within_dataset_rank_correlation": 0.3673540248749655
+        },
+        {
+          "outcome": "trained_full_vs_aligned_log_benefit",
+          "phase_statistic": "weighted_mean_cos_delta",
+          "status": "post-hoc descriptive association; not an identified causal effect",
+          "two_sided_within_dataset_permutation_p": 0.5295147048529515,
+          "units": 20,
+          "within_dataset_rank_correlation": -0.175
+        },
+        {
+          "outcome": "frozen_alignment_log_harm",
+          "phase_statistic": "weighted_mean_cos_delta",
+          "status": "post-hoc descriptive association; not an identified causal effect",
+          "two_sided_within_dataset_permutation_p": 0.1838281617183828,
+          "units": 20,
+          "within_dataset_rank_correlation": -0.3500000000000001
+        },
+        {
+          "outcome": "frozen_permutation_log_harm",
+          "phase_statistic": "weighted_mean_cos_delta",
+          "status": "post-hoc descriptive association; not an identified causal effect",
+          "two_sided_within_dataset_permutation_p": 0.4631753682463175,
+          "units": 20,
+          "within_dataset_rank_correlation": -0.2
+        },
+        {
+          "outcome": "trained_full_vs_aligned_log_benefit",
+          "phase_statistic": "circular_resultant_magnitude",
+          "status": "post-hoc descriptive association; not an identified causal effect",
+          "two_sided_within_dataset_permutation_p": 0.7333726662733373,
+          "units": 20,
+          "within_dataset_rank_correlation": -0.1
+        },
+        {
+          "outcome": "frozen_alignment_log_harm",
+          "phase_statistic": "circular_resultant_magnitude",
+          "status": "post-hoc descriptive association; not an identified causal effect",
+          "two_sided_within_dataset_permutation_p": 0.1227087729122708,
+          "units": 20,
+          "within_dataset_rank_correlation": -0.4000000000000001
+        },
+        {
+          "outcome": "frozen_permutation_log_harm",
+          "phase_statistic": "circular_resultant_magnitude",
+          "status": "post-hoc descriptive association; not an identified causal effect",
+          "two_sided_within_dataset_permutation_p": 0.3019869801301987,
+          "units": 20,
+          "within_dataset_rank_correlation": -0.2750000000000001
+        },
+        {
+          "outcome": "trained_full_vs_aligned_log_benefit",
+          "phase_statistic": "relative_phase_entropy_normalized",
+          "status": "post-hoc descriptive association; not an identified causal effect",
+          "two_sided_within_dataset_permutation_p": 0.2196378036219637,
+          "units": 20,
+          "within_dataset_rank_correlation": 0.325
+        },
+        {
+          "outcome": "frozen_alignment_log_harm",
+          "phase_statistic": "relative_phase_entropy_normalized",
+          "status": "post-hoc descriptive association; not an identified causal effect",
+          "two_sided_within_dataset_permutation_p": 0.0628493715062849,
+          "units": 20,
+          "within_dataset_rank_correlation": 0.4750000000000001
+        },
+        {
+          "outcome": "frozen_permutation_log_harm",
+          "phase_statistic": "relative_phase_entropy_normalized",
+          "status": "post-hoc descriptive association; not an identified causal effect",
+          "two_sided_within_dataset_permutation_p": 0.3505864941350586,
+          "units": 20,
+          "within_dataset_rank_correlation": 0.25
+        }
+      ],
+      "scope_level_association": {
+        "name": "within-dataset-and-scope seed-rank association",
+        "paired_model_scope_units": 40,
+        "rank_correlation": -0.08750000000000001,
+        "status": "post-hoc descriptive association; not an identified causal effect",
+        "two_sided_stratified_permutation_p": 0.6482535174648254
+      },
+      "status": "post-hoc association only"
+    }
+  },
+  "schema_version": 1,
+  "title": "Complete MACE-only Pearl three-rung causal analysis"
+}

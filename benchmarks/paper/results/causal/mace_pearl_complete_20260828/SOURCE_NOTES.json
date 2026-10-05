@@ -1,0 +1,23 @@
+{
+  "final_probe_root": "/public/home/sps-xia/rxlin/chorus_phase_causal_20260825/probes",
+  "generated_by": "/public/home/sps-xia/rxlin/CHORUS-MLIP-persistent-formal-20260730/benchmarks/causal/phase_specific_20260825/analyse_mace_pearl_complete.py",
+  "persistent_root": "/public/home/sps-xia/rxlin/chorus_persistent_causal_20260826",
+  "source_files": [
+    {
+      "path": "/public/home/sps-xia/rxlin/chorus_causal_results/mace_final_pearl_source_20260828/primary_modes.csv",
+      "sha256": "1d46965cdb20c80642cb065aa5b7d718bcf84448c134d04e8e1de4c97097e9ac"
+    },
+    {
+      "path": "/public/home/sps-xia/rxlin/chorus_causal_results/mace_final_pearl_source_20260828/aligned_runs.csv",
+      "sha256": "b9118675103ed6c80f418bac433e5ee9c7e5c8d75e3d0d523d1fef12efa51e98"
+    },
+    {
+      "path": "/public/home/sps-xia/rxlin/chorus_causal_results/mace_final_pearl_source_20260828/frozen_probe_runs.csv",
+      "sha256": "04d107fd62662bb6e858fd3b2aada8c2294274611dc8cb551b0cebcd4b980a40"
+    },
+    {
+      "path": "/public/home/sps-xia/rxlin/chorus_causal_results/mace_final_pearl_source_20260828/observational_associations.csv",
+      "sha256": "5cf6b866dd4d8cc8eb5f04a3c054f3b487a8d964b159f0e8bc4329c266d3e6c6"
+    }
+  ]
+}

@@ -1,0 +1,255 @@
+{
+  "analysis": {
+    "bootstrap_replicates": 100000,
+    "causal_unit": "independently trained dataset-by-seed model",
+    "rng_seed": 20260828
+  },
+  "effects": [
+    {
+      "backbone": "MACE-ICTC",
+      "control": "aligned",
+      "dataset_relative_error_reduction_percent": {
+        "3bpa": 0.6418025159525942,
+        "bucky": 0.4491198909669314,
+        "mal": 0.07526153252538359,
+        "zro": 1.2737249448294574
+      },
+      "macro_95pct_hierarchical_bootstrap_ci_percent": [
+        -0.12050635358311634,
+        1.300351173684866
+      ],
+      "macro_mean_log_benefit": 0.006127996558537487,
+      "macro_relative_error_reduction_percent": 0.6109258682378216,
+      "metric": "test_force_mae",
+      "name": "MACE-ICTC Final full vs aligned",
+      "paired_units": 20,
+      "scope": "Final",
+      "treatment": "full",
+      "wins": 16
+    },
+    {
+      "backbone": "MACE-ICTC",
+      "control": "aligned",
+      "dataset_relative_error_reduction_percent": {
+        "3bpa": 1.4818502940766254,
+        "bucky": 0.8858858336634468,
+        "mal": 1.15867020362177,
+        "zro": 0.11124026030878698
+      },
+      "macro_95pct_hierarchical_bootstrap_ci_percent": [
+        0.0778862600453456,
+        1.8062525755209946
+      ],
+      "macro_mean_log_benefit": 0.009148774459671867,
+      "macro_relative_error_reduction_percent": 0.9107051756760631,
+      "metric": "test_force_mae",
+      "name": "MACE-ICTC Persistent full vs aligned",
+      "paired_units": 20,
+      "scope": "Persistent",
+      "treatment": "full",
+      "wins": 11
+    },
+    {
+      "backbone": "NequIP",
+      "control": "off",
+      "dataset_relative_error_reduction_percent": {
+        "3bpa": 23.831042956426185,
+        "bucky": 28.572051271446675,
+        "mal": 5.913489211690259,
+        "zro": 13.109142750085123
+      },
+      "macro_95pct_hierarchical_bootstrap_ci_percent": [
+        9.346497030124167,
+        26.509046856783147
+      ],
+      "macro_mean_log_benefit": 0.20254250433208726,
+      "macro_relative_error_reduction_percent": 18.334822937764685,
+      "metric": "test_force_mae",
+      "name": "NequIP Final diagonal vs off",
+      "paired_units": 20,
+      "scope": "Final",
+      "treatment": "diagonal",
+      "wins": 20
+    },
+    {
+      "backbone": "NequIP",
+      "control": "diagonal",
+      "dataset_relative_error_reduction_percent": {
+        "3bpa": 28.057927893819603,
+        "bucky": 32.04134561540643,
+        "mal": 19.841975329469662,
+        "zro": -2.2556551455332974
+      },
+      "macro_95pct_hierarchical_bootstrap_ci_percent": [
+        6.126701354013253,
+        30.32033052806945
+      ],
+      "macro_mean_log_benefit": 0.22861097780155337,
+      "macro_relative_error_reduction_percent": 20.43620058506872,
+      "metric": "test_force_mae",
+      "name": "NequIP Final aligned vs diagonal",
+      "paired_units": 20,
+      "scope": "Final",
+      "treatment": "aligned",
+      "wins": 17
+    },
+    {
+      "backbone": "NequIP",
+      "control": "aligned",
+      "dataset_relative_error_reduction_percent": {
+        "3bpa": 0.5018223455620086,
+        "bucky": -0.6718160000104278,
+        "mal": 0.7929397734629751,
+        "zro": 1.045081054168584
+      },
+      "macro_95pct_hierarchical_bootstrap_ci_percent": [
+        -0.40547237640877754,
+        1.2631606345954949
+      ],
+      "macro_mean_log_benefit": 0.004200492407941747,
+      "macro_relative_error_reduction_percent": 0.4191682679090092,
+      "metric": "test_force_mae",
+      "name": "NequIP Final full vs aligned",
+      "paired_units": 20,
+      "scope": "Final",
+      "treatment": "full",
+      "wins": 13
+    },
+    {
+      "backbone": "NequIP",
+      "control": "aligned",
+      "dataset_relative_error_reduction_percent": {
+        "3bpa": 1.3965191884778405,
+        "bucky": 2.756700713074922,
+        "mal": 1.654002766939755,
+        "zro": 3.8933532965561457
+      },
+      "macro_95pct_hierarchical_bootstrap_ci_percent": [
+        1.1389436897916716,
+        3.822514100323926
+      ],
+      "macro_mean_log_benefit": 0.024601944898770777,
+      "macro_relative_error_reduction_percent": 2.4301783607765803,
+      "metric": "test_force_mae",
+      "name": "NequIP Persistent full vs aligned",
+      "paired_units": 20,
+      "scope": "Persistent",
+      "treatment": "full",
+      "wins": 18
+    }
+  ],
+  "interactions": [
+    {
+      "benefit_ratio_change_95pct_hierarchical_bootstrap_ci_percent": [
+        -0.8170988138012489,
+        1.4257506341390713
+      ],
+      "benefit_ratio_change_percent": 0.30253450483195765,
+      "dataset_benefit_ratio_change_percent": {
+        "3bpa": 0.8526832676329966,
+        "bucky": 0.44066977379581,
+        "mal": 1.0961089590035862,
+        "zro": -1.1637792756162824
+      },
+      "definition": "second paired log benefit minus first paired log benefit",
+      "macro_log_interaction": 0.0030207779011343803,
+      "name": "MACE-ICTC Persistent-minus-Final phase interaction",
+      "paired_units": 20,
+      "positive_pairs": 10
+    },
+    {
+      "benefit_ratio_change_95pct_hierarchical_bootstrap_ci_percent": [
+        0.4510206514416941,
+        3.8587665700406606
+      ],
+      "benefit_ratio_change_percent": 2.0610984616775503,
+      "dataset_benefit_ratio_change_percent": {
+        "3bpa": 0.9073684169689948,
+        "bucky": 3.525709985393658,
+        "mal": 0.8755445241317159,
+        "zro": 2.963657915540916
+      },
+      "definition": "second paired log benefit minus first paired log benefit",
+      "macro_log_interaction": 0.020401452490829027,
+      "name": "NequIP Persistent-minus-Final phase interaction",
+      "paired_units": 20,
+      "positive_pairs": 15
+    },
+    {
+      "benefit_ratio_change_95pct_hierarchical_bootstrap_ci_percent": [
+        -1.0844699440956607,
+        0.7953355727712457
+      ],
+      "benefit_ratio_change_percent": -0.19256477074293246,
+      "dataset_benefit_ratio_change_percent": {
+        "3bpa": -0.14068616500368475,
+        "bucky": -1.11345551865007,
+        "mal": 0.7234144820930919,
+        "zro": -0.23105864073925897
+      },
+      "definition": "second paired log benefit minus first paired log benefit",
+      "macro_log_interaction": -0.0019275041505957395,
+      "name": "NequIP-minus-MACE Final phase-effect replication contrast",
+      "paired_units": 20,
+      "positive_pairs": 6
+    },
+    {
+      "benefit_ratio_change_95pct_hierarchical_bootstrap_ci_percent": [
+        -0.26131642510282044,
+        3.6136848642691533
+      ],
+      "benefit_ratio_change_percent": 1.5573188098251851,
+      "dataset_benefit_ratio_change_percent": {
+        "3bpa": -0.08653964839424862,
+        "bucky": 1.923849656613845,
+        "mal": 0.5036631660200172,
+        "zro": 3.9353293096551485
+      },
+      "definition": "second paired log benefit minus first paired log benefit",
+      "macro_log_interaction": 0.015453170439098905,
+      "name": "NequIP-minus-MACE Persistent phase-effect replication contrast",
+      "paired_units": 20,
+      "positive_pairs": 15
+    }
+  ],
+  "primary_outcome": "test Force MAE at the validation-Force-MAE-selected checkpoint",
+  "readiness": {
+    "all_complete": true,
+    "schema_version": 1,
+    "sections": [
+      {
+        "complete": true,
+        "expected": 40,
+        "extra": [],
+        "found": 40,
+        "missing": [],
+        "name": "MACE-Final"
+      },
+      {
+        "complete": true,
+        "expected": 40,
+        "extra": [],
+        "found": 40,
+        "missing": [],
+        "name": "MACE-Persistent"
+      },
+      {
+        "complete": true,
+        "expected": 80,
+        "extra": [],
+        "found": 80,
+        "missing": [],
+        "name": "NequIP-Final"
+      },
+      {
+        "complete": true,
+        "expected": 40,
+        "extra": [],
+        "found": 40,
+        "missing": [],
+        "name": "NequIP-Persistent"
+      }
+    ]
+  },
+  "schema_version": 1
+}

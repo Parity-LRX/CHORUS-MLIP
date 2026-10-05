@@ -1,0 +1,110 @@
+{
+  "schema_version": 1,
+  "passed": true,
+  "checks": [
+    {
+      "name": "required_files",
+      "passed": true,
+      "detail": "missing=[]"
+    },
+    {
+      "name": "declared_audit",
+      "passed": true,
+      "detail": "{\"schema_version\": 1, \"trained\": {\"complete\": true, \"trained_model_cells\": 240, \"duplicate_cells\": 0, \"finite_positive_metrics\": true, \"test_never_used_for_selection\": true, \"cells\": [{\"backbone\": \"MACE-ICTC\", \"scope\": \"Final\", \"expected\": 80, \"found\": 80, \"missing\": [], \"extra\": [], \"complete\": true}, {\"backbone\": \"MACE-ICTC\", \"scope\": \"Persistent\", \"expected\": 40, \"found\": 40, \"missing\": [], \"extra\": [], \"complete\": true}, {\"backbone\": \"NequIP-SH\", \"scope\": \"Final\", \"expected\": 80, \"found\": 80, \"missing\": [], \"extra\": [], \"complete\": true}, {\"backbone\": \"NequIP-SH\", \"scope\": \"Persistent\", \"expected\": 40, \"found\": 40, \"missing\": [], \"extra\": [], \"complete\": true}]}, \"frozen\": {\"complete\": true, \"expected_frozen_model_cells\": 80, \"found_frozen_model_cells\": 80, \"missing\": [], \"extra\": [], \"duplicate_cells\": 0, \"maximum_factual_vs_trained_force_mae_difference_mev_per_angstrom\": 0.0004950390527316273, \"maximum_common_shift_pointwise_force_change_mev_per_angstrom\": 0.008463859558105469, \"factual_match_tolerance_mev_per_angstrom\": 0.05, \"common_shift_tolerance_mev_per_angstrom\": 0.02}, \"causal_unit\": \"dataset-by-seed trained model\", \"nested_outcomes_are_not_replicates\": true, \"datasets\": [\"mal\", \"bucky\", \"3bpa\", \"zro\"], \"seeds\": [20260616, 20260617, 20260618, 20260619, 20260620], \"bootstrap_replicates\": 100000, \"rng_seed\": 20260829, \"passed\": true}"
+    },
+    {
+      "name": "trained_cell_count",
+      "passed": true,
+      "detail": "found=240"
+    },
+    {
+      "name": "frozen_cell_count",
+      "passed": true,
+      "detail": "found=80"
+    },
+    {
+      "name": "trained_unique_keys",
+      "passed": true,
+      "detail": "backbone/scope/dataset/seed/mode"
+    },
+    {
+      "name": "frozen_unique_keys",
+      "passed": true,
+      "detail": "backbone/scope/dataset/seed"
+    },
+    {
+      "name": "test_not_selected",
+      "passed": true,
+      "detail": "all 240 cells"
+    },
+    {
+      "name": "trained_point_estimates_recomputed",
+      "passed": true,
+      "detail": "max_log_difference=0.000e+00"
+    },
+    {
+      "name": "trained_wins_recomputed",
+      "passed": true,
+      "detail": "mismatches=0"
+    },
+    {
+      "name": "frozen_point_estimates_recomputed",
+      "passed": true,
+      "detail": "max_log_difference=1.110e-16"
+    },
+    {
+      "name": "frozen_wins_recomputed",
+      "passed": true,
+      "detail": "mismatches=0"
+    },
+    {
+      "name": "common_shift_negative_control",
+      "passed": true,
+      "detail": "maximum_pointwise_force_change=0.00846386 meV/angstrom"
+    },
+    {
+      "name": "macro_dose_monotonic",
+      "passed": true,
+      "detail": "[]"
+    },
+    {
+      "name": "cell_dose_monotonic_counts_recomputed",
+      "passed": true,
+      "detail": "[]"
+    },
+    {
+      "name": "source_manifest_integrity",
+      "passed": true,
+      "detail": "files=45; failures=[]"
+    },
+    {
+      "name": "code_manifest_integrity",
+      "passed": true,
+      "detail": "files=4; failures=[]"
+    }
+  ],
+  "sha256": {
+    "DATA_AUDIT.json": "24205e8671650d3512f4a6e713933fbef676b3697d19acd1c1a403a547464242",
+    "causal_analysis.json": "e9473f389fd41bac693265938f20a89f8b191c97d708580aa4a634f45699489b",
+    "trained_runs.csv": "bee7e9e7358a650c2fadbaf97e815082576808a21459975a89a929796661e2e9",
+    "frozen_probe_runs.csv": "3093933cf3c92aaacb25417f6eb2426644948a425e97fb6a89b95860c13adb8b",
+    "trained_paired_effects.csv": "770d8b3d200d6ea30d4e1ed239902fbe45d37e508c74443e5ceae2ab35aab444",
+    "frozen_paired_effects.csv": "6db5a4c1c71137462de22e3ce2ada937e3ff954a7cb58e325819c21c5e441f13",
+    "paired_interactions.csv": "dbe6633e4072a833d5ee72333525e1d7b49056877dd0ad91dea3fd9334bd6853",
+    "phase_dose_response.csv": "1ae9ac9a57dcf3473929d37b92129775ac14ea0e3abe3d18e830a45b295ff556",
+    "trained_effect_summary.csv": "0241ac09db67fc77fca6353763ab38151b9c7abb27433c176b53d458744e4753",
+    "frozen_effect_summary.csv": "1bcff8e7d0367657ae42c0e1ea20e5a29d29b7606d5b02cdbb2c41aa0501d0b0",
+    "interaction_summary.csv": "c0ffd4ee040448baf0e0931d6dd10282909caedc06cb03c81b58ab9245eaae9b",
+    "REPORT.md": "bd7d2d84c0305f6d5840da8fa5afd95d714ba27f0d887afad183a33e8b27ca3e",
+    "CAUSAL_IDENTIFICATION.md": "cc583d44c7f53cd30d2398582505955cdbeaf5cff3c20e1c9a32437f334c8d49",
+    "CLAIM_EVIDENCE_MATRIX.md": "add6968446f17b098199559238a3addb8b98f5ef9c6bae32ecad01428f4ea2fe",
+    "PEARL_CAUSAL_LADDER.md": "4265cbee3149435c5ad4b78e1c90135830e61597b28c0f5daaa373a15be5902b",
+    "SOURCE_MANIFEST.json": "f7e71302bdd9686032e1c4380c16a8f606a0a146207874dab4f02495fd4ae937",
+    "CODE_MANIFEST.json": "db5da2e9ca0b0ef072c984eaa290f115b6c080355f208edfda7a14f8fed7501f",
+    "causal_dag.svg": "f048a98fa0921282fa15de5ac1c655d6d2eef0c4d038f357b3137cae47f8546c",
+    "trained_component_forest.svg": "1d3a65c3892e69cd10c05422c27a20a8ce5a10ff8579bf82dbc14a81798ef312",
+    "frozen_intervention_forest.svg": "419f8f14aebead2365b12631b2923f5da341e10618342619510c4575f8d90300",
+    "phase_dose_response.svg": "c35bf099d933054bb14f996e388683a97e5c5e707378221a121ae8b259222641"
+  },
+  "validation_boundary": "point estimates, cell completeness, selection hygiene, negative control, monotonic dose response, and artifact integrity"
+}

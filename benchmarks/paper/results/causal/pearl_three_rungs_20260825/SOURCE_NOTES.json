@@ -1,0 +1,22 @@
+{
+  "generated_by": "/Users/sara/Desktop/code/CHORUS-MLIP/benchmarks/causal/phase_specific_20260825/analyse_pearl_three_rungs.py",
+  "observational_protocol_status": "post_hoc_observational_extension",
+  "raw_data_locations": {
+    "phase": "/tmp/chorus_phase_causal_20260825",
+    "primary": "/tmp/chorus_u1_causal_20260824/runs"
+  },
+  "source_files": [
+    {
+      "path": "/tmp/chorus_u1_causal_20260824/summary/summary.json",
+      "sha256": "d16b17d6695a1526263eddfcc6b62d228cb7d60f48548b3c4f2b5ab703dd025f"
+    },
+    {
+      "path": "/tmp/chorus_phase_causal_20260825/summary/summary.json",
+      "sha256": "29a4fc720c33ed6f2236d92591f5d77e8f87fd043b0452e1c214ad56b6b50642"
+    },
+    {
+      "path": "/Users/sara/Desktop/code/CHORUS-MLIP/benchmarks/causal/phase_specific_20260825/analyse_pearl_three_rungs.py",
+      "sha256": "ffbc2f30c89cabd1bfb5a6e6aaf2c4b793c0a4ed57eaa4538ca0b8fa889e5519"
+    }
+  ]
+}

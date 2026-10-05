@@ -17,6 +17,14 @@ namespace mfftorch {
 
 namespace {
 
+// LAMMPS' serial MPI stubs use mutable collective send-buffer signatures,
+// unlike real MPI's const send buffers.  nvcc enforces the mismatch even
+// though these collectives never modify their send arguments.
+template <typename T>
+T* mpi_send_buffer(const T* ptr) {
+  return const_cast<T*>(ptr);
+}
+
 struct TreeNode {
   std::vector<int> indices;
   torch::Tensor center;
@@ -979,8 +987,16 @@ RemoteLeafPayload gather_remote_leaf_payload(
   const int64_t local_leaf_count = local_payload.size();
   std::vector<int64_t> leaf_counts(static_cast<size_t>(world_size), 0);
   std::vector<int64_t> geometry_versions(static_cast<size_t>(world_size), 0);
-  MPI_Allgather(&local_leaf_count, 1, MPI_LONG_LONG, leaf_counts.data(), 1, MPI_LONG_LONG, world);
-  MPI_Allgather(&local_geometry_version, 1, MPI_LONG_LONG, geometry_versions.data(), 1, MPI_LONG_LONG, world);
+  MPI_Allgather(
+      mpi_send_buffer(&local_leaf_count), 1, MPI_LONG_LONG, leaf_counts.data(), 1, MPI_LONG_LONG, world);
+  MPI_Allgather(
+      mpi_send_buffer(&local_geometry_version),
+      1,
+      MPI_LONG_LONG,
+      geometry_versions.data(),
+      1,
+      MPI_LONG_LONG,
+      world);
 
   std::vector<int> charge_recvcounts(static_cast<size_t>(world_size), 0);
   for (int rank = 0; rank < world_size; ++rank) {
@@ -1560,7 +1576,7 @@ std::vector<RankClusterSummary> gather_leaf_summaries(
   constexpr int payload_size = 13;
   std::vector<int> leaf_counts(static_cast<size_t>(world_size), 0);
   const int local_leaf_count = static_cast<int>(local_summaries.size());
-  MPI_Allgather(&local_leaf_count, 1, MPI_INT, leaf_counts.data(), 1, MPI_INT, world);
+  MPI_Allgather(mpi_send_buffer(&local_leaf_count), 1, MPI_INT, leaf_counts.data(), 1, MPI_INT, world);
 
   std::vector<int> recv_counts(static_cast<size_t>(world_size), 0);
   for (int rank = 0; rank < world_size; ++rank) {
@@ -1840,7 +1856,7 @@ ImportedAtoms exchange_requested_atoms(
   MPI_Comm_size(world, &world_size);
   std::vector<int> requested_by(static_cast<size_t>(world_size), 0);
   MPI_Alltoall(
-      request_flags.data(),
+      mpi_send_buffer(request_flags.data()),
       1,
       MPI_INT,
       requested_by.data(),
@@ -2088,11 +2104,12 @@ ReciprocalOutputs MFFTreeFmmSolver::compute(const ReciprocalInputs& inputs) cons
 
     const double local_energy_value = atom_energy.sum().item<double>();
     double total_energy_value = 0.0;
-    MPI_Allreduce(&local_energy_value, &total_energy_value, 1, MPI_DOUBLE, MPI_SUM, inputs.world);
+    MPI_Allreduce(
+        mpi_send_buffer(&local_energy_value), &total_energy_value, 1, MPI_DOUBLE, MPI_SUM, inputs.world);
 
     double global_atom_count = 0.0;
     const double local_atom_count = static_cast<double>(natoms);
-    MPI_Allreduce(&local_atom_count, &global_atom_count, 1, MPI_DOUBLE, MPI_SUM, inputs.world);
+    MPI_Allreduce(mpi_send_buffer(&local_atom_count), &global_atom_count, 1, MPI_DOUBLE, MPI_SUM, inputs.world);
     if (config_.energy_partition == "uniform" && global_atom_count > 0.0 && natoms > 0) {
       atom_energy = torch::full_like(atom_energy, static_cast<float>(total_energy_value / global_atom_count));
     }
@@ -2219,7 +2236,7 @@ ReciprocalOutputs MFFTreeFmmSolver::compute(const ReciprocalInputs& inputs) cons
 
   double global_atom_count = 0.0;
   const double local_atom_count = static_cast<double>(natoms);
-  MPI_Allreduce(&local_atom_count, &global_atom_count, 1, MPI_DOUBLE, MPI_SUM, inputs.world);
+  MPI_Allreduce(mpi_send_buffer(&local_atom_count), &global_atom_count, 1, MPI_DOUBLE, MPI_SUM, inputs.world);
   if (config_.energy_partition == "uniform" && global_atom_count > 0.0 && natoms > 0) {
     atom_energy = torch::full_like(atom_energy, static_cast<float>(total_energy_value / global_atom_count));
   }

@@ -176,7 +176,11 @@ mfftorch::ReciprocalInputs make_reciprocal_inputs(
   MPI_Comm_size(world, &world_size);
   int64_t local_n = local_pos.defined() ? local_pos.size(0) : 0;
   int64_t global_offset = 0;
+#ifdef MPI_STUBS
+  global_offset = 0;
+#else
   MPI_Exscan(&local_n, &global_offset, 1, MPI_LONG_LONG, MPI_SUM, world);
+#endif
   if (world_rank == 0) global_offset = 0;
   inputs.world = world;
   inputs.local_pos = local_pos;

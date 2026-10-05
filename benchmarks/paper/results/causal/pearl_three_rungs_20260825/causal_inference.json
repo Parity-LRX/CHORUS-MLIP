@@ -1,0 +1,1584 @@
+{
+  "analysis_config": {
+    "hierarchical_bootstrap_replicates": 100000,
+    "rng_seed": 20260825,
+    "within_dataset_association_permutations": 100000
+  },
+  "datasets": [
+    "mal",
+    "bucky",
+    "3bpa",
+    "zro"
+  ],
+  "effect_definition": "100 * (1 - exp(-equal-dataset mean paired log(control/treatment)))",
+  "input_validation": {
+    "aligned_rows_expected_20": true,
+    "all_aligned_metrics_finite": true,
+    "all_primary_metrics_finite": true,
+    "all_probe_force_metrics_finite": true,
+    "all_test_selection_flags_false": true,
+    "common_shift_within_0.05_mev_per_angstrom": true,
+    "dataset_seed_coverage": {
+      "aligned": {
+        "3bpa": [
+          20260616,
+          20260617,
+          20260618,
+          20260619,
+          20260620
+        ],
+        "bucky": [
+          20260616,
+          20260617,
+          20260618,
+          20260619,
+          20260620
+        ],
+        "mal": [
+          20260616,
+          20260617,
+          20260618,
+          20260619,
+          20260620
+        ],
+        "zro": [
+          20260616,
+          20260617,
+          20260618,
+          20260619,
+          20260620
+        ]
+      },
+      "observational": {
+        "3bpa": [
+          20260616,
+          20260617,
+          20260618,
+          20260619,
+          20260620
+        ],
+        "bucky": [
+          20260616,
+          20260617,
+          20260618,
+          20260619,
+          20260620
+        ],
+        "mal": [
+          20260616,
+          20260617,
+          20260618,
+          20260619,
+          20260620
+        ],
+        "zro": [
+          20260616,
+          20260617,
+          20260618,
+          20260619,
+          20260620
+        ]
+      },
+      "primary": {
+        "3bpa": [
+          20260616,
+          20260617,
+          20260618,
+          20260619,
+          20260620
+        ],
+        "bucky": [
+          20260616,
+          20260617,
+          20260618,
+          20260619,
+          20260620
+        ],
+        "mal": [
+          20260616,
+          20260617,
+          20260618,
+          20260619,
+          20260620
+        ],
+        "zro": [
+          20260616,
+          20260617,
+          20260618,
+          20260619,
+          20260620
+        ]
+      },
+      "probes": {
+        "3bpa": [
+          20260616,
+          20260617,
+          20260618,
+          20260619,
+          20260620
+        ],
+        "bucky": [
+          20260616,
+          20260617,
+          20260618,
+          20260619,
+          20260620
+        ],
+        "mal": [
+          20260616,
+          20260617,
+          20260618,
+          20260619,
+          20260620
+        ],
+        "zro": [
+          20260616,
+          20260617,
+          20260618,
+          20260619,
+          20260620
+        ]
+      }
+    },
+    "full_aligned_nominal_parameter_counts_equal": true,
+    "maximum_common_shift_force_change_mev_per_angstrom": 0.004291534423828125,
+    "maximum_native_replay_force_mae_difference_mev_per_angstrom": 0.0004408348512576765,
+    "native_replay_within_0.1_mev_per_angstrom": true,
+    "observational_rows_expected_20": true,
+    "passed": true,
+    "primary_rows_expected_80": true,
+    "probe_rows_expected_20": true
+  },
+  "interpretation": {
+    "causal_unit": "training run or frozen fitted predictor",
+    "functional_phase_result": "large frozen-checkpoint alignment and assignment effects with monotonic dose response",
+    "heterogeneous_component": "phase-free cross-neighbour closure",
+    "incremental_phase_result": "small positive panel mean with a hierarchical-bootstrap interval crossing zero",
+    "robust_component": "stable Hermitian self-density"
+  },
+  "parquet_audit": {
+    "atomic_finite": true,
+    "atomic_rows": 4964675,
+    "frame_finite": true,
+    "frame_rows": 112455,
+    "pyarrow_version": "24.0.0"
+  },
+  "pearl_rungs": {
+    "doing": {
+      "dose_response": [
+        {
+          "force_mae_ratio_to_factual": 3.0138334321718037,
+          "lambda": 0.0,
+          "scope": "3BPA (300 K)"
+        },
+        {
+          "force_mae_ratio_to_factual": 2.4833206965183976,
+          "lambda": 0.0,
+          "scope": "Buckyball"
+        },
+        {
+          "force_mae_ratio_to_factual": 1.0911096784806733,
+          "lambda": 0.0,
+          "scope": "MAL"
+        },
+        {
+          "force_mae_ratio_to_factual": 1.4851441174653843,
+          "lambda": 0.0,
+          "scope": "ZrO"
+        },
+        {
+          "force_mae_ratio_to_factual": 1.8661530778510946,
+          "lambda": 0.0,
+          "scope": "Equal-dataset macro"
+        },
+        {
+          "force_mae_ratio_to_factual": 2.4057388952044296,
+          "lambda": 0.25,
+          "scope": "3BPA (300 K)"
+        },
+        {
+          "force_mae_ratio_to_factual": 2.0169729696335152,
+          "lambda": 0.25,
+          "scope": "Buckyball"
+        },
+        {
+          "force_mae_ratio_to_factual": 1.055630903880882,
+          "lambda": 0.25,
+          "scope": "MAL"
+        },
+        {
+          "force_mae_ratio_to_factual": 1.3584720185246766,
+          "lambda": 0.25,
+          "scope": "ZrO"
+        },
+        {
+          "force_mae_ratio_to_factual": 1.6241563717871148,
+          "lambda": 0.25,
+          "scope": "Equal-dataset macro"
+        },
+        {
+          "force_mae_ratio_to_factual": 1.82873669568562,
+          "lambda": 0.5,
+          "scope": "3BPA (300 K)"
+        },
+        {
+          "force_mae_ratio_to_factual": 1.5790543579084553,
+          "lambda": 0.5,
+          "scope": "Buckyball"
+        },
+        {
+          "force_mae_ratio_to_factual": 1.0272658682592977,
+          "lambda": 0.5,
+          "scope": "MAL"
+        },
+        {
+          "force_mae_ratio_to_factual": 1.210083760711693,
+          "lambda": 0.5,
+          "scope": "ZrO"
+        },
+        {
+          "force_mae_ratio_to_factual": 1.3764537961335348,
+          "lambda": 0.5,
+          "scope": "Equal-dataset macro"
+        },
+        {
+          "force_mae_ratio_to_factual": 1.297094796455257,
+          "lambda": 0.75,
+          "scope": "3BPA (300 K)"
+        },
+        {
+          "force_mae_ratio_to_factual": 1.1954750666899394,
+          "lambda": 0.75,
+          "scope": "Buckyball"
+        },
+        {
+          "force_mae_ratio_to_factual": 1.0078141138361576,
+          "lambda": 0.75,
+          "scope": "MAL"
+        },
+        {
+          "force_mae_ratio_to_factual": 1.0722207027783364,
+          "lambda": 0.75,
+          "scope": "ZrO"
+        },
+        {
+          "force_mae_ratio_to_factual": 1.1377431150504218,
+          "lambda": 0.75,
+          "scope": "Equal-dataset macro"
+        },
+        {
+          "force_mae_ratio_to_factual": 1.0,
+          "lambda": 1.0,
+          "scope": "3BPA (300 K)"
+        },
+        {
+          "force_mae_ratio_to_factual": 1.0,
+          "lambda": 1.0,
+          "scope": "Buckyball"
+        },
+        {
+          "force_mae_ratio_to_factual": 1.0,
+          "lambda": 1.0,
+          "scope": "MAL"
+        },
+        {
+          "force_mae_ratio_to_factual": 1.0,
+          "lambda": 1.0,
+          "scope": "ZrO"
+        },
+        {
+          "force_mae_ratio_to_factual": 1.0,
+          "lambda": 1.0,
+          "scope": "Equal-dataset macro"
+        }
+      ],
+      "effects": [
+        {
+          "control": "aligned_probe",
+          "dataset_relative_error_reduction_percent": {
+            "3bpa": 66.81966596676219,
+            "bucky": 59.73133871102534,
+            "mal": 8.350185162644696,
+            "zro": 32.66646729836252
+          },
+          "dataset_wins_of_five": {
+            "3bpa": 5,
+            "bucky": 5,
+            "mal": 5,
+            "zro": 5
+          },
+          "exact_two_sided_sign_flip_p": 1.9073486328125e-06,
+          "heterogeneous_sign_across_datasets": false,
+          "leave_one_dataset_out_percent": {
+            "3bpa": 37.13000948608857,
+            "bucky": 41.05939598579577,
+            "mal": 55.191564346607436,
+            "zro": 50.3415477677266
+          },
+          "macro_95pct_hierarchical_bootstrap_ci_percent": [
+            19.325040346067965,
+            64.04351401279129
+          ],
+          "macro_relative_error_reduction_percent": 46.41382789714571,
+          "metric": "test_force_mae",
+          "name": "frozen_native_vs_aligned",
+          "paired_units": 20,
+          "treatment": "native",
+          "two_sided_binomial_sign_p": 1.9073486328125e-06,
+          "two_sided_wilcoxon_p": 1.9073486328125e-06,
+          "wins": 20
+        },
+        {
+          "control": "permuted_probe",
+          "dataset_relative_error_reduction_percent": {
+            "3bpa": 87.55323055774376,
+            "bucky": 83.57770437404925,
+            "mal": 16.569224660774395,
+            "zro": 48.60952607943424
+          },
+          "dataset_wins_of_five": {
+            "3bpa": 5,
+            "bucky": 5,
+            "mal": 5,
+            "zro": 5
+          },
+          "exact_two_sided_sign_flip_p": 1.9073486328125e-06,
+          "heterogeneous_sign_across_datasets": false,
+          "leave_one_dataset_out_percent": {
+            "3bpa": 58.70657341521339,
+            "bucky": 62.35084941064459,
+            "mal": 78.09931437202032,
+            "zro": 74.26017459129395
+          },
+          "macro_95pct_hierarchical_bootstrap_ci_percent": [
+            32.03842463534991,
+            86.10649099595162
+          ],
+          "macro_relative_error_reduction_percent": 69.40328133006264,
+          "metric": "test_force_mae",
+          "name": "frozen_native_vs_permuted",
+          "paired_units": 20,
+          "treatment": "native",
+          "two_sided_binomial_sign_p": 1.9073486328125e-06,
+          "two_sided_wilcoxon_p": 1.9073486328125e-06,
+          "wins": 20
+        }
+      ],
+      "maximum_common_shift_force_change_mev_per_angstrom": 0.004291534423828125,
+      "maximum_permutation_repeat_force_mae_spread_mev_per_angstrom": 1.5954226244704302,
+      "mean_permutation_repeat_force_mae_spread_mev_per_angstrom": 0.4930907647029102
+    },
+    "imagining": {
+      "counterfactual_audit": {
+        "aligned_checkpoint_sha256": "1e6f083d586d8412f4e32c3e9157b081159c2935fad9dde7f6bf8d7f2db982ea",
+        "aligned_state_elements": 181131,
+        "aligned_state_tensor_count": 73,
+        "deterministic_algorithms_forced": false,
+        "full_checkpoint_sha256": "a13e506bd6166184dc891fc863cf64f0ee9adb786cbf1ff1da29b354c70dcfd4",
+        "full_state_elements": 181131,
+        "full_state_tensor_count": 73,
+        "inactive_aligned_phase_head_elements": 32,
+        "interpretation": "Nominal architecture and state schema are matched. Aligned-Full makes the 32-element phase head functionally inactive; CUDA deterministic algorithms were not forced, so the paired retraining is a learning-system potential-outcome estimate rather than bitwise replay.",
+        "phase_head_key": "interactions.1.phase_head.weight",
+        "same_state_tensor_schema": true
+      },
+      "effects": [
+        {
+          "control": "off",
+          "dataset_relative_error_reduction_percent": {
+            "3bpa": 10.26661545698503,
+            "bucky": 11.315329044118517,
+            "mal": 11.592833104953215,
+            "zro": 2.8426041196623175
+          },
+          "dataset_wins_of_five": {
+            "3bpa": 5,
+            "bucky": 5,
+            "mal": 5,
+            "zro": 5
+          },
+          "exact_two_sided_sign_flip_p": 1.9073486328125e-06,
+          "heterogeneous_sign_across_datasets": false,
+          "leave_one_dataset_out_percent": {
+            "3bpa": 8.671996010428696,
+            "bucky": 8.313415241413036,
+            "mal": 8.217582798876489,
+            "zro": 11.060088353940223
+          },
+          "macro_95pct_hierarchical_bootstrap_ci_percent": [
+            4.874118587835465,
+            11.904132038755316
+          ],
+          "macro_relative_error_reduction_percent": 9.073288027239856,
+          "metric": "test_force_mae",
+          "name": "stable_self_density",
+          "paired_units": 20,
+          "treatment": "diagonal",
+          "two_sided_binomial_sign_p": 1.9073486328125e-06,
+          "two_sided_wilcoxon_p": 1.9073486328125e-06,
+          "wins": 20
+        },
+        {
+          "control": "diagonal",
+          "dataset_relative_error_reduction_percent": {
+            "3bpa": 4.245365214025087,
+            "bucky": 5.57398142695652,
+            "mal": -3.8509119426723304,
+            "zro": 0.054487973875860796
+          },
+          "dataset_wins_of_five": {
+            "3bpa": 5,
+            "bucky": 5,
+            "mal": 1,
+            "zro": 3
+          },
+          "exact_two_sided_sign_flip_p": 0.16126251220703125,
+          "heterogeneous_sign_across_datasets": true,
+          "leave_one_dataset_out_percent": {
+            "3bpa": 0.6681715050280146,
+            "bucky": 0.20445858551557672,
+            "mal": 3.3196397741747097,
+            "zro": 2.076423799896654
+          },
+          "macro_95pct_hierarchical_bootstrap_ci_percent": [
+            -2.4047884319647133,
+            5.138067245074823
+          ],
+          "macro_relative_error_reduction_percent": 1.574807340878015,
+          "metric": "test_force_mae",
+          "name": "phase_free_cross_neighbour_closure",
+          "paired_units": 20,
+          "treatment": "aligned",
+          "two_sided_binomial_sign_p": 0.11531829833984375,
+          "two_sided_wilcoxon_p": 0.20244979858398438,
+          "wins": 14
+        },
+        {
+          "control": "aligned",
+          "dataset_relative_error_reduction_percent": {
+            "3bpa": 0.6418025159525942,
+            "bucky": 0.4491198909669314,
+            "mal": 0.07526153252538359,
+            "zro": 1.2737249448294574
+          },
+          "dataset_wins_of_five": {
+            "3bpa": 3,
+            "bucky": 4,
+            "mal": 4,
+            "zro": 5
+          },
+          "exact_two_sided_sign_flip_p": 0.06556129455566406,
+          "heterogeneous_sign_across_datasets": false,
+          "leave_one_dataset_out_percent": {
+            "3bpa": 0.6006315202009338,
+            "bucky": 0.6648027300056092,
+            "mal": 0.7888417685069204,
+            "zro": 0.3890054908902263
+          },
+          "macro_95pct_hierarchical_bootstrap_ci_percent": [
+            -0.11185407263152314,
+            1.3022239486191964
+          ],
+          "macro_relative_error_reduction_percent": 0.6109258682378216,
+          "metric": "test_force_mae",
+          "name": "learned_relative_phase",
+          "paired_units": 20,
+          "treatment": "full",
+          "two_sided_binomial_sign_p": 0.01181793212890625,
+          "two_sided_wilcoxon_p": 0.039989471435546875,
+          "wins": 16
+        },
+        {
+          "control": "diagonal",
+          "dataset_relative_error_reduction_percent": {
+            "3bpa": 4.8599208692227,
+            "bucky": 5.998067458616186,
+            "mal": -3.7727521548027054,
+            "zro": 1.327518891790136
+          },
+          "dataset_wins_of_five": {
+            "3bpa": 5,
+            "bucky": 5,
+            "mal": 1,
+            "zro": 5
+          },
+          "exact_two_sided_sign_flip_p": 0.057453155517578125,
+          "heterogeneous_sign_across_datasets": true,
+          "leave_one_dataset_out_percent": {
+            "3bpa": 1.2647897765607485,
+            "bucky": 0.8679020692629491,
+            "mal": 4.082294837578981,
+            "zro": 2.4573518881911283
+          },
+          "macro_95pct_hierarchical_bootstrap_ci_percent": [
+            -1.9847303198320974,
+            5.620120235732526
+          ],
+          "macro_relative_error_reduction_percent": 2.176112303695499,
+          "metric": "test_force_mae",
+          "name": "full_vs_diagonal",
+          "paired_units": 20,
+          "treatment": "full",
+          "two_sided_binomial_sign_p": 0.01181793212890625,
+          "two_sided_wilcoxon_p": 0.039989471435546875,
+          "wins": 16
+        },
+        {
+          "control": "off",
+          "dataset_relative_error_reduction_percent": {
+            "3bpa": 14.627586939050863,
+            "bucky": 16.63469543350409,
+            "mal": 8.257449810920326,
+            "zro": 4.132386904745122
+          },
+          "dataset_wins_of_five": {
+            "3bpa": 5,
+            "bucky": 5,
+            "mal": 5,
+            "zro": 5
+          },
+          "exact_two_sided_sign_flip_p": 1.9073486328125e-06,
+          "heterogeneous_sign_across_datasets": false,
+          "leave_one_dataset_out_percent": {
+            "3bpa": 9.827103268025795,
+            "bucky": 9.109165007769338,
+            "mal": 11.964411678083152,
+            "zro": 13.245654952130192
+          },
+          "macro_95pct_hierarchical_bootstrap_ci_percent": [
+            5.854021389836606,
+            15.783375631427177
+          ],
+          "macro_relative_error_reduction_percent": 11.051955393824864,
+          "metric": "test_force_mae",
+          "name": "full_vs_off",
+          "paired_units": 20,
+          "treatment": "full",
+          "two_sided_binomial_sign_p": 1.9073486328125e-06,
+          "two_sided_wilcoxon_p": 1.9073486328125e-06,
+          "wins": 20
+        },
+        {
+          "control": "charge2",
+          "dataset_relative_error_reduction_percent": {
+            "3bpa": 1.2676108889910997,
+            "bucky": -0.5154481634813912,
+            "mal": -1.8134251096001197,
+            "zro": -0.14779023001210145
+          },
+          "dataset_wins_of_five": {
+            "3bpa": 3,
+            "bucky": 2,
+            "mal": 1,
+            "zro": 2
+          },
+          "exact_two_sided_sign_flip_p": 0.5524063110351562,
+          "heterogeneous_sign_across_datasets": true,
+          "leave_one_dataset_out_percent": {
+            "3bpa": -0.8230297800785324,
+            "bucky": -0.22329766498123682,
+            "mal": 0.20442683587642563,
+            "zro": -0.3457929316857511
+          },
+          "macro_95pct_hierarchical_bootstrap_ci_percent": [
+            -1.6472150422244074,
+            1.053977669167524
+          ],
+          "macro_relative_error_reduction_percent": -0.296255585954186,
+          "metric": "test_force_mae",
+          "name": "full_vs_charge2_sensitivity",
+          "paired_units": 20,
+          "treatment": "full",
+          "two_sided_binomial_sign_p": 0.5034446716308594,
+          "two_sided_wilcoxon_p": 0.5216732025146484,
+          "wins": 8
+        }
+      ]
+    },
+    "seeing": {
+      "associations": [
+        {
+          "outcome": "trained_full_vs_aligned_log_benefit",
+          "phase_statistic": "destructive_kernel_fraction",
+          "status": "post-hoc descriptive association; not an identified causal effect",
+          "two_sided_within_dataset_permutation_p": 0.44264557354426454,
+          "units": 20,
+          "within_dataset_rank_correlation": 0.20763488362498048
+        },
+        {
+          "outcome": "frozen_alignment_log_harm",
+          "phase_statistic": "destructive_kernel_fraction",
+          "status": "post-hoc descriptive association; not an identified causal effect",
+          "two_sided_within_dataset_permutation_p": 0.3728762712372876,
+          "units": 20,
+          "within_dataset_rank_correlation": 0.2395787118749775
+        },
+        {
+          "outcome": "frozen_permutation_log_harm",
+          "phase_statistic": "destructive_kernel_fraction",
+          "status": "post-hoc descriptive association; not an identified causal effect",
+          "two_sided_within_dataset_permutation_p": 0.15728842711572885,
+          "units": 20,
+          "within_dataset_rank_correlation": 0.3673540248749655
+        },
+        {
+          "outcome": "trained_full_vs_aligned_log_benefit",
+          "phase_statistic": "weighted_mean_cos_delta",
+          "status": "post-hoc descriptive association; not an identified causal effect",
+          "two_sided_within_dataset_permutation_p": 0.5295147048529515,
+          "units": 20,
+          "within_dataset_rank_correlation": -0.17500000000000004
+        },
+        {
+          "outcome": "frozen_alignment_log_harm",
+          "phase_statistic": "weighted_mean_cos_delta",
+          "status": "post-hoc descriptive association; not an identified causal effect",
+          "two_sided_within_dataset_permutation_p": 0.18382816171838282,
+          "units": 20,
+          "within_dataset_rank_correlation": -0.3500000000000001
+        },
+        {
+          "outcome": "frozen_permutation_log_harm",
+          "phase_statistic": "weighted_mean_cos_delta",
+          "status": "post-hoc descriptive association; not an identified causal effect",
+          "two_sided_within_dataset_permutation_p": 0.46317536824631755,
+          "units": 20,
+          "within_dataset_rank_correlation": -0.20000000000000004
+        },
+        {
+          "outcome": "trained_full_vs_aligned_log_benefit",
+          "phase_statistic": "circular_resultant_magnitude",
+          "status": "post-hoc descriptive association; not an identified causal effect",
+          "two_sided_within_dataset_permutation_p": 0.7333726662733373,
+          "units": 20,
+          "within_dataset_rank_correlation": -0.10000000000000002
+        },
+        {
+          "outcome": "frozen_alignment_log_harm",
+          "phase_statistic": "circular_resultant_magnitude",
+          "status": "post-hoc descriptive association; not an identified causal effect",
+          "two_sided_within_dataset_permutation_p": 0.12270877291227088,
+          "units": 20,
+          "within_dataset_rank_correlation": -0.4000000000000001
+        },
+        {
+          "outcome": "frozen_permutation_log_harm",
+          "phase_statistic": "circular_resultant_magnitude",
+          "status": "post-hoc descriptive association; not an identified causal effect",
+          "two_sided_within_dataset_permutation_p": 0.3019869801301987,
+          "units": 20,
+          "within_dataset_rank_correlation": -0.2750000000000001
+        },
+        {
+          "outcome": "trained_full_vs_aligned_log_benefit",
+          "phase_statistic": "relative_phase_entropy_normalized",
+          "status": "post-hoc descriptive association; not an identified causal effect",
+          "two_sided_within_dataset_permutation_p": 0.21963780362196378,
+          "units": 20,
+          "within_dataset_rank_correlation": 0.325
+        },
+        {
+          "outcome": "frozen_alignment_log_harm",
+          "phase_statistic": "relative_phase_entropy_normalized",
+          "status": "post-hoc descriptive association; not an identified causal effect",
+          "two_sided_within_dataset_permutation_p": 0.06284937150628493,
+          "units": 20,
+          "within_dataset_rank_correlation": 0.4750000000000001
+        },
+        {
+          "outcome": "frozen_permutation_log_harm",
+          "phase_statistic": "relative_phase_entropy_normalized",
+          "status": "post-hoc descriptive association; not an identified causal effect",
+          "two_sided_within_dataset_permutation_p": 0.35058649413505866,
+          "units": 20,
+          "within_dataset_rank_correlation": 0.25000000000000006
+        }
+      ],
+      "phase_statistics": [
+        {
+          "circular_resultant_magnitude": 0.8509082526534479,
+          "dataset": "mal",
+          "destructive_kernel_fraction": 0.0056681351086867015,
+          "max_channel_destructive_fraction": 0.0056681351086867015,
+          "num_batches": 438,
+          "pair_amplitude_sum": 1688927.83304199,
+          "path": "/tmp/chorus_phase_causal_20260825/observational_phase/mal/seed20260616/phase_interference.json",
+          "relative_phase_entropy_normalized": 0.7666004485596829,
+          "seed": 20260616,
+          "weighted_mean_cos_delta": 0.8216806973027241
+        },
+        {
+          "circular_resultant_magnitude": 0.929573756036979,
+          "dataset": "mal",
+          "destructive_kernel_fraction": 0.0,
+          "max_channel_destructive_fraction": 0.0,
+          "num_batches": 438,
+          "pair_amplitude_sum": 1863866.5585870196,
+          "path": "/tmp/chorus_phase_causal_20260825/observational_phase/mal/seed20260617/phase_interference.json",
+          "relative_phase_entropy_normalized": 0.6724456621229605,
+          "seed": 20260617,
+          "weighted_mean_cos_delta": 0.9129868705927566
+        },
+        {
+          "circular_resultant_magnitude": 0.8934362533150053,
+          "dataset": "mal",
+          "destructive_kernel_fraction": 1.535116870883389e-08,
+          "max_channel_destructive_fraction": 1.535116870883389e-08,
+          "num_batches": 438,
+          "pair_amplitude_sum": 2147600.3295276277,
+          "path": "/tmp/chorus_phase_causal_20260825/observational_phase/mal/seed20260618/phase_interference.json",
+          "relative_phase_entropy_normalized": 0.7168578997306967,
+          "seed": 20260618,
+          "weighted_mean_cos_delta": 0.8583723685205662
+        },
+        {
+          "circular_resultant_magnitude": 0.9054284164491001,
+          "dataset": "mal",
+          "destructive_kernel_fraction": 0.0,
+          "max_channel_destructive_fraction": 0.0,
+          "num_batches": 438,
+          "pair_amplitude_sum": 1665131.5585516077,
+          "path": "/tmp/chorus_phase_causal_20260825/observational_phase/mal/seed20260619/phase_interference.json",
+          "relative_phase_entropy_normalized": 0.6818092734965812,
+          "seed": 20260619,
+          "weighted_mean_cos_delta": 0.8969367794687397
+        },
+        {
+          "circular_resultant_magnitude": 0.8937287802350803,
+          "dataset": "mal",
+          "destructive_kernel_fraction": 8.705785520897489e-07,
+          "max_channel_destructive_fraction": 8.705785520897489e-07,
+          "num_batches": 438,
+          "pair_amplitude_sum": 2114206.309305393,
+          "path": "/tmp/chorus_phase_causal_20260825/observational_phase/mal/seed20260620/phase_interference.json",
+          "relative_phase_entropy_normalized": 0.7170404205083908,
+          "seed": 20260620,
+          "weighted_mean_cos_delta": 0.8756454560583021
+        },
+        {
+          "circular_resultant_magnitude": 0.9687335200529547,
+          "dataset": "bucky",
+          "destructive_kernel_fraction": 0.0,
+          "max_channel_destructive_fraction": 0.0,
+          "num_batches": 1226,
+          "pair_amplitude_sum": 431965010.4712633,
+          "path": "/tmp/chorus_phase_causal_20260825/observational_phase/bucky/seed20260616/phase_interference.json",
+          "relative_phase_entropy_normalized": 0.4747566104857011,
+          "seed": 20260616,
+          "weighted_mean_cos_delta": 0.9681719705777069
+        },
+        {
+          "circular_resultant_magnitude": 0.9782403274943362,
+          "dataset": "bucky",
+          "destructive_kernel_fraction": 0.0,
+          "max_channel_destructive_fraction": 0.0,
+          "num_batches": 1226,
+          "pair_amplitude_sum": 417706513.2385929,
+          "path": "/tmp/chorus_phase_causal_20260825/observational_phase/bucky/seed20260617/phase_interference.json",
+          "relative_phase_entropy_normalized": 0.4129826445799116,
+          "seed": 20260617,
+          "weighted_mean_cos_delta": 0.9776246380096407
+        },
+        {
+          "circular_resultant_magnitude": 0.9827714210246183,
+          "dataset": "bucky",
+          "destructive_kernel_fraction": 0.0,
+          "max_channel_destructive_fraction": 0.0,
+          "num_batches": 1226,
+          "pair_amplitude_sum": 608258194.2183859,
+          "path": "/tmp/chorus_phase_causal_20260825/observational_phase/bucky/seed20260618/phase_interference.json",
+          "relative_phase_entropy_normalized": 0.4051843892918018,
+          "seed": 20260618,
+          "weighted_mean_cos_delta": 0.9823853430569379
+        },
+        {
+          "circular_resultant_magnitude": 0.9797924067657192,
+          "dataset": "bucky",
+          "destructive_kernel_fraction": 0.0,
+          "max_channel_destructive_fraction": 0.0,
+          "num_batches": 1226,
+          "pair_amplitude_sum": 854078536.6744683,
+          "path": "/tmp/chorus_phase_causal_20260825/observational_phase/bucky/seed20260619/phase_interference.json",
+          "relative_phase_entropy_normalized": 0.37427157430195035,
+          "seed": 20260619,
+          "weighted_mean_cos_delta": 0.9797144885831284
+        },
+        {
+          "circular_resultant_magnitude": 0.9933415561509833,
+          "dataset": "bucky",
+          "destructive_kernel_fraction": 0.0,
+          "max_channel_destructive_fraction": 0.0,
+          "num_batches": 1226,
+          "pair_amplitude_sum": 420627390.78008586,
+          "path": "/tmp/chorus_phase_causal_20260825/observational_phase/bucky/seed20260620/phase_interference.json",
+          "relative_phase_entropy_normalized": 0.3568565645313124,
+          "seed": 20260620,
+          "weighted_mean_cos_delta": 0.993298168585486
+        },
+        {
+          "circular_resultant_magnitude": 0.9331210615360789,
+          "dataset": "3bpa",
+          "destructive_kernel_fraction": 0.0,
+          "max_channel_destructive_fraction": 0.0,
+          "num_batches": 105,
+          "pair_amplitude_sum": 13714641.568896055,
+          "path": "/tmp/chorus_phase_causal_20260825/observational_phase/3bpa/seed20260616/phase_interference.json",
+          "relative_phase_entropy_normalized": 0.6498264874472073,
+          "seed": 20260616,
+          "weighted_mean_cos_delta": 0.9325664740294315
+        },
+        {
+          "circular_resultant_magnitude": 0.9139143859925899,
+          "dataset": "3bpa",
+          "destructive_kernel_fraction": 1.7776003356078008e-07,
+          "max_channel_destructive_fraction": 1.7776003356078008e-07,
+          "num_batches": 105,
+          "pair_amplitude_sum": 10179391.856828464,
+          "path": "/tmp/chorus_phase_causal_20260825/observational_phase/3bpa/seed20260617/phase_interference.json",
+          "relative_phase_entropy_normalized": 0.6775644742650458,
+          "seed": 20260617,
+          "weighted_mean_cos_delta": 0.9137101008679136
+        },
+        {
+          "circular_resultant_magnitude": 0.8999989245634062,
+          "dataset": "3bpa",
+          "destructive_kernel_fraction": 0.0,
+          "max_channel_destructive_fraction": 0.0,
+          "num_batches": 105,
+          "pair_amplitude_sum": 8635913.465425443,
+          "path": "/tmp/chorus_phase_causal_20260825/observational_phase/3bpa/seed20260618/phase_interference.json",
+          "relative_phase_entropy_normalized": 0.6885454404484086,
+          "seed": 20260618,
+          "weighted_mean_cos_delta": 0.8965873816355346
+        },
+        {
+          "circular_resultant_magnitude": 0.9145813565974977,
+          "dataset": "3bpa",
+          "destructive_kernel_fraction": 0.0,
+          "max_channel_destructive_fraction": 0.0,
+          "num_batches": 105,
+          "pair_amplitude_sum": 10355863.737194164,
+          "path": "/tmp/chorus_phase_causal_20260825/observational_phase/3bpa/seed20260619/phase_interference.json",
+          "relative_phase_entropy_normalized": 0.6491881373772879,
+          "seed": 20260619,
+          "weighted_mean_cos_delta": 0.9114896786908454
+        },
+        {
+          "circular_resultant_magnitude": 0.8878152934163906,
+          "dataset": "3bpa",
+          "destructive_kernel_fraction": 0.0,
+          "max_channel_destructive_fraction": 0.0,
+          "num_batches": 105,
+          "pair_amplitude_sum": 7978589.952991436,
+          "path": "/tmp/chorus_phase_causal_20260825/observational_phase/3bpa/seed20260620/phase_interference.json",
+          "relative_phase_entropy_normalized": 0.6545916420357514,
+          "seed": 20260620,
+          "weighted_mean_cos_delta": 0.883469172543447
+        },
+        {
+          "circular_resultant_magnitude": 0.9358755586593881,
+          "dataset": "zro",
+          "destructive_kernel_fraction": 1.2719050154966472e-05,
+          "max_channel_destructive_fraction": 1.2719050154966472e-05,
+          "num_batches": 2230,
+          "pair_amplitude_sum": 145786993.58696887,
+          "path": "/tmp/chorus_phase_causal_20260825/observational_phase/zro/seed20260616/phase_interference.json",
+          "relative_phase_entropy_normalized": 0.5547786406832462,
+          "seed": 20260616,
+          "weighted_mean_cos_delta": 0.9320317507859733
+        },
+        {
+          "circular_resultant_magnitude": 0.3916028453652213,
+          "dataset": "zro",
+          "destructive_kernel_fraction": 0.29577288909963706,
+          "max_channel_destructive_fraction": 0.29577288909963706,
+          "num_batches": 2230,
+          "pair_amplitude_sum": 221028486.18870658,
+          "path": "/tmp/chorus_phase_causal_20260825/observational_phase/zro/seed20260617/phase_interference.json",
+          "relative_phase_entropy_normalized": 0.6886008436402702,
+          "seed": 20260617,
+          "weighted_mean_cos_delta": 0.3567492554087046
+        },
+        {
+          "circular_resultant_magnitude": 0.8918905774943733,
+          "dataset": "zro",
+          "destructive_kernel_fraction": 0.0005194793335937309,
+          "max_channel_destructive_fraction": 0.0005194793335937309,
+          "num_batches": 2230,
+          "pair_amplitude_sum": 184765224.90915665,
+          "path": "/tmp/chorus_phase_causal_20260825/observational_phase/zro/seed20260618/phase_interference.json",
+          "relative_phase_entropy_normalized": 0.5844209503855113,
+          "seed": 20260618,
+          "weighted_mean_cos_delta": 0.8734972686430537
+        },
+        {
+          "circular_resultant_magnitude": 0.8923225625661816,
+          "dataset": "zro",
+          "destructive_kernel_fraction": 0.0004325612862759509,
+          "max_channel_destructive_fraction": 0.0004325612862759509,
+          "num_batches": 2230,
+          "pair_amplitude_sum": 189876535.86587894,
+          "path": "/tmp/chorus_phase_causal_20260825/observational_phase/zro/seed20260619/phase_interference.json",
+          "relative_phase_entropy_normalized": 0.6374120120064352,
+          "seed": 20260619,
+          "weighted_mean_cos_delta": 0.8717770799093382
+        },
+        {
+          "circular_resultant_magnitude": 0.8949973761911911,
+          "dataset": "zro",
+          "destructive_kernel_fraction": 0.00033038613541834484,
+          "max_channel_destructive_fraction": 0.00033038613541834484,
+          "num_batches": 2230,
+          "pair_amplitude_sum": 164111690.0134492,
+          "path": "/tmp/chorus_phase_causal_20260825/observational_phase/zro/seed20260620/phase_interference.json",
+          "relative_phase_entropy_normalized": 0.5885782596284327,
+          "seed": 20260620,
+          "weighted_mean_cos_delta": 0.875241606317421
+        }
+      ],
+      "status": "post-hoc descriptive"
+    }
+  },
+  "primary_outcome": "test Force MAE selected by validation Force MAE",
+  "schema_version": 1,
+  "secondary_metric_effects": [
+    {
+      "control": "off",
+      "dataset_relative_error_reduction_percent": {
+        "3bpa": 9.052249312531224,
+        "bucky": -1.797136042272185,
+        "mal": -1.7697337404484648,
+        "zro": 2.947943581727297
+      },
+      "dataset_wins_of_five": {
+        "3bpa": 2,
+        "bucky": 2,
+        "mal": 4,
+        "zro": 3
+      },
+      "exact_two_sided_sign_flip_p": 0.5769290924072266,
+      "heterogeneous_sign_across_datasets": true,
+      "leave_one_dataset_out_percent": {
+        "3bpa": -0.18121934234720527,
+        "bucky": 3.5123384768492305,
+        "mal": 3.5036792332242883,
+        "zro": 1.9647967568551805
+      },
+      "macro_95pct_hierarchical_bootstrap_ci_percent": [
+        -5.759038758041755,
+        10.83131720548208
+      ],
+      "macro_relative_error_reduction_percent": 2.211513235655671,
+      "metric": "test_energy_mae",
+      "name": "stable_self_density",
+      "paired_units": 20,
+      "treatment": "diagonal",
+      "two_sided_binomial_sign_p": 0.8238029479980469,
+      "two_sided_wilcoxon_p": 0.6742229461669922,
+      "wins": 11
+    },
+    {
+      "control": "diagonal",
+      "dataset_relative_error_reduction_percent": {
+        "3bpa": 9.858532978488821,
+        "bucky": 3.897739600231376,
+        "mal": 1.3571976434308408,
+        "zro": -9.462240648598485
+      },
+      "dataset_wins_of_five": {
+        "3bpa": 4,
+        "bucky": 3,
+        "mal": 4,
+        "zro": 1
+      },
+      "exact_two_sided_sign_flip_p": 0.6274871826171875,
+      "heterogeneous_sign_across_datasets": true,
+      "leave_one_dataset_out_percent": {
+        "3bpa": -1.240538393051538,
+        "bucky": 0.8974599694952068,
+        "mal": 1.755664526854106,
+        "zro": 5.105463532206467
+      },
+      "macro_95pct_hierarchical_bootstrap_ci_percent": [
+        -8.065763899996458,
+        9.266823306475343
+      ],
+      "macro_relative_error_reduction_percent": 1.6561989609432115,
+      "metric": "test_energy_mae",
+      "name": "phase_free_cross_neighbour_closure",
+      "paired_units": 20,
+      "treatment": "aligned",
+      "two_sided_binomial_sign_p": 0.5034446716308594,
+      "two_sided_wilcoxon_p": 0.21453736472050733,
+      "wins": 12
+    },
+    {
+      "control": "aligned",
+      "dataset_relative_error_reduction_percent": {
+        "3bpa": -4.89763727218846,
+        "bucky": -0.48957287594466603,
+        "mal": -4.501865382596071,
+        "zro": 3.0167797669716
+      },
+      "dataset_wins_of_five": {
+        "3bpa": 2,
+        "bucky": 3,
+        "mal": 2,
+        "zro": 3
+      },
+      "exact_two_sided_sign_flip_p": 0.4672107696533203,
+      "heterogeneous_sign_across_datasets": true,
+      "leave_one_dataset_out_percent": {
+        "3bpa": -0.6114051550338839,
+        "bucky": -2.061539847585281,
+        "mal": -0.7382577659492906,
+        "zro": -3.2769926454371934
+      },
+      "macro_95pct_hierarchical_bootstrap_ci_percent": [
+        -7.062178456895449,
+        3.2793842640260222
+      ],
+      "macro_relative_error_reduction_percent": -1.6662576486801361,
+      "metric": "test_energy_mae",
+      "name": "learned_relative_phase",
+      "paired_units": 20,
+      "treatment": "full",
+      "two_sided_binomial_sign_p": 1.0,
+      "two_sided_wilcoxon_p": 0.6476554870605469,
+      "wins": 10
+    },
+    {
+      "control": "diagonal",
+      "dataset_relative_error_reduction_percent": {
+        "3bpa": 5.443730891945819,
+        "bucky": 3.4272490001443945,
+        "mal": -3.083568528282221,
+        "zro": -6.160005920237799
+      },
+      "dataset_wins_of_five": {
+        "3bpa": 4,
+        "bucky": 4,
+        "mal": 2,
+        "zro": 2
+      },
+      "exact_two_sided_sign_flip_p": 0.9959526062011719,
+      "heterogeneous_sign_across_datasets": true,
+      "leave_one_dataset_out_percent": {
+        "3bpa": -1.8595282637706934,
+        "bucky": -1.1455783832027944,
+        "mal": 1.0303680906183277,
+        "zro": 1.9957765512351733
+      },
+      "macro_95pct_hierarchical_bootstrap_ci_percent": [
+        -8.33001382940907,
+        6.977673678271713
+      ],
+      "macro_relative_error_reduction_percent": 0.01753785412714759,
+      "metric": "test_energy_mae",
+      "name": "full_vs_diagonal",
+      "paired_units": 20,
+      "treatment": "full",
+      "two_sided_binomial_sign_p": 0.5034446716308594,
+      "two_sided_wilcoxon_p": 0.7841262817382812,
+      "wins": 12
+    },
+    {
+      "control": "off",
+      "dataset_relative_error_reduction_percent": {
+        "3bpa": 14.003200112234826,
+        "bucky": 1.6917052849122372,
+        "mal": -4.90787322138555,
+        "zro": -3.0304688393508084
+      },
+      "dataset_wins_of_five": {
+        "3bpa": 5,
+        "bucky": 4,
+        "mal": 2,
+        "zro": 2
+      },
+      "exact_two_sided_sign_flip_p": 0.5798873901367188,
+      "heterogeneous_sign_across_datasets": true,
+      "leave_one_dataset_out_percent": {
+        "3bpa": -2.0441174310082744,
+        "bucky": 2.406996683982132,
+        "mal": 4.497946531025865,
+        "zro": 3.921360355137604
+      },
+      "macro_95pct_hierarchical_bootstrap_ci_percent": [
+        -7.344541569351141,
+        12.222612685063288
+      ],
+      "macro_relative_error_reduction_percent": 2.228663237817552,
+      "metric": "test_energy_mae",
+      "name": "full_vs_off",
+      "paired_units": 20,
+      "treatment": "full",
+      "two_sided_binomial_sign_p": 0.26317596435546875,
+      "two_sided_wilcoxon_p": 0.5705966949462891,
+      "wins": 13
+    },
+    {
+      "control": "charge2",
+      "dataset_relative_error_reduction_percent": {
+        "3bpa": -11.272282372286746,
+        "bucky": 1.1171415253064754,
+        "mal": -0.7452893131113747,
+        "zro": -5.328452673126116
+      },
+      "dataset_wins_of_five": {
+        "3bpa": 1,
+        "bucky": 2,
+        "mal": 4,
+        "zro": 1
+      },
+      "exact_two_sided_sign_flip_p": 0.13695716857910156,
+      "heterogeneous_sign_across_datasets": true,
+      "leave_one_dataset_out_percent": {
+        "3bpa": -1.616403911935116,
+        "bucky": -5.694522956366543,
+        "mal": -5.039159412763139,
+        "zro": -3.4929863604482136
+      },
+      "macro_95pct_hierarchical_bootstrap_ci_percent": [
+        -10.596687171504312,
+        2.2285539822459297
+      ],
+      "macro_relative_error_reduction_percent": -3.948832351159237,
+      "metric": "test_energy_mae",
+      "name": "full_vs_charge2_sensitivity",
+      "paired_units": 20,
+      "treatment": "full",
+      "two_sided_binomial_sign_p": 0.5034446716308594,
+      "two_sided_wilcoxon_p": 0.16495704650878906,
+      "wins": 8
+    },
+    {
+      "control": "off",
+      "dataset_relative_error_reduction_percent": {
+        "3bpa": 7.617188767542893,
+        "bucky": -2.2158365429021165,
+        "mal": -3.6435074490588137,
+        "zro": 5.338959931347864
+      },
+      "dataset_wins_of_five": {
+        "3bpa": 2,
+        "bucky": 2,
+        "mal": 3,
+        "zro": 5
+      },
+      "exact_two_sided_sign_flip_p": 0.6314983367919922,
+      "heterogeneous_sign_across_datasets": true,
+      "leave_one_dataset_out_percent": {
+        "3bpa": -0.09457048177368144,
+        "bucky": 3.22388527778964,
+        "mal": 3.6702992840928372,
+        "zro": 0.7149586677429931
+      },
+      "macro_95pct_hierarchical_bootstrap_ci_percent": [
+        -6.737323242704364,
+        10.235898771526541
+      ],
+      "macro_relative_error_reduction_percent": 1.8917150766998514,
+      "metric": "test_energy_rmse",
+      "name": "stable_self_density",
+      "paired_units": 20,
+      "treatment": "diagonal",
+      "two_sided_binomial_sign_p": 0.5034446716308594,
+      "two_sided_wilcoxon_p": 0.6476554870605469,
+      "wins": 12
+    },
+    {
+      "control": "diagonal",
+      "dataset_relative_error_reduction_percent": {
+        "3bpa": 8.019158906438895,
+        "bucky": 3.869647985907043,
+        "mal": 2.2112789247238585,
+        "zro": -7.821190790074328
+      },
+      "dataset_wins_of_five": {
+        "3bpa": 4,
+        "bucky": 3,
+        "mal": 4,
+        "zro": 0
+      },
+      "exact_two_sided_sign_flip_p": 0.5641536712646484,
+      "heterogeneous_sign_across_datasets": true,
+      "leave_one_dataset_out_percent": {
+        "3bpa": -0.45027752056359116,
+        "bucky": 1.0163595815169901,
+        "mal": 1.5790972156077387,
+        "zro": 4.731595533338573
+      },
+      "macro_95pct_hierarchical_bootstrap_ci_percent": [
+        -6.2320801956610286,
+        8.604909369619543
+      ],
+      "macro_relative_error_reduction_percent": 1.7375247623795165,
+      "metric": "test_energy_rmse",
+      "name": "phase_free_cross_neighbour_closure",
+      "paired_units": 20,
+      "treatment": "aligned",
+      "two_sided_binomial_sign_p": 0.8238029479980469,
+      "two_sided_wilcoxon_p": 0.34881019592285156,
+      "wins": 11
+    },
+    {
+      "control": "aligned",
+      "dataset_relative_error_reduction_percent": {
+        "3bpa": 0.23525869105640584,
+        "bucky": -0.045542641094287184,
+        "mal": -9.10303125921783,
+        "zro": 4.039701271965457
+      },
+      "dataset_wins_of_five": {
+        "3bpa": 3,
+        "bucky": 3,
+        "mal": 1,
+        "zro": 3
+      },
+      "exact_two_sided_sign_flip_p": 0.6601142883300781,
+      "heterogeneous_sign_across_datasets": true,
+      "leave_one_dataset_out_percent": {
+        "3bpa": -1.5567320518213856,
+        "bucky": -1.4616287394958238,
+        "mal": 1.4275679161460442,
+        "zro": -2.8814825572127
+      },
+      "macro_95pct_hierarchical_bootstrap_ci_percent": [
+        -8.10948234020689,
+        3.943464236995716
+      ],
+      "macro_relative_error_reduction_percent": -1.105739097054581,
+      "metric": "test_energy_rmse",
+      "name": "learned_relative_phase",
+      "paired_units": 20,
+      "treatment": "full",
+      "two_sided_binomial_sign_p": 1.0,
+      "two_sided_wilcoxon_p": 0.956329345703125,
+      "wins": 10
+    },
+    {
+      "control": "diagonal",
+      "dataset_relative_error_reduction_percent": {
+        "3bpa": 8.235551829218268,
+        "bucky": 3.8258676847066075,
+        "mal": -6.690458922747844,
+        "zro": -3.4655367742793874
+      },
+      "dataset_wins_of_five": {
+        "3bpa": 4,
+        "bucky": 4,
+        "mal": 2,
+        "zro": 1
+      },
+      "exact_two_sided_sign_flip_p": 0.8313541412353516,
+      "heterogeneous_sign_across_datasets": true,
+      "leave_one_dataset_out_percent": {
+        "3bpa": -2.014019186869742,
+        "bucky": -0.4304137542387565,
+        "mal": 2.984122446539006,
+        "zro": 1.9864530760968835
+      },
+      "macro_95pct_hierarchical_bootstrap_ci_percent": [
+        -7.820665916074289,
+        7.674788985388437
+      ],
+      "macro_relative_error_reduction_percent": 0.6509981559435829,
+      "metric": "test_energy_rmse",
+      "name": "full_vs_diagonal",
+      "paired_units": 20,
+      "treatment": "full",
+      "two_sided_binomial_sign_p": 0.8238029479980469,
+      "two_sided_wilcoxon_p": 0.7011814117431641,
+      "wins": 11
+    },
+    {
+      "control": "off",
+      "dataset_relative_error_reduction_percent": {
+        "3bpa": 15.225423067880783,
+        "bucky": 1.6948061160452998,
+        "mal": -10.577733741033214,
+        "zro": 2.0584467768533843
+      },
+      "dataset_wins_of_five": {
+        "3bpa": 5,
+        "bucky": 3,
+        "mal": 1,
+        "zro": 4
+      },
+      "exact_two_sided_sign_flip_p": 0.552764892578125,
+      "heterogeneous_sign_across_datasets": true,
+      "leave_one_dataset_out_percent": {
+        "3bpa": -2.1104943362914463,
+        "bucky": 2.8073475692073635,
+        "mal": 6.544895505840076,
+        "zro": 2.687209425391668
+      },
+      "macro_95pct_hierarchical_bootstrap_ci_percent": [
+        -8.718175190914662,
+        13.244069060106234
+      ],
+      "macro_relative_error_reduction_percent": 2.5303982023784033,
+      "metric": "test_energy_rmse",
+      "name": "full_vs_off",
+      "paired_units": 20,
+      "treatment": "full",
+      "two_sided_binomial_sign_p": 0.26317596435546875,
+      "two_sided_wilcoxon_p": 0.47490501403808594,
+      "wins": 13
+    },
+    {
+      "control": "charge2",
+      "dataset_relative_error_reduction_percent": {
+        "3bpa": -6.988098561451617,
+        "bucky": 1.90208866621413,
+        "mal": -7.388213157030443,
+        "zro": -2.9635900314858965
+      },
+      "dataset_wins_of_five": {
+        "3bpa": 1,
+        "bucky": 2,
+        "mal": 1,
+        "zro": 1
+      },
+      "exact_two_sided_sign_flip_p": 0.13714981079101562,
+      "heterogeneous_sign_across_datasets": true,
+      "leave_one_dataset_out_percent": {
+        "3bpa": -2.746416650320427,
+        "bucky": -5.760928272789778,
+        "mal": -2.618651218855539,
+        "zro": -4.068017658458767
+      },
+      "macro_95pct_hierarchical_bootstrap_ci_percent": [
+        -9.882963417885236,
+        1.752023586936154
+      ],
+      "macro_relative_error_reduction_percent": -3.7908050742710087,
+      "metric": "test_energy_rmse",
+      "name": "full_vs_charge2_sensitivity",
+      "paired_units": 20,
+      "treatment": "full",
+      "two_sided_binomial_sign_p": 0.04138946533203125,
+      "two_sided_wilcoxon_p": 0.08355636667535958,
+      "wins": 5
+    },
+    {
+      "control": "off",
+      "dataset_relative_error_reduction_percent": {
+        "3bpa": 9.38339786155038,
+        "bucky": 11.726226033049459,
+        "mal": 0.9611247091880215,
+        "zro": 2.6107707514178125
+      },
+      "dataset_wins_of_five": {
+        "3bpa": 5,
+        "bucky": 5,
+        "mal": 3,
+        "zro": 5
+      },
+      "exact_two_sided_sign_flip_p": 0.0003509521484375,
+      "heterogeneous_sign_across_datasets": false,
+      "leave_one_dataset_out_percent": {
+        "3bpa": 5.220130229525688,
+        "bucky": 4.38893980153463,
+        "mal": 7.986800534719407,
+        "zro": 7.470178899557078
+      },
+      "macro_95pct_hierarchical_bootstrap_ci_percent": [
+        1.4507599200307737,
+        10.73180990258358
+      ],
+      "macro_relative_error_reduction_percent": 6.2785446149774105,
+      "metric": "test_force_rmse",
+      "name": "stable_self_density",
+      "paired_units": 20,
+      "treatment": "diagonal",
+      "two_sided_binomial_sign_p": 0.0004024505615234375,
+      "two_sided_wilcoxon_p": 0.0004825592041015625,
+      "wins": 18
+    },
+    {
+      "control": "diagonal",
+      "dataset_relative_error_reduction_percent": {
+        "3bpa": 5.1018804002287865,
+        "bucky": 5.956540948962685,
+        "mal": 0.7325726360850493,
+        "zro": 0.5527468504485045
+      },
+      "dataset_wins_of_five": {
+        "3bpa": 5,
+        "bucky": 5,
+        "mal": 4,
+        "zro": 3
+      },
+      "exact_two_sided_sign_flip_p": 0.003742218017578125,
+      "heterogeneous_sign_across_datasets": false,
+      "leave_one_dataset_out_percent": {
+        "3bpa": 2.4465309375894306,
+        "bucky": 2.1519019059088373,
+        "mal": 3.8993486573950853,
+        "zro": 3.957308367769663
+      },
+      "macro_95pct_hierarchical_bootstrap_ci_percent": [
+        0.2522294121297238,
+        5.839244532365068
+      ],
+      "macro_relative_error_reduction_percent": 3.117253924659391,
+      "metric": "test_force_rmse",
+      "name": "phase_free_cross_neighbour_closure",
+      "paired_units": 20,
+      "treatment": "aligned",
+      "two_sided_binomial_sign_p": 0.0025768280029296875,
+      "two_sided_wilcoxon_p": 0.002712249755859375,
+      "wins": 17
+    },
+    {
+      "control": "aligned",
+      "dataset_relative_error_reduction_percent": {
+        "3bpa": -0.5290964584672597,
+        "bucky": 0.3322455384685119,
+        "mal": 0.7612495388136131,
+        "zro": -0.06226360046068802
+      },
+      "dataset_wins_of_five": {
+        "3bpa": 2,
+        "bucky": 3,
+        "mal": 4,
+        "zro": 2
+      },
+      "exact_two_sided_sign_flip_p": 0.7785263061523438,
+      "heterogeneous_sign_across_datasets": true,
+      "leave_one_dataset_out_percent": {
+        "3bpa": 0.34431132018394317,
+        "bucky": 0.058055123758549154,
+        "mal": -0.08575247511775075,
+        "zro": 0.18957303991651298
+      },
+      "macro_95pct_hierarchical_bootstrap_ci_percent": [
+        -0.8285975097961917,
+        1.0844000304379742
+      ],
+      "macro_relative_error_reduction_percent": 0.1266733630632566,
+      "metric": "test_force_rmse",
+      "name": "learned_relative_phase",
+      "paired_units": 20,
+      "treatment": "full",
+      "two_sided_binomial_sign_p": 0.8238029479980469,
+      "two_sided_wilcoxon_p": 0.5458755493164062,
+      "wins": 11
+    },
+    {
+      "control": "diagonal",
+      "dataset_relative_error_reduction_percent": {
+        "3bpa": 4.599777810274364,
+        "bucky": 6.268996145881223,
+        "mal": 1.4882454690849922,
+        "zro": 0.49082741007835384
+      },
+      "dataset_wins_of_five": {
+        "3bpa": 5,
+        "bucky": 5,
+        "mal": 3,
+        "zro": 3
+      },
+      "exact_two_sided_sign_flip_p": 0.0008869171142578125,
+      "heterogeneous_sign_across_datasets": false,
+      "leave_one_dataset_out_percent": {
+        "3bpa": 2.782418574803458,
+        "bucky": 2.2087077403527444,
+        "mal": 3.8169399702645213,
+        "zro": 4.139379417914524
+      },
+      "macro_95pct_hierarchical_bootstrap_ci_percent": [
+        0.6934641872109759,
+        5.795934921375724
+      ],
+      "macro_relative_error_reduction_percent": 3.239978557341061,
+      "metric": "test_force_rmse",
+      "name": "full_vs_diagonal",
+      "paired_units": 20,
+      "treatment": "full",
+      "two_sided_binomial_sign_p": 0.01181793212890625,
+      "two_sided_wilcoxon_p": 0.0014324188232421875,
+      "wins": 16
+    },
+    {
+      "control": "off",
+      "dataset_relative_error_reduction_percent": {
+        "3bpa": 13.55156021913938,
+        "bucky": 17.26010552086148,
+        "mal": 2.4350662833362735,
+        "zro": 3.0887837830338882
+      },
+      "dataset_wins_of_five": {
+        "3bpa": 5,
+        "bucky": 5,
+        "mal": 4,
+        "zro": 4
+      },
+      "exact_two_sided_sign_flip_p": 7.05718994140625e-05,
+      "heterogeneous_sign_across_datasets": false,
+      "leave_one_dataset_out_percent": {
+        "3bpa": 7.8573029311938765,
+        "bucky": 6.500708688771462,
+        "mal": 11.49888912302892,
+        "zro": 11.30033926962195
+      },
+      "macro_95pct_hierarchical_bootstrap_ci_percent": [
+        2.6143757450901375,
+        15.644526155100047
+      ],
+      "macro_relative_error_reduction_percent": 9.315099673080097,
+      "metric": "test_force_rmse",
+      "name": "full_vs_off",
+      "paired_units": 20,
+      "treatment": "full",
+      "two_sided_binomial_sign_p": 0.0004024505615234375,
+      "two_sided_wilcoxon_p": 0.0001049041748046875,
+      "wins": 18
+    },
+    {
+      "control": "charge2",
+      "dataset_relative_error_reduction_percent": {
+        "3bpa": 0.867019044078976,
+        "bucky": -0.5939115620564372,
+        "mal": -5.584589715615174,
+        "zro": -0.590513553399008
+      },
+      "dataset_wins_of_five": {
+        "3bpa": 2,
+        "bucky": 2,
+        "mal": 0,
+        "zro": 2
+      },
+      "exact_two_sided_sign_flip_p": 0.10825538635253906,
+      "heterogeneous_sign_across_datasets": true,
+      "leave_one_dataset_out_percent": {
+        "3bpa": -2.229542989324873,
+        "bucky": -1.7322326860057746,
+        "mal": -0.10343085066200075,
+        "zro": -1.7333781986482943
+      },
+      "macro_95pct_hierarchical_bootstrap_ci_percent": [
+        -4.473617747798185,
+        0.7887392847535365
+      ],
+      "macro_relative_error_reduction_percent": -1.4464504460866445,
+      "metric": "test_force_rmse",
+      "name": "full_vs_charge2_sensitivity",
+      "paired_units": 20,
+      "treatment": "full",
+      "two_sided_binomial_sign_p": 0.11531829833984375,
+      "two_sided_wilcoxon_p": 0.13272666931152344,
+      "wins": 6
+    }
+  ],
+  "seeds": [
+    20260616,
+    20260617,
+    20260618,
+    20260619,
+    20260620
+  ],
+  "title": "CHORUS Pearl three-rung causal-mechanism audit"
+}

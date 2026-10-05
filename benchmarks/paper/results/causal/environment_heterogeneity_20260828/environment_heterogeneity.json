@@ -1,0 +1,1311 @@
+{
+  "audit": {
+    "atomic_rows": 4964675,
+    "bootstrap_replicates": 100000,
+    "causal_unit": "independently trained dataset-by-seed predictor",
+    "complete": true,
+    "finite": true,
+    "frame_rows": 112455,
+    "model_pairs": 20,
+    "nested_outcomes": "atoms and frames",
+    "pyarrow_version": "24.0.0",
+    "rng_seed": 20260828
+  },
+  "energy_effects": [
+    {
+      "aligned_95pct_seed_bootstrap_ci_percent": [
+        187.07660788141735,
+        1048.7488229775045
+      ],
+      "aligned_energy_mae_mev_per_atom": 1.9968225040498857,
+      "aligned_proportional_error_inflation_percent": 376.60623635499866,
+      "dataset": "3bpa",
+      "model_pairs": 5,
+      "native_energy_mae_mev_per_atom": 0.27417344883829303,
+      "permuted_energy_mae_mev_per_atom": 20.001230048765063
+    },
+    {
+      "aligned_95pct_seed_bootstrap_ci_percent": [
+        235.68252054932765,
+        976.1191524737965
+      ],
+      "aligned_energy_mae_mev_per_atom": 2.7411376148180002,
+      "aligned_proportional_error_inflation_percent": 531.2965463234732,
+      "dataset": "bucky",
+      "model_pairs": 5,
+      "native_energy_mae_mev_per_atom": 0.350426208414657,
+      "permuted_energy_mae_mev_per_atom": 17.31111209176205
+    },
+    {
+      "aligned_95pct_seed_bootstrap_ci_percent": [
+        7.93316590473845,
+        46.107759173810855
+      ],
+      "aligned_energy_mae_mev_per_atom": 21.418288070436507,
+      "aligned_proportional_error_inflation_percent": 24.841762565479282,
+      "dataset": "mal",
+      "model_pairs": 5,
+      "native_energy_mae_mev_per_atom": 16.925176711309526,
+      "permuted_energy_mae_mev_per_atom": 27.021015857514886
+    },
+    {
+      "aligned_95pct_seed_bootstrap_ci_percent": [
+        -2.074734596782807,
+        53.9315520326722
+      ],
+      "aligned_energy_mae_mev_per_atom": 50.906339016419565,
+      "aligned_proportional_error_inflation_percent": 16.06036546677119,
+      "dataset": "zro",
+      "model_pairs": 5,
+      "native_energy_mae_mev_per_atom": 42.549243875953344,
+      "permuted_energy_mae_mev_per_atom": 61.16573659165598
+    }
+  ],
+  "energy_macro": {
+    "aligned_95pct_hierarchical_bootstrap_ci_percent": [
+      18.812607750962243,
+      479.93508773692673
+    ],
+    "aligned_proportional_error_inflation_percent": 156.95628212802316
+  },
+  "estimand": "frozen relative-phase alignment harm at the validation-selected Full checkpoint",
+  "gradient_contrasts": [
+    {
+      "dataset": "mal",
+      "dimension": "reference-force quartile",
+      "model_pairs": 5,
+      "positive_proportional_contrast_pairs": 4,
+      "q4_minus_q1_absolute_harm_95pct_ci": [
+        8.001891167795952,
+        18.01733164065591
+      ],
+      "q4_minus_q1_absolute_harm_mev_per_angstrom": 11.777417059706906,
+      "q4_vs_q1_proportional_harm_ratio_95pct_ci_percent": [
+        -0.7079379891972764,
+        3.130615086699931
+      ],
+      "q4_vs_q1_proportional_harm_ratio_percent": 1.159966223263944
+    },
+    {
+      "dataset": "bucky",
+      "dimension": "reference-force quartile",
+      "model_pairs": 5,
+      "positive_proportional_contrast_pairs": 1,
+      "q4_minus_q1_absolute_harm_95pct_ci": [
+        3.623686110969686,
+        6.819519894748682
+      ],
+      "q4_minus_q1_absolute_harm_mev_per_angstrom": 5.288434628502159,
+      "q4_vs_q1_proportional_harm_ratio_95pct_ci_percent": [
+        -11.252965961637216,
+        -1.7767742111930491
+      ],
+      "q4_vs_q1_proportional_harm_ratio_percent": -6.581948364337036
+    },
+    {
+      "dataset": "bucky",
+      "dimension": "neighbour-count quartile",
+      "model_pairs": 5,
+      "positive_proportional_contrast_pairs": 1,
+      "q4_minus_q1_absolute_harm_95pct_ci": [
+        -8.270315417814627,
+        1.585743040585167
+      ],
+      "q4_minus_q1_absolute_harm_mev_per_angstrom": -3.802127359530496,
+      "q4_vs_q1_proportional_harm_ratio_95pct_ci_percent": [
+        -44.8340591168441,
+        -16.529481776413324
+      ],
+      "q4_vs_q1_proportional_harm_ratio_percent": -33.84645069118291
+    },
+    {
+      "dataset": "3bpa",
+      "dimension": "reference-force quartile",
+      "model_pairs": 5,
+      "positive_proportional_contrast_pairs": 1,
+      "q4_minus_q1_absolute_harm_95pct_ci": [
+        9.019493115570539,
+        17.174738946193038
+      ],
+      "q4_minus_q1_absolute_harm_mev_per_angstrom": 13.09711603088179,
+      "q4_vs_q1_proportional_harm_ratio_95pct_ci_percent": [
+        -19.34716124401859,
+        -4.5741226173712475
+      ],
+      "q4_vs_q1_proportional_harm_ratio_percent": -12.750202236996877
+    },
+    {
+      "dataset": "3bpa",
+      "dimension": "neighbour-count quartile",
+      "model_pairs": 5,
+      "positive_proportional_contrast_pairs": 2,
+      "q4_minus_q1_absolute_harm_95pct_ci": [
+        15.561507530495907,
+        21.291314222914018
+      ],
+      "q4_minus_q1_absolute_harm_mev_per_angstrom": 18.42641087670496,
+      "q4_vs_q1_proportional_harm_ratio_95pct_ci_percent": [
+        -22.663407766597786,
+        0.3848859753027063
+      ],
+      "q4_vs_q1_proportional_harm_ratio_percent": -11.889699846904607
+    },
+    {
+      "dataset": "zro",
+      "dimension": "reference-force quartile",
+      "model_pairs": 5,
+      "positive_proportional_contrast_pairs": 3,
+      "q4_minus_q1_absolute_harm_95pct_ci": [
+        4.772456489192078,
+        42.852330440827
+      ],
+      "q4_minus_q1_absolute_harm_mev_per_angstrom": 18.954153971324093,
+      "q4_vs_q1_proportional_harm_ratio_95pct_ci_percent": [
+        -2.164953388830968,
+        11.337425792076292
+      ],
+      "q4_vs_q1_proportional_harm_ratio_percent": 3.500632932096581
+    },
+    {
+      "dataset": "zro",
+      "dimension": "neighbour-count quartile",
+      "model_pairs": 5,
+      "positive_proportional_contrast_pairs": 5,
+      "q4_minus_q1_absolute_harm_95pct_ci": [
+        19.02095043235019,
+        42.54933307243928
+      ],
+      "q4_minus_q1_absolute_harm_mev_per_angstrom": 27.733180268272765,
+      "q4_vs_q1_proportional_harm_ratio_95pct_ci_percent": [
+        21.635918048662177,
+        33.17080349473074
+      ],
+      "q4_vs_q1_proportional_harm_ratio_percent": 26.30219921120862
+    }
+  ],
+  "macro_quartile_effects": [
+    {
+      "aligned_95pct_hierarchical_bootstrap_ci_percent": [
+        16.95007492215857,
+        222.1549500877521
+      ],
+      "aligned_proportional_error_inflation_percent": 94.72707543320567,
+      "dataset": "equal-dataset macro",
+      "dimension": "neighbour-count quartile",
+      "model_pairs": 20,
+      "permuted_95pct_hierarchical_bootstrap_ci_percent": [
+        30.861142648956587,
+        782.720736534029
+      ],
+      "permuted_proportional_error_inflation_percent": 238.63132977731456,
+      "stratum": "Q1"
+    },
+    {
+      "aligned_95pct_hierarchical_bootstrap_ci_percent": [
+        24.910988008487642,
+        196.79300551078478
+      ],
+      "aligned_proportional_error_inflation_percent": 93.00591623449857,
+      "dataset": "equal-dataset macro",
+      "dimension": "reference-force quartile",
+      "model_pairs": 20,
+      "permuted_95pct_hierarchical_bootstrap_ci_percent": [
+        50.43576719953528,
+        660.1128067868653
+      ],
+      "permuted_proportional_error_inflation_percent": 239.2491960032742,
+      "stratum": "Q1"
+    },
+    {
+      "aligned_95pct_hierarchical_bootstrap_ci_percent": [
+        21.593272196258514,
+        181.7934944130058
+      ],
+      "aligned_proportional_error_inflation_percent": 85.9128091938675,
+      "dataset": "equal-dataset macro",
+      "dimension": "reference-force quartile",
+      "model_pairs": 20,
+      "permuted_95pct_hierarchical_bootstrap_ci_percent": [
+        44.157871336603506,
+        625.5066183187053
+      ],
+      "permuted_proportional_error_inflation_percent": 224.4451190823246,
+      "stratum": "Q2"
+    },
+    {
+      "aligned_95pct_hierarchical_bootstrap_ci_percent": [
+        21.832256072350138,
+        176.3286834347541
+      ],
+      "aligned_proportional_error_inflation_percent": 84.429030468377,
+      "dataset": "equal-dataset macro",
+      "dimension": "reference-force quartile",
+      "model_pairs": 20,
+      "permuted_95pct_hierarchical_bootstrap_ci_percent": [
+        43.88115053268674,
+        614.8904930330544
+      ],
+      "permuted_proportional_error_inflation_percent": 221.52051117311356,
+      "stratum": "Q3"
+    },
+    {
+      "aligned_95pct_hierarchical_bootstrap_ci_percent": [
+        26.78015105559851,
+        166.64180617134966
+      ],
+      "aligned_proportional_error_inflation_percent": 85.50573926424012,
+      "dataset": "equal-dataset macro",
+      "dimension": "reference-force quartile",
+      "model_pairs": 20,
+      "permuted_95pct_hierarchical_bootstrap_ci_percent": [
+        51.897295274971185,
+        590.4701362064908
+      ],
+      "permuted_proportional_error_inflation_percent": 226.32170175974574,
+      "stratum": "Q4"
+    }
+  ],
+  "schema_version": 1,
+  "stratum_effects": [
+    {
+      "aligned_95pct_seed_bootstrap_ci_percent": [
+        175.16069394096985,
+        260.67890840705564
+      ],
+      "aligned_force_mae_mev_per_angstrom": 23.371178934145703,
+      "aligned_minus_native_mev_per_angstrom": 16.185691071671055,
+      "aligned_proportional_error_inflation_percent": 220.61713629017433,
+      "aligned_worse_model_pairs": 5,
+      "atom_fraction_harmed_descriptive": 0.9400639105252647,
+      "atoms_per_seed_mean": 20028.0,
+      "dataset": "3bpa",
+      "dimension": "element",
+      "model_pairs": 5,
+      "native_force_mae_mev_per_angstrom": 7.185487862474649,
+      "permuted_95pct_seed_bootstrap_ci_percent": [
+        614.5017479800484,
+        915.6399942285049
+      ],
+      "permuted_force_mae_mev_per_angstrom": 61.68091371714056,
+      "permuted_minus_native_mev_per_angstrom": 54.4954258546659,
+      "permuted_proportional_error_inflation_percent": 743.2502087753828,
+      "stratum": "Z=1",
+      "stratum_high": 1.0,
+      "stratum_low": 1.0
+    },
+    {
+      "aligned_95pct_seed_bootstrap_ci_percent": [
+        159.80982654232892,
+        240.50377910385902
+      ],
+      "aligned_force_mae_mev_per_angstrom": 49.0969067065772,
+      "aligned_minus_native_mev_per_angstrom": 32.539545040240476,
+      "aligned_proportional_error_inflation_percent": 192.43048824214878,
+      "aligned_worse_model_pairs": 5,
+      "atom_fraction_harmed_descriptive": 0.9284601557819053,
+      "atoms_per_seed_mean": 20028.0,
+      "dataset": "3bpa",
+      "dimension": "element",
+      "model_pairs": 5,
+      "native_force_mae_mev_per_angstrom": 16.55736166633673,
+      "permuted_95pct_seed_bootstrap_ci_percent": [
+        508.9518045981925,
+        959.8643074199753
+      ],
+      "permuted_force_mae_mev_per_angstrom": 139.48332196906387,
+      "permuted_minus_native_mev_per_angstrom": 122.92596030272713,
+      "permuted_proportional_error_inflation_percent": 698.141094862512,
+      "stratum": "Z=6",
+      "stratum_high": 6.0,
+      "stratum_low": 6.0
+    },
+    {
+      "aligned_95pct_seed_bootstrap_ci_percent": [
+        161.19081841706432,
+        250.28373876469718
+      ],
+      "aligned_force_mae_mev_per_angstrom": 50.87598561933694,
+      "aligned_minus_native_mev_per_angstrom": 34.42275564337392,
+      "aligned_proportional_error_inflation_percent": 205.2897561876134,
+      "aligned_worse_model_pairs": 5,
+      "atom_fraction_harmed_descriptive": 0.9339125224685441,
+      "atoms_per_seed_mean": 3338.0,
+      "dataset": "3bpa",
+      "dimension": "element",
+      "model_pairs": 5,
+      "native_force_mae_mev_per_angstrom": 16.45322997596302,
+      "permuted_95pct_seed_bootstrap_ci_percent": [
+        537.5361140457335,
+        963.0395780473897
+      ],
+      "permuted_force_mae_mev_per_angstrom": 140.35697420249895,
+      "permuted_minus_native_mev_per_angstrom": 123.90374422653592,
+      "permuted_proportional_error_inflation_percent": 720.5782907082341,
+      "stratum": "Z=7",
+      "stratum_high": 7.0,
+      "stratum_low": 7.0
+    },
+    {
+      "aligned_95pct_seed_bootstrap_ci_percent": [
+        155.5037599203756,
+        215.99892844513096
+      ],
+      "aligned_force_mae_mev_per_angstrom": 66.75897965569288,
+      "aligned_minus_native_mev_per_angstrom": 43.161193507979085,
+      "aligned_proportional_error_inflation_percent": 180.7703286623767,
+      "aligned_worse_model_pairs": 5,
+      "atom_fraction_harmed_descriptive": 0.9466746554823248,
+      "atoms_per_seed_mean": 1669.0,
+      "dataset": "3bpa",
+      "dimension": "element",
+      "model_pairs": 5,
+      "native_force_mae_mev_per_angstrom": 23.597786147713798,
+      "permuted_95pct_seed_bootstrap_ci_percent": [
+        442.2256306690555,
+        568.2262240946673
+      ],
+      "permuted_force_mae_mev_per_angstrom": 144.1274434636102,
+      "permuted_minus_native_mev_per_angstrom": 120.5296573158964,
+      "permuted_proportional_error_inflation_percent": 506.7280816195533,
+      "stratum": "Z=8",
+      "stratum_high": 8.0,
+      "stratum_low": 8.0
+    },
+    {
+      "aligned_95pct_seed_bootstrap_ci_percent": [
+        174.24841373264678,
+        293.0418676987403
+      ],
+      "aligned_force_mae_mev_per_angstrom": 23.203087109055037,
+      "aligned_minus_native_mev_per_angstrom": 16.177885047634508,
+      "aligned_proportional_error_inflation_percent": 222.25262535233205,
+      "aligned_worse_model_pairs": 5,
+      "atom_fraction_harmed_descriptive": 0.941580465836324,
+      "atoms_per_seed_mean": 14211.0,
+      "dataset": "3bpa",
+      "dimension": "neighbour-count quartile",
+      "model_pairs": 5,
+      "native_force_mae_mev_per_angstrom": 7.025202061420529,
+      "permuted_95pct_seed_bootstrap_ci_percent": [
+        677.8773343576155,
+        1220.0395992684748
+      ],
+      "permuted_force_mae_mev_per_angstrom": 73.7061138347606,
+      "permuted_minus_native_mev_per_angstrom": 66.68091177334006,
+      "permuted_proportional_error_inflation_percent": 903.5740303217782,
+      "stratum": "Q1",
+      "stratum_high": 14.0,
+      "stratum_low": 9.0
+    },
+    {
+      "aligned_95pct_seed_bootstrap_ci_percent": [
+        165.13200381624046,
+        259.1630249257115
+      ],
+      "aligned_force_mae_mev_per_angstrom": 38.413748956594794,
+      "aligned_minus_native_mev_per_angstrom": 26.01221667017382,
+      "aligned_proportional_error_inflation_percent": 204.58505019513552,
+      "aligned_worse_model_pairs": 5,
+      "atom_fraction_harmed_descriptive": 0.9325926540087887,
+      "atoms_per_seed_mean": 12061.0,
+      "dataset": "3bpa",
+      "dimension": "neighbour-count quartile",
+      "model_pairs": 5,
+      "native_force_mae_mev_per_angstrom": 12.40153228642097,
+      "permuted_95pct_seed_bootstrap_ci_percent": [
+        541.9417719658707,
+        1077.6735575905664
+      ],
+      "permuted_force_mae_mev_per_angstrom": 114.29874667506019,
+      "permuted_minus_native_mev_per_angstrom": 101.8972143886392,
+      "permuted_proportional_error_inflation_percent": 769.4813686083435,
+      "stratum": "Q2",
+      "stratum_high": 17.0,
+      "stratum_low": 15.0
+    },
+    {
+      "aligned_95pct_seed_bootstrap_ci_percent": [
+        182.34243719406967,
+        234.67235500337046
+      ],
+      "aligned_force_mae_mev_per_angstrom": 46.02069310931956,
+      "aligned_minus_native_mev_per_angstrom": 30.95702738386301,
+      "aligned_proportional_error_inflation_percent": 203.7954544543254,
+      "aligned_worse_model_pairs": 5,
+      "atom_fraction_harmed_descriptive": 0.9340218284238938,
+      "atoms_per_seed_mean": 8521.0,
+      "dataset": "3bpa",
+      "dimension": "neighbour-count quartile",
+      "model_pairs": 5,
+      "native_force_mae_mev_per_angstrom": 15.063665725456554,
+      "permuted_95pct_seed_bootstrap_ci_percent": [
+        511.43971084061445,
+        870.9217390268587
+      ],
+      "permuted_force_mae_mev_per_angstrom": 120.24548757367083,
+      "permuted_minus_native_mev_per_angstrom": 105.18182184821428,
+      "permuted_proportional_error_inflation_percent": 670.4934181155926,
+      "stratum": "Q3",
+      "stratum_high": 20.0,
+      "stratum_low": 18.0
+    },
+    {
+      "aligned_95pct_seed_bootstrap_ci_percent": [
+        163.74752123927863,
+        201.97841184097007
+      ],
+      "aligned_force_mae_mev_per_angstrom": 53.30535279438303,
+      "aligned_minus_native_mev_per_angstrom": 34.60429592433947,
+      "aligned_proportional_error_inflation_percent": 183.93775544916977,
+      "aligned_worse_model_pairs": 5,
+      "atom_fraction_harmed_descriptive": 0.9281986368062316,
+      "atoms_per_seed_mean": 10270.0,
+      "dataset": "3bpa",
+      "dimension": "neighbour-count quartile",
+      "model_pairs": 5,
+      "native_force_mae_mev_per_angstrom": 18.701056870043566,
+      "permuted_95pct_seed_bootstrap_ci_percent": [
+        478.7947130884618,
+        657.7203718844465
+      ],
+      "permuted_force_mae_mev_per_angstrom": 125.35258309474939,
+      "permuted_minus_native_mev_per_angstrom": 106.65152622470582,
+      "permuted_proportional_error_inflation_percent": 562.7791561007322,
+      "stratum": "Q4",
+      "stratum_high": 26.0,
+      "stratum_low": 21.0
+    },
+    {
+      "aligned_95pct_seed_bootstrap_ci_percent": [
+        191.34655090240994,
+        269.2507468503548
+      ],
+      "aligned_force_mae_mev_per_angstrom": 27.62709366640662,
+      "aligned_minus_native_mev_per_angstrom": 19.249489502148208,
+      "aligned_proportional_error_inflation_percent": 226.2634843984835,
+      "aligned_worse_model_pairs": 5,
+      "atom_fraction_harmed_descriptive": 0.946884431031422,
+      "atoms_per_seed_mean": 11266.0,
+      "dataset": "3bpa",
+      "dimension": "reference-force quartile",
+      "model_pairs": 5,
+      "native_force_mae_mev_per_angstrom": 8.377604164258411,
+      "permuted_95pct_seed_bootstrap_ci_percent": [
+        627.1655176798741,
+        957.0407138178945
+      ],
+      "permuted_force_mae_mev_per_angstrom": 74.99866432383176,
+      "permuted_minus_native_mev_per_angstrom": 66.62106015957333,
+      "permuted_proportional_error_inflation_percent": 776.7231934151695,
+      "stratum": "Q1",
+      "stratum_high": 778.246283531189,
+      "stratum_low": 29.38813529908657
+    },
+    {
+      "aligned_95pct_seed_bootstrap_ci_percent": [
+        181.99502195234587,
+        241.41111301293247
+      ],
+      "aligned_force_mae_mev_per_angstrom": 34.74676319051488,
+      "aligned_minus_native_mev_per_angstrom": 23.572260803307994,
+      "aligned_proportional_error_inflation_percent": 208.5256600782003,
+      "aligned_worse_model_pairs": 5,
+      "atom_fraction_harmed_descriptive": 0.9377063731581752,
+      "atoms_per_seed_mean": 11266.0,
+      "dataset": "3bpa",
+      "dimension": "reference-force quartile",
+      "model_pairs": 5,
+      "native_force_mae_mev_per_angstrom": 11.174502387206891,
+      "permuted_95pct_seed_bootstrap_ci_percent": [
+        565.5059805840137,
+        912.9135837244578
+      ],
+      "permuted_force_mae_mev_per_angstrom": 94.30103514670198,
+      "permuted_minus_native_mev_per_angstrom": 83.12653275949509,
+      "permuted_proportional_error_inflation_percent": 721.0359601037057,
+      "stratum": "Q2",
+      "stratum_high": 1279.1303396224976,
+      "stratum_low": 778.2676815986633
+    },
+    {
+      "aligned_95pct_seed_bootstrap_ci_percent": [
+        175.1736206821735,
+        237.88643888204203
+      ],
+      "aligned_force_mae_mev_per_angstrom": 41.849676147021675,
+      "aligned_minus_native_mev_per_angstrom": 28.048452767700248,
+      "aligned_proportional_error_inflation_percent": 200.631912007811,
+      "aligned_worse_model_pairs": 5,
+      "atom_fraction_harmed_descriptive": 0.931333214983135,
+      "atoms_per_seed_mean": 11266.0,
+      "dataset": "3bpa",
+      "dimension": "reference-force quartile",
+      "model_pairs": 5,
+      "native_force_mae_mev_per_angstrom": 13.801223379321424,
+      "permuted_95pct_seed_bootstrap_ci_percent": [
+        529.225142011177,
+        919.5905528352588
+      ],
+      "permuted_force_mae_mev_per_angstrom": 114.78257633647463,
+      "permuted_minus_native_mev_per_angstrom": 100.98135295715319,
+      "permuted_proportional_error_inflation_percent": 700.969419142217,
+      "stratum": "Q3",
+      "stratum_high": 1924.2829084396362,
+      "stratum_low": 1279.1396379470825
+    },
+    {
+      "aligned_95pct_seed_bootstrap_ci_percent": [
+        155.30538234044656,
+        223.8757638264198
+      ],
+      "aligned_force_mae_mev_per_angstrom": 49.57419204906105,
+      "aligned_minus_native_mev_per_angstrom": 32.34660553303,
+      "aligned_proportional_error_inflation_percent": 184.66423031220413,
+      "aligned_worse_model_pairs": 5,
+      "atom_fraction_harmed_descriptive": 0.9228584110075456,
+      "atoms_per_seed_mean": 11265.0,
+      "dataset": "3bpa",
+      "dimension": "reference-force quartile",
+      "model_pairs": 5,
+      "native_force_mae_mev_per_angstrom": 17.227586516031057,
+      "permuted_95pct_seed_bootstrap_ci_percent": [
+        483.57043280859455,
+        879.4096548969069
+      ],
+      "permuted_force_mae_mev_per_angstrom": 136.4852797257215,
+      "permuted_minus_native_mev_per_angstrom": 119.25769320969047,
+      "permuted_proportional_error_inflation_percent": 656.0122460682129,
+      "stratum": "Q4",
+      "stratum_high": 6042.981147766113,
+      "stratum_low": 1924.332857131958
+    },
+    {
+      "aligned_95pct_seed_bootstrap_ci_percent": [
+        141.7497095545292,
+        288.16576653180215
+      ],
+      "aligned_force_mae_mev_per_angstrom": 20.713994949012445,
+      "aligned_minus_native_mev_per_angstrom": 14.300306227681343,
+      "aligned_proportional_error_inflation_percent": 213.93463473052964,
+      "aligned_worse_model_pairs": 5,
+      "atom_fraction_harmed_descriptive": 0.9435055662411844,
+      "atoms_per_seed_mean": 137256.0,
+      "dataset": "bucky",
+      "dimension": "element",
+      "model_pairs": 5,
+      "native_force_mae_mev_per_angstrom": 6.413688721331101,
+      "permuted_95pct_seed_bootstrap_ci_percent": [
+        295.6123386993928,
+        713.4922514344889
+      ],
+      "permuted_force_mae_mev_per_angstrom": 43.0176197236421,
+      "permuted_minus_native_mev_per_angstrom": 36.603931002311,
+      "permuted_proportional_error_inflation_percent": 524.3447616847747,
+      "stratum": "Z=1",
+      "stratum_high": 1.0,
+      "stratum_low": 1.0
+    },
+    {
+      "aligned_95pct_seed_bootstrap_ci_percent": [
+        119.87937085951519,
+        179.42974731266676
+      ],
+      "aligned_force_mae_mev_per_angstrom": 31.22589452675026,
+      "aligned_minus_native_mev_per_angstrom": 18.37009865856023,
+      "aligned_proportional_error_inflation_percent": 140.0338627702055,
+      "aligned_worse_model_pairs": 5,
+      "atom_fraction_harmed_descriptive": 0.9040391676866584,
+      "atoms_per_seed_mean": 588240.0,
+      "dataset": "bucky",
+      "dimension": "element",
+      "model_pairs": 5,
+      "native_force_mae_mev_per_angstrom": 12.855795868190024,
+      "permuted_95pct_seed_bootstrap_ci_percent": [
+        357.75957343273706,
+        696.5233625688846
+      ],
+      "permuted_force_mae_mev_per_angstrom": 81.60093113347007,
+      "permuted_minus_native_mev_per_angstrom": 68.74513526528003,
+      "permuted_proportional_error_inflation_percent": 503.8345755906512,
+      "stratum": "Z=6",
+      "stratum_high": 6.0,
+      "stratum_low": 6.0
+    },
+    {
+      "aligned_95pct_seed_bootstrap_ci_percent": [
+        153.56383756758981,
+        274.25255251353985
+      ],
+      "aligned_force_mae_mev_per_angstrom": 27.463206244712097,
+      "aligned_minus_native_mev_per_angstrom": 18.889799930844244,
+      "aligned_proportional_error_inflation_percent": 214.33695951987045,
+      "aligned_worse_model_pairs": 5,
+      "atom_fraction_harmed_descriptive": 0.9471069066378561,
+      "atoms_per_seed_mean": 189745.0,
+      "dataset": "bucky",
+      "dimension": "neighbour-count quartile",
+      "model_pairs": 5,
+      "native_force_mae_mev_per_angstrom": 8.573406313867851,
+      "permuted_95pct_seed_bootstrap_ci_percent": [
+        411.42748106182523,
+        865.4888619715927
+      ],
+      "permuted_force_mae_mev_per_angstrom": 66.66809125726768,
+      "permuted_minus_native_mev_per_angstrom": 58.09468494339982,
+      "permuted_proportional_error_inflation_percent": 633.3996469925585,
+      "stratum": "Q1",
+      "stratum_high": 25.0,
+      "stratum_low": 10.0
+    },
+    {
+      "aligned_95pct_seed_bootstrap_ci_percent": [
+        121.48887700536693,
+        209.42423246845965
+      ],
+      "aligned_force_mae_mev_per_angstrom": 27.541698158387373,
+      "aligned_minus_native_mev_per_angstrom": 16.977996756850853,
+      "aligned_proportional_error_inflation_percent": 155.84696615874577,
+      "aligned_worse_model_pairs": 5,
+      "atom_fraction_harmed_descriptive": 0.9185161797836988,
+      "atoms_per_seed_mean": 186869.0,
+      "dataset": "bucky",
+      "dimension": "neighbour-count quartile",
+      "model_pairs": 5,
+      "native_force_mae_mev_per_angstrom": 10.563701401536514,
+      "permuted_95pct_seed_bootstrap_ci_percent": [
+        351.5084903261126,
+        635.5918824732447
+      ],
+      "permuted_force_mae_mev_per_angstrom": 63.47194751046751,
+      "permuted_minus_native_mev_per_angstrom": 52.908246108930996,
+      "permuted_proportional_error_inflation_percent": 476.3037223128426,
+      "stratum": "Q2",
+      "stratum_high": 29.0,
+      "stratum_low": 26.0
+    },
+    {
+      "aligned_95pct_seed_bootstrap_ci_percent": [
+        112.51980262938382,
+        176.02211581292764
+      ],
+      "aligned_force_mae_mev_per_angstrom": 33.50088789011453,
+      "aligned_minus_native_mev_per_angstrom": 19.379928788690428,
+      "aligned_proportional_error_inflation_percent": 134.0997047876749,
+      "aligned_worse_model_pairs": 5,
+      "atom_fraction_harmed_descriptive": 0.9022984416955454,
+      "atoms_per_seed_mean": 174292.0,
+      "dataset": "bucky",
+      "dimension": "neighbour-count quartile",
+      "model_pairs": 5,
+      "native_force_mae_mev_per_angstrom": 14.120959101424097,
+      "permuted_95pct_seed_bootstrap_ci_percent": [
+        354.1920636753729,
+        702.0964939371781
+      ],
+      "permuted_force_mae_mev_per_angstrom": 89.80136248776716,
+      "permuted_minus_native_mev_per_angstrom": 75.68040338634307,
+      "permuted_proportional_error_inflation_percent": 503.577552472015,
+      "stratum": "Q3",
+      "stratum_high": 35.0,
+      "stratum_low": 30.0
+    },
+    {
+      "aligned_95pct_seed_bootstrap_ci_percent": [
+        83.93807636824316,
+        140.49454055691152
+      ],
+      "aligned_force_mae_mev_per_angstrom": 28.723339669687828,
+      "aligned_minus_native_mev_per_angstrom": 15.08767257131375,
+      "aligned_proportional_error_inflation_percent": 107.94505551181398,
+      "aligned_worse_model_pairs": 5,
+      "atom_fraction_harmed_descriptive": 0.8745025488286844,
+      "atoms_per_seed_mean": 174590.0,
+      "dataset": "bucky",
+      "dimension": "neighbour-count quartile",
+      "model_pairs": 5,
+      "native_force_mae_mev_per_angstrom": 13.63566709837408,
+      "permuted_95pct_seed_bootstrap_ci_percent": [
+        311.32291873558137,
+        629.9212730773941
+      ],
+      "permuted_force_mae_mev_per_angstrom": 78.71483324977908,
+      "permuted_minus_native_mev_per_angstrom": 65.07916615140498,
+      "permuted_proportional_error_inflation_percent": 447.93553315092174,
+      "stratum": "Q4",
+      "stratum_high": 60.0,
+      "stratum_low": 36.0
+    },
+    {
+      "aligned_95pct_seed_bootstrap_ci_percent": [
+        129.60524286450567,
+        207.12142775143425
+      ],
+      "aligned_force_mae_mev_per_angstrom": 24.39465821238351,
+      "aligned_minus_native_mev_per_angstrom": 15.141519870198653,
+      "aligned_proportional_error_inflation_percent": 159.7858586469722,
+      "aligned_worse_model_pairs": 5,
+      "atom_fraction_harmed_descriptive": 0.9190920418582597,
+      "atoms_per_seed_mean": 181374.0,
+      "dataset": "bucky",
+      "dimension": "reference-force quartile",
+      "model_pairs": 5,
+      "native_force_mae_mev_per_angstrom": 9.25313834218486,
+      "permuted_95pct_seed_bootstrap_ci_percent": [
+        361.1353582748062,
+        698.0558528731951
+      ],
+      "permuted_force_mae_mev_per_angstrom": 59.8310497593322,
+      "permuted_minus_native_mev_per_angstrom": 50.577911417147355,
+      "permuted_proportional_error_inflation_percent": 519.9950208273976,
+      "stratum": "Q1",
+      "stratum_high": 1006.3492059707642,
+      "stratum_low": 8.399941958487034
+    },
+    {
+      "aligned_95pct_seed_bootstrap_ci_percent": [
+        125.114494501364,
+        189.06819705467436
+      ],
+      "aligned_force_mae_mev_per_angstrom": 27.784048066507648,
+      "aligned_minus_native_mev_per_angstrom": 16.733348870308856,
+      "aligned_proportional_error_inflation_percent": 148.5175433935433,
+      "aligned_worse_model_pairs": 5,
+      "atom_fraction_harmed_descriptive": 0.9110864842810988,
+      "atoms_per_seed_mean": 181374.0,
+      "dataset": "bucky",
+      "dimension": "reference-force quartile",
+      "model_pairs": 5,
+      "native_force_mae_mev_per_angstrom": 11.050699196198789,
+      "permuted_95pct_seed_bootstrap_ci_percent": [
+        361.9873007901867,
+        691.5869485320488
+      ],
+      "permuted_force_mae_mev_per_angstrom": 70.21862241859478,
+      "permuted_minus_native_mev_per_angstrom": 59.167923222395984,
+      "permuted_proportional_error_inflation_percent": 507.130832580817,
+      "stratum": "Q2",
+      "stratum_high": 1529.6200513839722,
+      "stratum_low": 1006.350040435791
+    },
+    {
+      "aligned_95pct_seed_bootstrap_ci_percent": [
+        124.78637152523295,
+        185.62479212040876
+      ],
+      "aligned_force_mae_mev_per_angstrom": 30.289250466368685,
+      "aligned_minus_native_mev_per_angstrom": 18.095728474367508,
+      "aligned_proportional_error_inflation_percent": 145.6763198344016,
+      "aligned_worse_model_pairs": 5,
+      "atom_fraction_harmed_descriptive": 0.9094478811737075,
+      "atoms_per_seed_mean": 181374.0,
+      "dataset": "bucky",
+      "dimension": "reference-force quartile",
+      "model_pairs": 5,
+      "native_force_mae_mev_per_angstrom": 12.19352199200118,
+      "permuted_95pct_seed_bootstrap_ci_percent": [
+        360.9238658652995,
+        699.4922313571227
+      ],
+      "permuted_force_mae_mev_per_angstrom": 77.80394210200953,
+      "permuted_minus_native_mev_per_angstrom": 65.61042011000835,
+      "permuted_proportional_error_inflation_percent": 507.5585037571768,
+      "stratum": "Q3",
+      "stratum_high": 2176.069736480713,
+      "stratum_low": 1529.6212434768677
+    },
+    {
+      "aligned_95pct_seed_bootstrap_ci_percent": [
+        120.6838401978044,
+        181.82689120631971
+      ],
+      "aligned_force_mae_mev_per_angstrom": 34.4806703299396,
+      "aligned_minus_native_mev_per_angstrom": 20.429954498700813,
+      "aligned_proportional_error_inflation_percent": 142.68688757297895,
+      "aligned_worse_model_pairs": 5,
+      "atom_fraction_harmed_descriptive": 0.9063967272045608,
+      "atoms_per_seed_mean": 181374.0,
+      "dataset": "bucky",
+      "dimension": "reference-force quartile",
+      "model_pairs": 5,
+      "native_force_mae_mev_per_angstrom": 14.050715831238787,
+      "permuted_95pct_seed_bootstrap_ci_percent": [
+        350.48931544113435,
+        701.0312978771921
+      ],
+      "permuted_force_mae_mev_per_angstrom": 89.35192864650637,
+      "permuted_minus_native_mev_per_angstrom": 75.30121281526759,
+      "permuted_proportional_error_inflation_percent": 503.2766674888437,
+      "stratum": "Q4",
+      "stratum_high": 8737.088203430176,
+      "stratum_low": 2176.076889038086
+    },
+    {
+      "aligned_95pct_seed_bootstrap_ci_percent": [
+        7.598394191102574,
+        16.23231925199411
+      ],
+      "aligned_force_mae_mev_per_angstrom": 104.00305903094454,
+      "aligned_minus_native_mev_per_angstrom": 10.871803867389932,
+      "aligned_proportional_error_inflation_percent": 11.57331033221026,
+      "aligned_worse_model_pairs": 5,
+      "atom_fraction_harmed_descriptive": 0.6723785714285715,
+      "atoms_per_seed_mean": 28000.0,
+      "dataset": "mal",
+      "dimension": "element",
+      "model_pairs": 5,
+      "native_force_mae_mev_per_angstrom": 93.13125516355463,
+      "permuted_95pct_seed_bootstrap_ci_percent": [
+        15.4437976177038,
+        30.743464734409574
+      ],
+      "permuted_force_mae_mev_per_angstrom": 115.40901397398473,
+      "permuted_minus_native_mev_per_angstrom": 22.27775881043012,
+      "permuted_proportional_error_inflation_percent": 23.589783023624655,
+      "stratum": "Z=1",
+      "stratum_high": 1.0,
+      "stratum_low": 1.0
+    },
+    {
+      "aligned_95pct_seed_bootstrap_ci_percent": [
+        5.427459240578989,
+        12.41792394913796
+      ],
+      "aligned_force_mae_mev_per_angstrom": 310.4139616975982,
+      "aligned_minus_native_mev_per_angstrom": 24.082725856537444,
+      "aligned_proportional_error_inflation_percent": 8.373007325667482,
+      "aligned_worse_model_pairs": 5,
+      "atom_fraction_harmed_descriptive": 0.6758857142857143,
+      "atoms_per_seed_mean": 21000.0,
+      "dataset": "mal",
+      "dimension": "element",
+      "model_pairs": 5,
+      "native_force_mae_mev_per_angstrom": 286.3312358410608,
+      "permuted_95pct_seed_bootstrap_ci_percent": [
+        12.562672587857751,
+        26.54118667721152
+      ],
+      "permuted_force_mae_mev_per_angstrom": 342.1839203401868,
+      "permuted_minus_native_mev_per_angstrom": 55.852684499126006,
+      "permuted_proportional_error_inflation_percent": 19.347451438335906,
+      "stratum": "Z=6",
+      "stratum_high": 6.0,
+      "stratum_low": 6.0
+    },
+    {
+      "aligned_95pct_seed_bootstrap_ci_percent": [
+        6.04697990877666,
+        10.882129215212
+      ],
+      "aligned_force_mae_mev_per_angstrom": 236.60002275093157,
+      "aligned_minus_native_mev_per_angstrom": 18.549547946924577,
+      "aligned_proportional_error_inflation_percent": 8.437608462783633,
+      "aligned_worse_model_pairs": 5,
+      "atom_fraction_harmed_descriptive": 0.6622285714285714,
+      "atoms_per_seed_mean": 14000.0,
+      "dataset": "mal",
+      "dimension": "element",
+      "model_pairs": 5,
+      "native_force_mae_mev_per_angstrom": 218.050474804007,
+      "permuted_95pct_seed_bootstrap_ci_percent": [
+        13.780044077037473,
+        22.28033271127739
+      ],
+      "permuted_force_mae_mev_per_angstrom": 256.76531364152737,
+      "permuted_minus_native_mev_per_angstrom": 38.71483883752038,
+      "permuted_proportional_error_inflation_percent": 17.668544539841076,
+      "stratum": "Z=8",
+      "stratum_high": 8.0,
+      "stratum_low": 8.0
+    },
+    {
+      "aligned_95pct_seed_bootstrap_ci_percent": [
+        6.108686010566335,
+        12.764631826135412
+      ],
+      "aligned_force_mae_mev_per_angstrom": 202.27268519093735,
+      "aligned_minus_native_mev_per_angstrom": 16.981609881446808,
+      "aligned_proportional_error_inflation_percent": 9.110967875776801,
+      "aligned_worse_model_pairs": 5,
+      "atom_fraction_harmed_descriptive": 0.6712920634920636,
+      "atoms_per_seed_mean": 63000.0,
+      "dataset": "mal",
+      "dimension": "neighbour-count quartile",
+      "model_pairs": 5,
+      "native_force_mae_mev_per_angstrom": 185.29107530949054,
+      "permuted_95pct_seed_bootstrap_ci_percent": [
+        13.574680598198698,
+        26.177550694204715
+      ],
+      "permuted_force_mae_mev_per_angstrom": 222.41316046661714,
+      "permuted_minus_native_mev_per_angstrom": 37.12208515712659,
+      "permuted_proportional_error_inflation_percent": 19.859847387154232,
+      "stratum": "Q1",
+      "stratum_high": 8.0,
+      "stratum_low": 6.0
+    },
+    {
+      "aligned_95pct_seed_bootstrap_ci_percent": [
+        6.183216612226607,
+        12.660107831314448
+      ],
+      "aligned_force_mae_mev_per_angstrom": 136.96127049160737,
+      "aligned_minus_native_mev_per_angstrom": 11.89845055030984,
+      "aligned_proportional_error_inflation_percent": 9.373729173916663,
+      "aligned_worse_model_pairs": 5,
+      "atom_fraction_harmed_descriptive": 0.6750984126984128,
+      "atoms_per_seed_mean": 15750.0,
+      "dataset": "mal",
+      "dimension": "reference-force quartile",
+      "model_pairs": 5,
+      "native_force_mae_mev_per_angstrom": 125.06281994129753,
+      "permuted_95pct_seed_bootstrap_ci_percent": [
+        14.283948568789965,
+        25.369229390896464
+      ],
+      "permuted_force_mae_mev_per_angstrom": 150.3689539371147,
+      "permuted_minus_native_mev_per_angstrom": 25.306133995817174,
+      "permuted_proportional_error_inflation_percent": 19.993618201863416,
+      "stratum": "Q1",
+      "stratum_high": 2178.4679889678955,
+      "stratum_low": 71.39204442501068
+    },
+    {
+      "aligned_95pct_seed_bootstrap_ci_percent": [
+        5.036790465719529,
+        10.870813986115104
+      ],
+      "aligned_force_mae_mev_per_angstrom": 180.13211549396314,
+      "aligned_minus_native_mev_per_angstrom": 13.328632512604372,
+      "aligned_proportional_error_inflation_percent": 7.914384849395025,
+      "aligned_worse_model_pairs": 5,
+      "atom_fraction_harmed_descriptive": 0.6606222222222222,
+      "atoms_per_seed_mean": 15750.0,
+      "dataset": "mal",
+      "dimension": "reference-force quartile",
+      "model_pairs": 5,
+      "native_force_mae_mev_per_angstrom": 166.80348298135877,
+      "permuted_95pct_seed_bootstrap_ci_percent": [
+        12.159629356879387,
+        22.834068871338822
+      ],
+      "permuted_force_mae_mev_per_angstrom": 196.53205188604457,
+      "permuted_minus_native_mev_per_angstrom": 29.72856890468578,
+      "permuted_proportional_error_inflation_percent": 17.645511065009547,
+      "stratum": "Q2",
+      "stratum_high": 3624.1366863250732,
+      "stratum_low": 2178.4937381744385
+    },
+    {
+      "aligned_95pct_seed_bootstrap_ci_percent": [
+        5.397345779929295,
+        12.003178522012801
+      ],
+      "aligned_force_mae_mev_per_angstrom": 245.5779267184806,
+      "aligned_minus_native_mev_per_angstrom": 19.023488852856254,
+      "aligned_proportional_error_inflation_percent": 8.32302309071458,
+      "aligned_worse_model_pairs": 5,
+      "atom_fraction_harmed_descriptive": 0.6682285714285714,
+      "atoms_per_seed_mean": 15750.0,
+      "dataset": "mal",
+      "dimension": "reference-force quartile",
+      "model_pairs": 5,
+      "native_force_mae_mev_per_angstrom": 226.55443786562438,
+      "permuted_95pct_seed_bootstrap_ci_percent": [
+        12.681985147133043,
+        23.824979695338172
+      ],
+      "permuted_force_mae_mev_per_angstrom": 268.2246531299064,
+      "permuted_minus_native_mev_per_angstrom": 41.670215264282064,
+      "permuted_proportional_error_inflation_percent": 18.20813515621453,
+      "stratum": "Q3",
+      "stratum_high": 5890.511512756348,
+      "stratum_low": 3624.237298965454
+    },
+    {
+      "aligned_95pct_seed_bootstrap_ci_percent": [
+        7.570801779719524,
+        15.255448284718629
+      ],
+      "aligned_force_mae_mev_per_angstrom": 246.4194280596982,
+      "aligned_minus_native_mev_per_angstrom": 23.675867610016745,
+      "aligned_proportional_error_inflation_percent": 10.642427489458278,
+      "aligned_worse_model_pairs": 5,
+      "atom_fraction_harmed_descriptive": 0.6812190476190476,
+      "atoms_per_seed_mean": 15750.0,
+      "dataset": "mal",
+      "dimension": "reference-force quartile",
+      "model_pairs": 5,
+      "native_force_mae_mev_per_angstrom": 222.7435604496815,
+      "permuted_95pct_seed_bootstrap_ci_percent": [
+        15.458848371023134,
+        31.912305578969434
+      ],
+      "permuted_force_mae_mev_per_angstrom": 274.5269829134028,
+      "permuted_minus_native_mev_per_angstrom": 51.78342246372135,
+      "permuted_proportional_error_inflation_percent": 23.119635148253657,
+      "stratum": "Q4",
+      "stratum_high": 22677.07633972168,
+      "stratum_low": 5890.536785125732
+    },
+    {
+      "aligned_95pct_seed_bootstrap_ci_percent": [
+        24.080049952371553,
+        80.29080716395478
+      ],
+      "aligned_force_mae_mev_per_angstrom": 114.45257582145727,
+      "aligned_minus_native_mev_per_angstrom": 36.278179002558645,
+      "aligned_proportional_error_inflation_percent": 42.03767064902869,
+      "aligned_worse_model_pairs": 5,
+      "atom_fraction_harmed_descriptive": 0.7168513618367387,
+      "atoms_per_seed_mean": 100526.0,
+      "dataset": "zro",
+      "dimension": "element",
+      "model_pairs": 5,
+      "native_force_mae_mev_per_angstrom": 78.17439681889866,
+      "permuted_95pct_seed_bootstrap_ci_percent": [
+        49.83755674895478,
+        136.1400836637963
+      ],
+      "permuted_force_mae_mev_per_angstrom": 146.0522087329729,
+      "permuted_minus_native_mev_per_angstrom": 67.87781191407427,
+      "permuted_proportional_error_inflation_percent": 79.10711525059406,
+      "stratum": "Z=40",
+      "stratum_high": 40.0,
+      "stratum_low": 40.0
+    },
+    {
+      "aligned_95pct_seed_bootstrap_ci_percent": [
+        37.96211581473171,
+        108.03199373232498
+      ],
+      "aligned_force_mae_mev_per_angstrom": 119.03577235287919,
+      "aligned_minus_native_mev_per_angstrom": 47.57323985078857,
+      "aligned_proportional_error_inflation_percent": 60.568422682097264,
+      "aligned_worse_model_pairs": 5,
+      "atom_fraction_harmed_descriptive": 0.804071367884452,
+      "atoms_per_seed_mean": 58850.0,
+      "dataset": "zro",
+      "dimension": "element",
+      "model_pairs": 5,
+      "native_force_mae_mev_per_angstrom": 71.46253250209061,
+      "permuted_95pct_seed_bootstrap_ci_percent": [
+        76.73945542443929,
+        209.20990340266093
+      ],
+      "permuted_force_mae_mev_per_angstrom": 169.34430841822416,
+      "permuted_minus_native_mev_per_angstrom": 97.88177591613352,
+      "permuted_proportional_error_inflation_percent": 123.23176554788806,
+      "stratum": "Z=8",
+      "stratum_high": 8.0,
+      "stratum_low": 8.0
+    },
+    {
+      "aligned_95pct_seed_bootstrap_ci_percent": [
+        16.028352006893414,
+        58.54289152434813
+      ],
+      "aligned_force_mae_mev_per_angstrom": 104.71792919781065,
+      "aligned_minus_native_mev_per_angstrom": 25.807185556580414,
+      "aligned_proportional_error_inflation_percent": 30.090338817217848,
+      "aligned_worse_model_pairs": 5,
+      "atom_fraction_harmed_descriptive": 0.6760915230501661,
+      "atoms_per_seed_mean": 44273.0,
+      "dataset": "zro",
+      "dimension": "neighbour-count quartile",
+      "model_pairs": 5,
+      "native_force_mae_mev_per_angstrom": 78.91074364123024,
+      "permuted_95pct_seed_bootstrap_ci_percent": [
+        30.227771701409328,
+        87.13727187304208
+      ],
+      "permuted_force_mae_mev_per_angstrom": 120.8471537182697,
+      "permuted_minus_native_mev_per_angstrom": 41.936410077039454,
+      "permuted_proportional_error_inflation_percent": 49.054369827709735,
+      "stratum": "Q1",
+      "stratum_high": 34.0,
+      "stratum_low": 5.0
+    },
+    {
+      "aligned_95pct_seed_bootstrap_ci_percent": [
+        21.305735453780034,
+        73.78377788500346
+      ],
+      "aligned_force_mae_mev_per_angstrom": 92.52032666742879,
+      "aligned_minus_native_mev_per_angstrom": 27.516306458915153,
+      "aligned_proportional_error_inflation_percent": 38.6214092482499,
+      "aligned_worse_model_pairs": 5,
+      "atom_fraction_harmed_descriptive": 0.7116817500416412,
+      "atoms_per_seed_mean": 36022.0,
+      "dataset": "zro",
+      "dimension": "neighbour-count quartile",
+      "model_pairs": 5,
+      "native_force_mae_mev_per_angstrom": 65.00402020851365,
+      "permuted_95pct_seed_bootstrap_ci_percent": [
+        37.78580450909872,
+        109.97693692575548
+      ],
+      "permuted_force_mae_mev_per_angstrom": 109.45655775954933,
+      "permuted_minus_native_mev_per_angstrom": 44.45253755103571,
+      "permuted_proportional_error_inflation_percent": 62.94119531956666,
+      "stratum": "Q2",
+      "stratum_high": 45.0,
+      "stratum_low": 35.0
+    },
+    {
+      "aligned_95pct_seed_bootstrap_ci_percent": [
+        35.308733327307735,
+        115.25356881143377
+      ],
+      "aligned_force_mae_mev_per_angstrom": 136.63363881287668,
+      "aligned_minus_native_mev_per_angstrom": 55.54386916611969,
+      "aligned_proportional_error_inflation_percent": 60.437820581478775,
+      "aligned_worse_model_pairs": 5,
+      "atom_fraction_harmed_descriptive": 0.8073524177556312,
+      "atoms_per_seed_mean": 39334.0,
+      "dataset": "zro",
+      "dimension": "neighbour-count quartile",
+      "model_pairs": 5,
+      "native_force_mae_mev_per_angstrom": 81.08976964675699,
+      "permuted_95pct_seed_bootstrap_ci_percent": [
+        74.90772404833773,
+        204.70695195957552
+      ],
+      "permuted_force_mae_mev_per_angstrom": 189.69826989976667,
+      "permuted_minus_native_mev_per_angstrom": 108.6085002530097,
+      "permuted_proportional_error_inflation_percent": 120.56785053052728,
+      "stratum": "Q3",
+      "stratum_high": 63.0,
+      "stratum_low": 46.0
+    },
+    {
+      "aligned_95pct_seed_bootstrap_ci_percent": [
+        41.857240101458764,
+        111.05613520852428
+      ],
+      "aligned_force_mae_mev_per_angstrom": 130.00787994918545,
+      "aligned_minus_native_mev_per_angstrom": 53.540365824853176,
+      "aligned_proportional_error_inflation_percent": 64.30695888745873,
+      "aligned_worse_model_pairs": 5,
+      "atom_fraction_harmed_descriptive": 0.8065162150602561,
+      "atoms_per_seed_mean": 39747.0,
+      "dataset": "zro",
+      "dimension": "neighbour-count quartile",
+      "model_pairs": 5,
+      "native_force_mae_mev_per_angstrom": 76.46751412433227,
+      "permuted_95pct_seed_bootstrap_ci_percent": [
+        90.6280345534921,
+        245.4409299144671
+      ],
+      "permuted_force_mae_mev_per_angstrom": 198.58743998496644,
+      "permuted_minus_native_mev_per_angstrom": 122.11992586063418,
+      "permuted_proportional_error_inflation_percent": 142.5210200568644,
+      "stratum": "Q4",
+      "stratum_high": 92.0,
+      "stratum_low": 64.0
+    },
+    {
+      "aligned_95pct_seed_bootstrap_ci_percent": [
+        31.84605652469091,
+        87.0079732704596
+      ],
+      "aligned_force_mae_mev_per_angstrom": 95.0289900843551,
+      "aligned_minus_native_mev_per_angstrom": 33.142505114356496,
+      "aligned_proportional_error_inflation_percent": 49.687484496498016,
+      "aligned_worse_model_pairs": 5,
+      "atom_fraction_harmed_descriptive": 0.7251330187732156,
+      "atoms_per_seed_mean": 39844.0,
+      "dataset": "zro",
+      "dimension": "reference-force quartile",
+      "model_pairs": 5,
+      "native_force_mae_mev_per_angstrom": 61.886484969998605,
+      "permuted_95pct_seed_bootstrap_ci_percent": [
+        66.42447893307848,
+        175.37980660357607
+      ],
+      "permuted_force_mae_mev_per_angstrom": 131.99132539034548,
+      "permuted_minus_native_mev_per_angstrom": 70.10484042034686,
+      "permuted_proportional_error_inflation_percent": 103.07967602013916,
+      "stratum": "Q1",
+      "stratum_high": 172.76842892169952,
+      "stratum_low": 0.5849743611179292
+    },
+    {
+      "aligned_95pct_seed_bootstrap_ci_percent": [
+        27.197991196578997,
+        79.4328119165574
+      ],
+      "aligned_force_mae_mev_per_angstrom": 113.16813031251313,
+      "aligned_minus_native_mev_per_angstrom": 36.80048758372366,
+      "aligned_proportional_error_inflation_percent": 44.38084239418192,
+      "aligned_worse_model_pairs": 5,
+      "atom_fraction_harmed_descriptive": 0.7353428370645517,
+      "atoms_per_seed_mean": 39844.0,
+      "dataset": "zro",
+      "dimension": "reference-force quartile",
+      "model_pairs": 5,
+      "native_force_mae_mev_per_angstrom": 76.36764272878949,
+      "permuted_95pct_seed_bootstrap_ci_percent": [
+        56.13356880770568,
+        151.6378379009277
+      ],
+      "permuted_force_mae_mev_per_angstrom": 150.91886169897205,
+      "permuted_minus_native_mev_per_angstrom": 74.55121897018256,
+      "permuted_proportional_error_inflation_percent": 88.94924108999709,
+      "stratum": "Q2",
+      "stratum_high": 358.7648868560791,
+      "stratum_low": 172.781303524971
+    },
+    {
+      "aligned_95pct_seed_bootstrap_ci_percent": [
+        26.484260387548975,
+        82.914339150229
+      ],
+      "aligned_force_mae_mev_per_angstrom": 121.01771626001718,
+      "aligned_minus_native_mev_per_angstrom": 39.75598589393521,
+      "aligned_proportional_error_inflation_percent": 44.60988612941208,
+      "aligned_worse_model_pairs": 5,
+      "atom_fraction_harmed_descriptive": 0.7519877522337114,
+      "atoms_per_seed_mean": 39844.0,
+      "dataset": "zro",
+      "dimension": "reference-force quartile",
+      "model_pairs": 5,
+      "native_force_mae_mev_per_angstrom": 81.26173036608198,
+      "permuted_95pct_seed_bootstrap_ci_percent": [
+        53.66492274764778,
+        145.98756627780165
+      ],
+      "permuted_force_mae_mev_per_angstrom": 157.6832969508984,
+      "permuted_minus_native_mev_per_angstrom": 76.42156658481646,
+      "permuted_proportional_error_inflation_percent": 85.77331446554425,
+      "stratum": "Q3",
+      "stratum_high": 678.3812642097473,
+      "stratum_low": 358.76524448394775
+    },
+    {
+      "aligned_95pct_seed_bootstrap_ci_percent": [
+        30.776663517435836,
+        107.1583733846067
+      ],
+      "aligned_force_mae_mev_per_angstrom": 135.36489529760598,
+      "aligned_minus_native_mev_per_angstrom": 52.096659085680585,
+      "aligned_proportional_error_inflation_percent": 54.92749387400939,
+      "aligned_worse_model_pairs": 5,
+      "atom_fraction_harmed_descriptive": 0.7837666900913562,
+      "atoms_per_seed_mean": 39844.0,
+      "dataset": "zro",
+      "dimension": "reference-force quartile",
+      "model_pairs": 5,
+      "native_force_mae_mev_per_angstrom": 83.26823621192543,
+      "permuted_95pct_seed_bootstrap_ci_percent": [
+        63.02200563640598,
+        176.04957601090706
+      ],
+      "permuted_force_mae_mev_per_angstrom": 178.0180229747255,
+      "permuted_minus_native_mev_per_angstrom": 94.74978676280007,
+      "permuted_proportional_error_inflation_percent": 101.93479119295779,
+      "stratum": "Q4",
+      "stratum_high": 1999.8716115951538,
+      "stratum_low": 678.3820390701294
+    }
+  ]
+}

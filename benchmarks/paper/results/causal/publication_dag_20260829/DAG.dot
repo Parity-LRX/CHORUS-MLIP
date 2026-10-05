@@ -1,0 +1,17 @@
+digraph CHORUS_DAG {
+      graph [rankdir=LR, bgcolor="transparent", pad=0.10, nodesep=0.35, ranksep=0.55];
+      node [shape=box, style="rounded,filled", fontname="Helvetica", fontsize=10, color="#C7CDD3", fillcolor="#F7F8FA"];
+      edge [color="#76818B", arrowsize=0.65, penwidth=1.0];
+      X [label="Design context X\ndataset · seed · backbone\nscope · protocol"];
+      T [label="Operator policy\nT"];
+      W [label="Optimised weights\nW", fillcolor="#EEF4F8"];
+      K [label="Validation-selected\ncheckpoint K", fillcolor="#EEF4F8"];
+      Y [label="Held-out error\nY", fillcolor="#F9F0EA"];
+      I [label="Frozen phase\nintervention I", fillcolor="#F1ECF8"];
+      Phi [label="Relative-phase\norganisation Φ", fillcolor="#F1ECF8"];
+      Rho [label="Hermitian density\nρ", fillcolor="#F1ECF8"];
+      {rank=same; X; T; I;}
+      X -> W; T -> W; W -> K;
+      X -> Rho; T -> Rho; K -> Phi; K -> Rho; I -> Phi; Phi -> Rho;
+      X -> Y; K -> Y; Rho -> Y;
+    }

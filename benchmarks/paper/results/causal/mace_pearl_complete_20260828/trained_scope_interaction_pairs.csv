@@ -1,0 +1,21 @@
+dataset,seed,log_benefit,scope,treatment,control
+3bpa,20260616,-0.014292927088657766,Persistent-minus-Final,scope interaction,zero
+3bpa,20260617,0.009694084020794053,Persistent-minus-Final,scope interaction,zero
+3bpa,20260618,0.03244885121418943,Persistent-minus-Final,scope interaction,zero
+3bpa,20260619,-0.02222097665899858,Persistent-minus-Final,scope interaction,zero
+3bpa,20260620,0.0368243914080954,Persistent-minus-Final,scope interaction,zero
+bucky,20260616,0.004125363424605299,Persistent-minus-Final,scope interaction,zero
+bucky,20260617,-0.010177641233181925,Persistent-minus-Final,scope interaction,zero
+bucky,20260618,-0.018030583018431807,Persistent-minus-Final,scope interaction,zero
+bucky,20260619,0.010816131454999024,Persistent-minus-Final,scope interaction,zero
+bucky,20260620,0.03525181275236183,Persistent-minus-Final,scope interaction,zero
+mal,20260616,-0.011493017855969161,Persistent-minus-Final,scope interaction,zero
+mal,20260617,0.02072737289844633,Persistent-minus-Final,scope interaction,zero
+mal,20260618,0.00615663832230273,Persistent-minus-Final,scope interaction,zero
+mal,20260619,0.019729634204772382,Persistent-minus-Final,scope interaction,zero
+mal,20260620,0.019386633656952715,Persistent-minus-Final,scope interaction,zero
+zro,20260616,-0.009415322335641496,Persistent-minus-Final,scope interaction,zero
+zro,20260617,-0.004773149066780835,Persistent-minus-Final,scope interaction,zero
+zro,20260618,-0.010288419036493895,Persistent-minus-Final,scope interaction,zero
+zro,20260619,-0.008501164706975766,Persistent-minus-Final,scope interaction,zero
+zro,20260620,-0.02555215433369979,Persistent-minus-Final,scope interaction,zero

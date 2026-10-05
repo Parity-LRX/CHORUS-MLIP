@@ -1,0 +1,48 @@
+{
+  "description": "Six in-domain test-force endpoints used by the main-text accuracy-cost synthesis: four molecular endpoints from Table 4 and the two responsive MS25 solid-state endpoints from Table 5.",
+  "selection_rule": "one checkpoint per model selected on validation Force MAE; test never selects",
+  "units": {
+    "force_mae": "meV/Angstrom",
+    "parameters": "trainable parameters"
+  },
+  "aggregation": {
+    "endpoint_weighting": "equal weight across six in-domain test endpoints",
+    "normalization": "divide each model Force MAE by the lowest observed Force MAE on that endpoint",
+    "summary": "geometric mean of six normalized Force MAEs"
+  },
+  "scope": {
+    "included": [
+      "T1X-50k",
+      "xxMD MAL",
+      "xxMD STI",
+      "MD22 Buckyball",
+      "MS25 Zr-O Set1",
+      "MS25 MgO-2x2 Set1"
+    ],
+    "excluded": {
+      "MS25 HEA Set1": "not included in the responsive-domain synthesis because the response is host dependent",
+      "3BPA temperature transfer": "retained as a separate appendix temperature-transfer study"
+    }
+  },
+  "endpoints": [
+    "T1X-50k",
+    "xxMD MAL",
+    "xxMD STI",
+    "MD22 Buckyball",
+    "MS25 Zr-O Set1",
+    "MS25 MgO-2x2 Set1"
+  ],
+  "models": {
+    "MACE-SH": [120.901, 228.300, 169.600, 22.282, 131.7767338104981, 9.790632262737777],
+    "MACE-ICTC": [91.888, 166.928, 168.271, 7.355, 68.118, 3.948],
+    "CHORUS-Final R16": [82.513, 159.062, 147.830, 6.724, 64.801, 3.68],
+    "CHORUS-Persistent R16": [82.342, 156.332, 146.185, 6.297, 64.389, 3.69],
+    "NequIP-SH": [140.259, 288.188, 199.049, 24.654, 84.033, 5.177],
+    "NequIP-CHORUS-Final": [113.859, 220.775, 166.486, 12.318, 76.401, 4.543],
+    "NequIP-CHORUS-Persistent": [96.125, 187.644, 157.413, 9.952, 75.813, 4.635],
+    "DPA-4 C32": [88.696, 225.660, 144.155, 5.915, 81.26502, 3.034535],
+    "TECE C36": [94.744, 216.259, 161.573, 12.079, 73.1082, 4.7883],
+    "DPA-4 C48": [80.148, 162.248, 129.724, 4.972, 73.9063, 2.555422],
+    "TECE C48": [88.289, 210.597, 169.212, 11.315, 69.3846, 4.7333]
+  }
+}

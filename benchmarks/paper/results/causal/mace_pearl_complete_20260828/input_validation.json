@@ -1,0 +1,9 @@
+{
+  "all_run_metrics_finite_positive": true,
+  "final_cells_expected_80": true,
+  "full_aligned_parameter_counts_equal_within_scope": true,
+  "passed": true,
+  "persistent_cells_expected_40": true,
+  "probe_cells_expected_40": true,
+  "test_never_used_for_selection": true
+}

@@ -27,6 +27,15 @@ namespace mfftorch {
 
 namespace {
 
+// Real MPI declares collective send buffers as const void*.  LAMMPS' serial
+// MPI stubs predate that signature and use void*, which nvcc rejects for a
+// pointer to a const scalar.  The collectives do not mutate send buffers, so
+// keep the constness at the call site and adapt only the stub-compatible ABI.
+template <typename T>
+T* mpi_send_buffer(const T* ptr) {
+  return const_cast<T*>(ptr);
+}
+
 torch::Tensor build_corner_offsets(const torch::TensorOptions& options) {
   return torch::tensor(
       {{0, 0, 0},
@@ -310,7 +319,7 @@ torch::Tensor MFFReciprocalSolver::neutralize_local_source(
       world);
   const double local_n = static_cast<double>(source.size(0));
   double global_n = 0.0;
-  MPI_Allreduce(&local_n, &global_n, 1, MPI_DOUBLE, MPI_SUM, world);
+  MPI_Allreduce(mpi_send_buffer(&local_n), &global_n, 1, MPI_DOUBLE, MPI_SUM, world);
   if (global_n <= 0.0) return source;
   auto mean = torch::from_blob(global_sum.data(), {source.size(1)}, torch::TensorOptions().dtype(torch::kFloat64))
                   .clone()
@@ -1230,7 +1239,7 @@ ReciprocalOutputs MFFReciprocalSolver::compute_replicated_atoms(
   MPI_Comm_rank(inputs.world, &world_rank);
 
   std::vector<int> counts(world_size, 0);
-  MPI_Allgather(&local_n, 1, MPI_INT, counts.data(), 1, MPI_INT, inputs.world);
+  MPI_Allgather(mpi_send_buffer(&local_n), 1, MPI_INT, counts.data(), 1, MPI_INT, inputs.world);
   std::vector<int> displs = build_displs(counts);
   int global_n = 0;
   for (int c : counts) global_n += c;
@@ -1433,7 +1442,7 @@ ReciprocalOutputs MFFReciprocalSolver::compute_mesh_backend(
     out.atom_energy_local = local_atom_energy;
     const double local_energy = local_atom_energy.sum().detach().to(torch::kCPU).item<double>();
     double total_energy = 0.0;
-    MPI_Allreduce(&local_energy, &total_energy, 1, MPI_DOUBLE, MPI_SUM, inputs.world);
+    MPI_Allreduce(mpi_send_buffer(&local_energy), &total_energy, 1, MPI_DOUBLE, MPI_SUM, inputs.world);
     out.energy = (world_rank == 0) ? total_energy : 0.0;
   } else {
     out.atom_energy_local = torch::zeros({local_n}, options);

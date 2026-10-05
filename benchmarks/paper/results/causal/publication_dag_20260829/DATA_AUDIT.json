@@ -1,0 +1,78 @@
+{
+  "schema_version": 1,
+  "trained": {
+    "complete": true,
+    "trained_model_cells": 240,
+    "duplicate_cells": 0,
+    "finite_positive_metrics": true,
+    "test_never_used_for_selection": true,
+    "cells": [
+      {
+        "backbone": "MACE-ICTC",
+        "scope": "Final",
+        "expected": 80,
+        "found": 80,
+        "missing": [],
+        "extra": [],
+        "complete": true
+      },
+      {
+        "backbone": "MACE-ICTC",
+        "scope": "Persistent",
+        "expected": 40,
+        "found": 40,
+        "missing": [],
+        "extra": [],
+        "complete": true
+      },
+      {
+        "backbone": "NequIP-SH",
+        "scope": "Final",
+        "expected": 80,
+        "found": 80,
+        "missing": [],
+        "extra": [],
+        "complete": true
+      },
+      {
+        "backbone": "NequIP-SH",
+        "scope": "Persistent",
+        "expected": 40,
+        "found": 40,
+        "missing": [],
+        "extra": [],
+        "complete": true
+      }
+    ]
+  },
+  "frozen": {
+    "complete": true,
+    "expected_frozen_model_cells": 80,
+    "found_frozen_model_cells": 80,
+    "missing": [],
+    "extra": [],
+    "duplicate_cells": 0,
+    "maximum_factual_vs_trained_force_mae_difference_mev_per_angstrom": 0.0004950390527316273,
+    "maximum_common_shift_pointwise_force_change_mev_per_angstrom": 0.008463859558105469,
+    "factual_match_tolerance_mev_per_angstrom": 0.05,
+    "common_shift_tolerance_mev_per_angstrom": 0.02
+  },
+  "causal_unit": "dataset-by-seed trained model",
+  "nested_outcomes_are_not_replicates": true,
+  "datasets": [
+    "mal",
+    "bucky",
+    "3bpa",
+    "zro"
+  ],
+  "seeds": [
+    20260616,
+    20260617,
+    20260618,
+    20260619,
+    20260620
+  ],
+  "bootstrap_replicates": 100000,
+  "rng_seed": 20260829,
+  "passed": true
+}

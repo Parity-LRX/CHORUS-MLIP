@@ -1,0 +1,13 @@
+phase_statistic,outcome,within_dataset_rank_correlation,two_sided_within_dataset_permutation_p,units,status
+destructive_kernel_fraction,trained_full_vs_aligned_log_benefit,0.20763488362498048,0.44264557354426454,20,post-hoc descriptive association; not an identified causal effect
+destructive_kernel_fraction,frozen_alignment_log_harm,0.2395787118749775,0.3728762712372876,20,post-hoc descriptive association; not an identified causal effect
+destructive_kernel_fraction,frozen_permutation_log_harm,0.3673540248749655,0.15728842711572885,20,post-hoc descriptive association; not an identified causal effect
+weighted_mean_cos_delta,trained_full_vs_aligned_log_benefit,-0.17500000000000004,0.5295147048529515,20,post-hoc descriptive association; not an identified causal effect
+weighted_mean_cos_delta,frozen_alignment_log_harm,-0.3500000000000001,0.18382816171838282,20,post-hoc descriptive association; not an identified causal effect
+weighted_mean_cos_delta,frozen_permutation_log_harm,-0.20000000000000004,0.46317536824631755,20,post-hoc descriptive association; not an identified causal effect
+circular_resultant_magnitude,trained_full_vs_aligned_log_benefit,-0.10000000000000002,0.7333726662733373,20,post-hoc descriptive association; not an identified causal effect
+circular_resultant_magnitude,frozen_alignment_log_harm,-0.4000000000000001,0.12270877291227088,20,post-hoc descriptive association; not an identified causal effect
+circular_resultant_magnitude,frozen_permutation_log_harm,-0.2750000000000001,0.3019869801301987,20,post-hoc descriptive association; not an identified causal effect
+relative_phase_entropy_normalized,trained_full_vs_aligned_log_benefit,0.325,0.21963780362196378,20,post-hoc descriptive association; not an identified causal effect
+relative_phase_entropy_normalized,frozen_alignment_log_harm,0.4750000000000001,0.06284937150628493,20,post-hoc descriptive association; not an identified causal effect
+relative_phase_entropy_normalized,frozen_permutation_log_harm,0.25000000000000006,0.35058649413505866,20,post-hoc descriptive association; not an identified causal effect

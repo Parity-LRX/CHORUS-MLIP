@@ -1,0 +1,14 @@
+{
+  "all_outcomes_finite": true,
+  "each_force_stratification_has_four_quartiles": true,
+  "formal_partial_interactions_reported": false,
+  "raw_outcomes_complete": true,
+  "reconstructed_metrics_match_within_1e-6": true,
+  "reconstructed_metrics_max_abs_diff": {
+    "aligned_force_mae_mev_per_angstrom": 1.3603900583802897e-07,
+    "native_force_mae_mev_per_angstrom": 1.2570149010571185e-07,
+    "permute_mean_force_mae_mev_per_angstrom": 1.9540513562787964e-07
+  },
+  "scope_backbone_completion_gate_active": true,
+  "twenty_trained_model_pairs": true
+}

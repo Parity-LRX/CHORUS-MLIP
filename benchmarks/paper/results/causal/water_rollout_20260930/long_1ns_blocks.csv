@@ -1,0 +1,25 @@
+label,model,block,start_ps,end_ps,midpoint_ps,endpoint,endpoint_name,value
+mace_phaseoff,MACE-ICTC,0,200.0,400.0,300.0,tetrahedral_q,Tetrahedral order q,0.6430280846653146
+mace_phaseoff,MACE-ICTC,0,200.0,400.0,300.0,hydrogen_bond_coordination,H-bond coordination,3.4809375
+mace_phaseoff,MACE-ICTC,1,400.0,600.0,500.0,tetrahedral_q,Tetrahedral order q,0.64237394344989
+mace_phaseoff,MACE-ICTC,1,400.0,600.0,500.0,hydrogen_bond_coordination,H-bond coordination,3.48375
+mace_phaseoff,MACE-ICTC,2,600.0,800.0,700.0,tetrahedral_q,Tetrahedral order q,0.6404988552451272
+mace_phaseoff,MACE-ICTC,2,600.0,800.0,700.0,hydrogen_bond_coordination,H-bond coordination,3.481484375
+mace_phaseoff,MACE-ICTC,3,800.0,1000.0,900.0,tetrahedral_q,Tetrahedral order q,0.6404204200513286
+mace_phaseoff,MACE-ICTC,3,800.0,1000.0,900.0,hydrogen_bond_coordination,H-bond coordination,3.476581934079602
+mace_final,Final,0,200.0,400.0,300.0,tetrahedral_q,Tetrahedral order q,0.6424713564387275
+mace_final,Final,0,200.0,400.0,300.0,hydrogen_bond_coordination,H-bond coordination,3.482734375
+mace_final,Final,1,400.0,600.0,500.0,tetrahedral_q,Tetrahedral order q,0.6437121600678768
+mace_final,Final,1,400.0,600.0,500.0,hydrogen_bond_coordination,H-bond coordination,3.4809765625
+mace_final,Final,2,600.0,800.0,700.0,tetrahedral_q,Tetrahedral order q,0.6403999327909705
+mace_final,Final,2,600.0,800.0,700.0,hydrogen_bond_coordination,H-bond coordination,3.48107421875
+mace_final,Final,3,800.0,1000.0,900.0,tetrahedral_q,Tetrahedral order q,0.6428139260061325
+mace_final,Final,3,800.0,1000.0,900.0,hydrogen_bond_coordination,H-bond coordination,3.4867848258706466
+mace_persistent,Persistent,0,200.0,400.0,300.0,tetrahedral_q,Tetrahedral order q,0.6409685302308354
+mace_persistent,Persistent,0,200.0,400.0,300.0,hydrogen_bond_coordination,H-bond coordination,3.47388671875
+mace_persistent,Persistent,1,400.0,600.0,500.0,tetrahedral_q,Tetrahedral order q,0.6417235824003437
+mace_persistent,Persistent,1,400.0,600.0,500.0,hydrogen_bond_coordination,H-bond coordination,3.4816015625
+mace_persistent,Persistent,2,600.0,800.0,700.0,tetrahedral_q,Tetrahedral order q,0.6426309031050604
+mace_persistent,Persistent,2,600.0,800.0,700.0,hydrogen_bond_coordination,H-bond coordination,3.4779296875
+mace_persistent,Persistent,3,800.0,1000.0,900.0,tetrahedral_q,Tetrahedral order q,0.6407969214649797
+mace_persistent,Persistent,3,800.0,1000.0,900.0,hydrogen_bond_coordination,H-bond coordination,3.4776896766169156

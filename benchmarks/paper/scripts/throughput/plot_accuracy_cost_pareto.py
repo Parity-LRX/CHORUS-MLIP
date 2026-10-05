@@ -1,23 +1,22 @@
 #!/usr/bin/env python3
-"""Plot the Table-5 accuracy and Figure-3 cost synthesis.
+"""Plot the cross-domain accuracy and cost synthesis.
 
 Chart contract
 --------------
 Question
-    Which tested configurations lie on the force-accuracy, throughput and
-    parameter-count frontier at the largest common trainable graph size?
+    Which tested configurations lie on the in-domain force-accuracy,
+    throughput and parameter-count frontier at the largest common trainable
+    graph size?
 Takeaway
-    CHORUS supplies the lowest aggregate force-error operating points, while
-    its Final and Persistent scopes occupy distinct accuracy--cost positions.
+    DPA-4 C48 attains the lowest aggregate force error, while CHORUS Final and
+    Persistent occupy lower-parameter and competitive-latency force frontiers.
 Form
-    Four aligned dot plots at N=2048: force-error gap, inference time per
-    structure, training time per optimiser step and trainable parameters.
-    Models are sorted by force error, so every quantitative axis points left
-    toward the preferred region.
+    Two force-first Pareto scatters at N=2048: six-endpoint force-error gap
+    versus trainable parameters and versus inference time per structure.
 Encoding
-    Position carries every metric directly. Neutral backbones, blue CHORUS,
-    orange DPA-4 and green TECE; marker shape duplicates identity. Full-opacity
-    points and bold row labels mark the four-objective non-dominated set.
+    Position carries both metrics directly. Neutral backbones, blue CHORUS,
+    orange DPA-4 and green TECE; marker shape duplicates identity. Opaque
+    linked points mark the two-objective non-dominated set in each panel.
 Outputs
     Machine-readable JSON/CSV plus PDF/SVG/PNG figures.
 """
@@ -101,13 +100,16 @@ def load_throughput(path: Path, natoms: int) -> dict[str, dict[str, float]]:
     return result
 
 
-def normalized_force_scores(path: Path) -> tuple[dict[str, float], list[float]]:
+def normalized_force_scores(
+    path: Path,
+) -> tuple[dict[str, float], list[float], list[str]]:
     payload = json.loads(path.read_text())
     values = payload["models"]
     missing = [model for model in MODEL_ORDER if model not in values]
     if missing:
         raise ValueError("Missing accuracy rows: " + ", ".join(missing))
-    endpoint_count = len(payload["endpoints"])
+    endpoints = [str(endpoint) for endpoint in payload["endpoints"]]
+    endpoint_count = len(endpoints)
     best = [
         min(float(values[model][index]) for model in MODEL_ORDER)
         for index in range(endpoint_count)
@@ -119,7 +121,7 @@ def normalized_force_scores(path: Path) -> tuple[dict[str, float], list[float]]:
             for index, value in enumerate(values[model])
         ]
         scores[model] = math.exp(sum(math.log(ratio) for ratio in ratios) / endpoint_count)
-    return scores, best
+    return scores, best, endpoints
 
 
 def dominates(
@@ -154,12 +156,14 @@ def write_outputs(
     output: Path,
     rows_by_task: dict[str, dict[str, dict[str, float]]],
     endpoint_best: list[float],
+    endpoints: list[str],
     natoms: int,
 ) -> None:
     flat: list[dict[str, Any]] = []
     summary: dict[str, Any] = {
         "natoms": natoms,
         "accuracy_metric": "geometric mean of endpoint-wise Force MAE / best endpoint Force MAE",
+        "accuracy_endpoints": endpoints,
         "endpoint_best_force_mae_mev_per_angstrom": endpoint_best,
         "tasks": {},
     }
@@ -210,7 +214,26 @@ def write_outputs(
             if other_model != model
         )
     ]
+
+    def pair_front(y_key: str) -> list[str]:
+        return [
+            model
+            for model, row in combined.items()
+            if not any(
+                other_row["score"] <= row["score"]
+                and other_row[y_key] <= row[y_key]
+                and (
+                    other_row["score"] < row["score"]
+                    or other_row[y_key] < row[y_key]
+                )
+                for other_model, other_row in combined.items()
+                if other_model != model
+            )
+        ]
+
     summary["pareto_force_inference_training_parameters"] = pareto_four
+    summary["pareto_force_parameters"] = pair_front("parameters")
+    summary["pareto_force_inference"] = pair_front("inference_latency_ms")
     summary["combined_models"] = combined
     (output / "accuracy_cost_pareto_summary.json").write_text(
         json.dumps(summary, indent=2, sort_keys=True) + "\n"
@@ -231,15 +254,15 @@ def plot(
             "font.family": "Times New Roman",
             "mathtext.fontset": "stix",
             "font.size": 7.2,
-            "axes.titlesize": 8.0,
-            "axes.labelsize": 7.4,
+            "axes.titlesize": 8.8,
+            "axes.labelsize": 7.8,
             "axes.linewidth": 0.55,
             "axes.edgecolor": "#555555",
             "text.color": "#272727",
             "xtick.color": "#4B4B4B",
             "ytick.color": "#4B4B4B",
-            "xtick.labelsize": 6.3,
-            "ytick.labelsize": 6.3,
+            "xtick.labelsize": 6.7,
+            "ytick.labelsize": 6.7,
             "pdf.fonttype": 42,
             "ps.fonttype": 42,
             "svg.fonttype": "none",
@@ -259,91 +282,112 @@ def plot(
         for model in MODEL_ORDER
     }
 
-    def dominates_four(lhs: dict[str, float], rhs: dict[str, float]) -> bool:
-        return all(lhs[key] <= rhs[key] for key in lhs) and any(
-            lhs[key] < rhs[key] for key in lhs
-        )
+    def pair_front(y_key: str) -> set[str]:
+        return {
+            model
+            for model, row in combined.items()
+            if not any(
+                other_row["force_gap"] <= row["force_gap"]
+                and other_row[y_key] <= row[y_key]
+                and (
+                    other_row["force_gap"] < row["force_gap"]
+                    or other_row[y_key] < row[y_key]
+                )
+                for other_model, other_row in combined.items()
+                if other_model != model
+            )
+        }
 
-    pareto = {
-        model
-        for model, row in combined.items()
-        if not any(
-            dominates_four(other_row, row)
-            for other_model, other_row in combined.items()
-            if other_model != model
-        )
+    label_offsets = {
+        "parameters": {
+            "DPA-4 C48": (6, 6),
+            "CHORUS-Persistent R16": (6, -10),
+            "CHORUS-Final R16": (6, 6),
+            "DPA-4 C32": (6, -10),
+            "MACE-ICTC": (6, 6),
+            "NequIP-CHORUS-Persistent": (6, 6),
+            "TECE C48": (6, 6),
+            "TECE C36": (6, 6),
+            "NequIP-CHORUS-Final": (6, 6),
+            "NequIP-SH": (6, 6),
+            "MACE-SH": (6, -10),
+        },
+        "inference_latency": {
+            "DPA-4 C48": (6, -10),
+            "CHORUS-Persistent R16": (6, 6),
+            "CHORUS-Final R16": (6, -10),
+            "DPA-4 C32": (6, -10),
+            "MACE-ICTC": (6, 6),
+            "NequIP-CHORUS-Persistent": (6, 6),
+            "TECE C48": (-6, 6),
+            "TECE C36": (-6, 6),
+            "NequIP-CHORUS-Final": (6, 6),
+            "NequIP-SH": (6, 6),
+            "MACE-SH": (6, -10),
+        },
     }
-    ordered_models = sorted(MODEL_ORDER, key=lambda model: combined[model]["force_gap"])
-    y_position = {model: len(ordered_models) - 1 - index for index, model in enumerate(ordered_models)}
-    metrics = (
-        ("force_gap", "Force-error gap", "%", (0, 140), "{:.1f}"),
-        ("inference_latency", "Inference time", "ms per structure", (0, 180), "{:.1f}"),
-        ("training_latency", "Training time", "ms per optimiser step", (0, 440), "{:.0f}"),
-        ("parameters", "Parameters", "million", (0, 1.55), "{:.2f}"),
+    panels = (
+        ("parameters", "Trainable parameters", "Parameters (million)  ← lower", (0, 1.55)),
+        ("inference_latency", "Inference time at N=2048", "ms per structure  ← lower", (0, 180)),
     )
-    fig, axes = plt.subplots(
-        1,
-        4,
-        figsize=(7.2, 3.08),
-        sharey=True,
-        gridspec_kw={"width_ratios": [1.15, 0.98, 0.98, 0.84]},
-    )
-    for panel_index, (ax, (key, title, unit, limits, formatter)) in enumerate(zip(axes, metrics)):
-        for row_index in range(len(ordered_models)):
-            if row_index % 2 == 0:
-                ax.axhspan(row_index - 0.5, row_index + 0.5, color="#F7F7F5", zorder=0)
-        for model in ordered_models:
-            value = combined[model][key]
+    fig, axes = plt.subplots(1, 2, figsize=(7.2, 3.35), sharex=True)
+    for panel_index, (ax, (key, title, unit, y_limits)) in enumerate(zip(axes, panels)):
+        pareto = pair_front(key)
+        frontier_models = sorted(pareto, key=lambda model: combined[model]["force_gap"])
+        ax.plot(
+            [combined[model]["force_gap"] for model in frontier_models],
+            [combined[model][key] for model in frontier_models],
+            color="#5B5B58",
+            linewidth=0.8,
+            linestyle=(0, (2.2, 2.2)),
+            zorder=1,
+        )
+        for model in MODEL_ORDER:
+            x_value = combined[model]["force_gap"]
+            y_value = combined[model][key]
             style = STYLE[model]
             is_pareto = model in pareto
             ax.scatter(
-                value,
-                y_position[model],
-                s=34,
+                x_value,
+                y_value,
+                s=44,
                 color=style["color"],
                 marker=style["marker"],
                 edgecolors="white",
-                linewidths=0.55,
-                alpha=0.98 if is_pareto else 0.28,
+                linewidths=0.65,
+                alpha=0.98 if is_pareto else 0.30,
                 zorder=3,
             )
+            dx, dy = label_offsets[key][model]
             ax.annotate(
-                formatter.format(value),
-                xy=(value, y_position[model]),
-                xytext=(5, 0),
+                DISPLAY[model],
+                xy=(x_value, y_value),
+                xytext=(dx, dy),
                 textcoords="offset points",
-                ha="left",
+                ha="right" if dx < 0 else "left",
                 va="center",
-                fontsize=5.35,
-                color="#333333" if is_pareto else "#92928E",
+                fontsize=5.7,
+                fontweight="normal",
+                color="#2B2B2B" if is_pareto else "#8A8A86",
             )
-        ax.set_xlim(*limits)
+        ax.set_xlim(-3, 125)
+        ax.set_ylim(*y_limits)
         ax.set_title(f"({chr(ord('a') + panel_index)})  {title}", loc="left", pad=7)
-        ax.set_xlabel(f"{unit}  ← better")
-        ax.grid(axis="x", color="#E6E6E3", linewidth=0.5)
-        ax.grid(False, axis="y")
-        ax.spines[["top", "right", "left"]].set_visible(False)
-        ax.tick_params(axis="y", length=0)
+        ax.set_xlabel("Six-endpoint force-MAE gap (%)  ← lower")
+        ax.set_ylabel(unit)
+        ax.grid(color="#E6E6E3", linewidth=0.5)
+        ax.spines[["top", "right"]].set_visible(False)
         ax.tick_params(which="minor", length=0)
-    axes[0].set_yticks(
-        [y_position[model] for model in ordered_models],
-        [DISPLAY[model] for model in ordered_models],
-    )
-    for tick, model in zip(axes[0].get_yticklabels(), ordered_models):
-        tick.set_fontweight("bold" if model in pareto else "normal")
-        tick.set_color("#2B2B2B" if model in pareto else "#8A8A86")
-        tick.set_fontsize(6.3)
-    axes[0].set_ylim(-0.65, len(ordered_models) - 0.35)
     fig.text(
         0.995,
-        0.02,
-        "Bold/opaque: four-objective Pareto set; faded: dominated",
+        0.015,
+        "Force metric only; opaque linked points form the two-objective Pareto set in each panel",
         ha="right",
         va="bottom",
-        fontsize=5.8,
+        fontsize=6.0,
         color="#555552",
     )
-    fig.subplots_adjust(left=0.195, right=0.995, top=0.92, bottom=0.18, wspace=0.12)
+    fig.subplots_adjust(left=0.09, right=0.985, top=0.90, bottom=0.19, wspace=0.25)
     for suffix in ("pdf", "svg"):
         fig.savefig(output / f"accuracy_cost_pareto.{suffix}", bbox_inches="tight")
     fig.savefig(output / "accuracy_cost_pareto.png", dpi=300, bbox_inches="tight")
@@ -360,7 +404,7 @@ def main() -> None:
     args.output.mkdir(parents=True, exist_ok=True)
 
     throughput = load_throughput(args.throughput, args.natoms)
-    scores, endpoint_best = normalized_force_scores(args.accuracy)
+    scores, endpoint_best, endpoints = normalized_force_scores(args.accuracy)
     rows_by_task: dict[str, dict[str, dict[str, float]]] = {}
     for task in ("inference", "train"):
         rows_by_task[task] = OrderedDict(
@@ -375,7 +419,7 @@ def main() -> None:
             for model in MODEL_ORDER
         )
 
-    write_outputs(args.output, rows_by_task, endpoint_best, args.natoms)
+    write_outputs(args.output, rows_by_task, endpoint_best, endpoints, args.natoms)
     plot(args.output, rows_by_task, args.natoms)
 
 

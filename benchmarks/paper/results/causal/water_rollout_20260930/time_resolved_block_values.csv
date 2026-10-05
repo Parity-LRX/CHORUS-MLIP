@@ -1,0 +1,121 @@
+label,model,seed,block,start_ps,end_ps,midpoint_ps,endpoint,endpoint_name,value
+mace_phaseoff,MACE-ICTC,20260616,0,100.0,150.0,125.0,tetrahedral_q,Tetrahedral order q,0.6472929477681985
+mace_phaseoff,MACE-ICTC,20260616,0,100.0,150.0,125.0,hydrogen_bond_coordination,H-bond coordination,3.499453125
+mace_phaseoff,MACE-ICTC,20260616,1,150.0,200.0,175.0,tetrahedral_q,Tetrahedral order q,0.6432387932154237
+mace_phaseoff,MACE-ICTC,20260616,1,150.0,200.0,175.0,hydrogen_bond_coordination,H-bond coordination,3.485234375
+mace_phaseoff,MACE-ICTC,20260616,2,200.0,250.0,225.0,tetrahedral_q,Tetrahedral order q,0.6465443964038876
+mace_phaseoff,MACE-ICTC,20260616,2,200.0,250.0,225.0,hydrogen_bond_coordination,H-bond coordination,3.497734375
+mace_phaseoff,MACE-ICTC,20260616,3,250.0,300.0,275.0,tetrahedral_q,Tetrahedral order q,0.6394537451487176
+mace_phaseoff,MACE-ICTC,20260616,3,250.0,300.0,275.0,hydrogen_bond_coordination,H-bond coordination,3.4706648284313726
+mace_phaseoff,MACE-ICTC,20260617,0,100.0,150.0,125.0,tetrahedral_q,Tetrahedral order q,0.6412168352716973
+mace_phaseoff,MACE-ICTC,20260617,0,100.0,150.0,125.0,hydrogen_bond_coordination,H-bond coordination,3.4609375
+mace_phaseoff,MACE-ICTC,20260617,1,150.0,200.0,175.0,tetrahedral_q,Tetrahedral order q,0.644277796238034
+mace_phaseoff,MACE-ICTC,20260617,1,150.0,200.0,175.0,hydrogen_bond_coordination,H-bond coordination,3.485
+mace_phaseoff,MACE-ICTC,20260617,2,200.0,250.0,225.0,tetrahedral_q,Tetrahedral order q,0.6431364958734157
+mace_phaseoff,MACE-ICTC,20260617,2,200.0,250.0,225.0,hydrogen_bond_coordination,H-bond coordination,3.488203125
+mace_phaseoff,MACE-ICTC,20260617,3,250.0,300.0,275.0,tetrahedral_q,Tetrahedral order q,0.6419596710409323
+mace_phaseoff,MACE-ICTC,20260617,3,250.0,300.0,275.0,hydrogen_bond_coordination,H-bond coordination,3.4829963235294117
+mace_phaseoff,MACE-ICTC,20260618,0,100.0,150.0,125.0,tetrahedral_q,Tetrahedral order q,0.6437457010744129
+mace_phaseoff,MACE-ICTC,20260618,0,100.0,150.0,125.0,hydrogen_bond_coordination,H-bond coordination,3.4834375
+mace_phaseoff,MACE-ICTC,20260618,1,150.0,200.0,175.0,tetrahedral_q,Tetrahedral order q,0.6407203358579614
+mace_phaseoff,MACE-ICTC,20260618,1,150.0,200.0,175.0,hydrogen_bond_coordination,H-bond coordination,3.475703125
+mace_phaseoff,MACE-ICTC,20260618,2,200.0,250.0,225.0,tetrahedral_q,Tetrahedral order q,0.6443771902683103
+mace_phaseoff,MACE-ICTC,20260618,2,200.0,250.0,225.0,hydrogen_bond_coordination,H-bond coordination,3.49484375
+mace_phaseoff,MACE-ICTC,20260618,3,250.0,300.0,275.0,tetrahedral_q,Tetrahedral order q,0.6441789739026766
+mace_phaseoff,MACE-ICTC,20260618,3,250.0,300.0,275.0,hydrogen_bond_coordination,H-bond coordination,3.489736519607843
+mace_phaseoff,MACE-ICTC,20260619,0,100.0,150.0,125.0,tetrahedral_q,Tetrahedral order q,0.6424255209399214
+mace_phaseoff,MACE-ICTC,20260619,0,100.0,150.0,125.0,hydrogen_bond_coordination,H-bond coordination,3.47703125
+mace_phaseoff,MACE-ICTC,20260619,1,150.0,200.0,175.0,tetrahedral_q,Tetrahedral order q,0.6418012171833929
+mace_phaseoff,MACE-ICTC,20260619,1,150.0,200.0,175.0,hydrogen_bond_coordination,H-bond coordination,3.486875
+mace_phaseoff,MACE-ICTC,20260619,2,200.0,250.0,225.0,tetrahedral_q,Tetrahedral order q,0.6432203489056882
+mace_phaseoff,MACE-ICTC,20260619,2,200.0,250.0,225.0,hydrogen_bond_coordination,H-bond coordination,3.483671875
+mace_phaseoff,MACE-ICTC,20260619,3,250.0,300.0,275.0,tetrahedral_q,Tetrahedral order q,0.6463820363873145
+mace_phaseoff,MACE-ICTC,20260619,3,250.0,300.0,275.0,hydrogen_bond_coordination,H-bond coordination,3.4980085784313726
+mace_phaseoff,MACE-ICTC,20260620,0,100.0,150.0,125.0,tetrahedral_q,Tetrahedral order q,0.6425611680336436
+mace_phaseoff,MACE-ICTC,20260620,0,100.0,150.0,125.0,hydrogen_bond_coordination,H-bond coordination,3.47609375
+mace_phaseoff,MACE-ICTC,20260620,1,150.0,200.0,175.0,tetrahedral_q,Tetrahedral order q,0.6432566496975677
+mace_phaseoff,MACE-ICTC,20260620,1,150.0,200.0,175.0,hydrogen_bond_coordination,H-bond coordination,3.490703125
+mace_phaseoff,MACE-ICTC,20260620,2,200.0,250.0,225.0,tetrahedral_q,Tetrahedral order q,0.6408062507203942
+mace_phaseoff,MACE-ICTC,20260620,2,200.0,250.0,225.0,hydrogen_bond_coordination,H-bond coordination,3.4784375
+mace_phaseoff,MACE-ICTC,20260620,3,250.0,300.0,275.0,tetrahedral_q,Tetrahedral order q,0.6437199189763263
+mace_phaseoff,MACE-ICTC,20260620,3,250.0,300.0,275.0,hydrogen_bond_coordination,H-bond coordination,3.479779411764706
+mace_final,Final,20260616,0,100.0,150.0,125.0,tetrahedral_q,Tetrahedral order q,0.6427826473982553
+mace_final,Final,20260616,0,100.0,150.0,125.0,hydrogen_bond_coordination,H-bond coordination,3.481328125
+mace_final,Final,20260616,1,150.0,200.0,175.0,tetrahedral_q,Tetrahedral order q,0.6398889739157514
+mace_final,Final,20260616,1,150.0,200.0,175.0,hydrogen_bond_coordination,H-bond coordination,3.478828125
+mace_final,Final,20260616,2,200.0,250.0,225.0,tetrahedral_q,Tetrahedral order q,0.6421932918271817
+mace_final,Final,20260616,2,200.0,250.0,225.0,hydrogen_bond_coordination,H-bond coordination,3.481171875
+mace_final,Final,20260616,3,250.0,300.0,275.0,tetrahedral_q,Tetrahedral order q,0.6461580123488955
+mace_final,Final,20260616,3,250.0,300.0,275.0,hydrogen_bond_coordination,H-bond coordination,3.4910386029411766
+mace_final,Final,20260617,0,100.0,150.0,125.0,tetrahedral_q,Tetrahedral order q,0.6429024794219248
+mace_final,Final,20260617,0,100.0,150.0,125.0,hydrogen_bond_coordination,H-bond coordination,3.48234375
+mace_final,Final,20260617,1,150.0,200.0,175.0,tetrahedral_q,Tetrahedral order q,0.6383412737729685
+mace_final,Final,20260617,1,150.0,200.0,175.0,hydrogen_bond_coordination,H-bond coordination,3.480390625
+mace_final,Final,20260617,2,200.0,250.0,225.0,tetrahedral_q,Tetrahedral order q,0.6428069022710953
+mace_final,Final,20260617,2,200.0,250.0,225.0,hydrogen_bond_coordination,H-bond coordination,3.495546875
+mace_final,Final,20260617,3,250.0,300.0,275.0,tetrahedral_q,Tetrahedral order q,0.6419505947893858
+mace_final,Final,20260617,3,250.0,300.0,275.0,hydrogen_bond_coordination,H-bond coordination,3.4806219362745097
+mace_final,Final,20260618,0,100.0,150.0,125.0,tetrahedral_q,Tetrahedral order q,0.6385342435502728
+mace_final,Final,20260618,0,100.0,150.0,125.0,hydrogen_bond_coordination,H-bond coordination,3.460078125
+mace_final,Final,20260618,1,150.0,200.0,175.0,tetrahedral_q,Tetrahedral order q,0.6432270082313231
+mace_final,Final,20260618,1,150.0,200.0,175.0,hydrogen_bond_coordination,H-bond coordination,3.485390625
+mace_final,Final,20260618,2,200.0,250.0,225.0,tetrahedral_q,Tetrahedral order q,0.6397098284623602
+mace_final,Final,20260618,2,200.0,250.0,225.0,hydrogen_bond_coordination,H-bond coordination,3.488203125
+mace_final,Final,20260618,3,250.0,300.0,275.0,tetrahedral_q,Tetrahedral order q,0.6419411044331886
+mace_final,Final,20260618,3,250.0,300.0,275.0,hydrogen_bond_coordination,H-bond coordination,3.483762254901961
+mace_final,Final,20260619,0,100.0,150.0,125.0,tetrahedral_q,Tetrahedral order q,0.6440858079271042
+mace_final,Final,20260619,0,100.0,150.0,125.0,hydrogen_bond_coordination,H-bond coordination,3.48953125
+mace_final,Final,20260619,1,150.0,200.0,175.0,tetrahedral_q,Tetrahedral order q,0.648088096195772
+mace_final,Final,20260619,1,150.0,200.0,175.0,hydrogen_bond_coordination,H-bond coordination,3.5015625
+mace_final,Final,20260619,2,200.0,250.0,225.0,tetrahedral_q,Tetrahedral order q,0.6425382576058897
+mace_final,Final,20260619,2,200.0,250.0,225.0,hydrogen_bond_coordination,H-bond coordination,3.494375
+mace_final,Final,20260619,3,250.0,300.0,275.0,tetrahedral_q,Tetrahedral order q,0.6372848604440253
+mace_final,Final,20260619,3,250.0,300.0,275.0,hydrogen_bond_coordination,H-bond coordination,3.465686274509804
+mace_final,Final,20260620,0,100.0,150.0,125.0,tetrahedral_q,Tetrahedral order q,0.6407550078411615
+mace_final,Final,20260620,0,100.0,150.0,125.0,hydrogen_bond_coordination,H-bond coordination,3.471171875
+mace_final,Final,20260620,1,150.0,200.0,175.0,tetrahedral_q,Tetrahedral order q,0.6393002671143315
+mace_final,Final,20260620,1,150.0,200.0,175.0,hydrogen_bond_coordination,H-bond coordination,3.48109375
+mace_final,Final,20260620,2,200.0,250.0,225.0,tetrahedral_q,Tetrahedral order q,0.6443911054159951
+mace_final,Final,20260620,2,200.0,250.0,225.0,hydrogen_bond_coordination,H-bond coordination,3.492734375
+mace_final,Final,20260620,3,250.0,300.0,275.0,tetrahedral_q,Tetrahedral order q,0.6366541975893838
+mace_final,Final,20260620,3,250.0,300.0,275.0,hydrogen_bond_coordination,H-bond coordination,3.4708180147058822
+mace_persistent,Persistent,20260616,0,100.0,150.0,125.0,tetrahedral_q,Tetrahedral order q,0.6402822730950152
+mace_persistent,Persistent,20260616,0,100.0,150.0,125.0,hydrogen_bond_coordination,H-bond coordination,3.482265625
+mace_persistent,Persistent,20260616,1,150.0,200.0,175.0,tetrahedral_q,Tetrahedral order q,0.6438411329361664
+mace_persistent,Persistent,20260616,1,150.0,200.0,175.0,hydrogen_bond_coordination,H-bond coordination,3.489453125
+mace_persistent,Persistent,20260616,2,200.0,250.0,225.0,tetrahedral_q,Tetrahedral order q,0.6409823933610203
+mace_persistent,Persistent,20260616,2,200.0,250.0,225.0,hydrogen_bond_coordination,H-bond coordination,3.489453125
+mace_persistent,Persistent,20260616,3,250.0,300.0,275.0,tetrahedral_q,Tetrahedral order q,0.64017893612565
+mace_persistent,Persistent,20260616,3,250.0,300.0,275.0,hydrogen_bond_coordination,H-bond coordination,3.4809283088235294
+mace_persistent,Persistent,20260617,0,100.0,150.0,125.0,tetrahedral_q,Tetrahedral order q,0.6379603303464662
+mace_persistent,Persistent,20260617,0,100.0,150.0,125.0,hydrogen_bond_coordination,H-bond coordination,3.4721875
+mace_persistent,Persistent,20260617,1,150.0,200.0,175.0,tetrahedral_q,Tetrahedral order q,0.6377012592430945
+mace_persistent,Persistent,20260617,1,150.0,200.0,175.0,hydrogen_bond_coordination,H-bond coordination,3.466328125
+mace_persistent,Persistent,20260617,2,200.0,250.0,225.0,tetrahedral_q,Tetrahedral order q,0.639595900441686
+mace_persistent,Persistent,20260617,2,200.0,250.0,225.0,hydrogen_bond_coordination,H-bond coordination,3.47765625
+mace_persistent,Persistent,20260617,3,250.0,300.0,275.0,tetrahedral_q,Tetrahedral order q,0.6402540958397674
+mace_persistent,Persistent,20260617,3,250.0,300.0,275.0,hydrogen_bond_coordination,H-bond coordination,3.4777113970588234
+mace_persistent,Persistent,20260618,0,100.0,150.0,125.0,tetrahedral_q,Tetrahedral order q,0.6415525153897987
+mace_persistent,Persistent,20260618,0,100.0,150.0,125.0,hydrogen_bond_coordination,H-bond coordination,3.478125
+mace_persistent,Persistent,20260618,1,150.0,200.0,175.0,tetrahedral_q,Tetrahedral order q,0.639490234800536
+mace_persistent,Persistent,20260618,1,150.0,200.0,175.0,hydrogen_bond_coordination,H-bond coordination,3.4759375
+mace_persistent,Persistent,20260618,2,200.0,250.0,225.0,tetrahedral_q,Tetrahedral order q,0.6395961802259176
+mace_persistent,Persistent,20260618,2,200.0,250.0,225.0,hydrogen_bond_coordination,H-bond coordination,3.48703125
+mace_persistent,Persistent,20260618,3,250.0,300.0,275.0,tetrahedral_q,Tetrahedral order q,0.6429035918069664
+mace_persistent,Persistent,20260618,3,250.0,300.0,275.0,hydrogen_bond_coordination,H-bond coordination,3.4924172794117645
+mace_persistent,Persistent,20260619,0,100.0,150.0,125.0,tetrahedral_q,Tetrahedral order q,0.6390411440814073
+mace_persistent,Persistent,20260619,0,100.0,150.0,125.0,hydrogen_bond_coordination,H-bond coordination,3.468203125
+mace_persistent,Persistent,20260619,1,150.0,200.0,175.0,tetrahedral_q,Tetrahedral order q,0.6398349191734574
+mace_persistent,Persistent,20260619,1,150.0,200.0,175.0,hydrogen_bond_coordination,H-bond coordination,3.478515625
+mace_persistent,Persistent,20260619,2,200.0,250.0,225.0,tetrahedral_q,Tetrahedral order q,0.643684531019441
+mace_persistent,Persistent,20260619,2,200.0,250.0,225.0,hydrogen_bond_coordination,H-bond coordination,3.4921875
+mace_persistent,Persistent,20260619,3,250.0,300.0,275.0,tetrahedral_q,Tetrahedral order q,0.6412365651594336
+mace_persistent,Persistent,20260619,3,250.0,300.0,275.0,hydrogen_bond_coordination,H-bond coordination,3.4839920343137254
+mace_persistent,Persistent,20260620,0,100.0,150.0,125.0,tetrahedral_q,Tetrahedral order q,0.6387224426618962
+mace_persistent,Persistent,20260620,0,100.0,150.0,125.0,hydrogen_bond_coordination,H-bond coordination,3.475234375
+mace_persistent,Persistent,20260620,1,150.0,200.0,175.0,tetrahedral_q,Tetrahedral order q,0.638108169004934
+mace_persistent,Persistent,20260620,1,150.0,200.0,175.0,hydrogen_bond_coordination,H-bond coordination,3.466796875
+mace_persistent,Persistent,20260620,2,200.0,250.0,225.0,tetrahedral_q,Tetrahedral order q,0.6435272609456816
+mace_persistent,Persistent,20260620,2,200.0,250.0,225.0,hydrogen_bond_coordination,H-bond coordination,3.484140625
+mace_persistent,Persistent,20260620,3,250.0,300.0,275.0,tetrahedral_q,Tetrahedral order q,0.6397040586353572
+mace_persistent,Persistent,20260620,3,250.0,300.0,275.0,hydrogen_bond_coordination,H-bond coordination,3.470894607843137

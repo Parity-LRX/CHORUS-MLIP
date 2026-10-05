@@ -1,0 +1,181 @@
+label,dataset,seed,log_interaction
+NequIP-minus-MACE self-density transport contrast,mal,20260616,-0.09731055001734577
+NequIP-minus-MACE self-density transport contrast,mal,20260617,-0.04789944069306543
+NequIP-minus-MACE self-density transport contrast,mal,20260618,-0.016250014579670582
+NequIP-minus-MACE self-density transport contrast,mal,20260619,-0.07798872881953545
+NequIP-minus-MACE self-density transport contrast,mal,20260620,-0.07185949955431961
+NequIP-minus-MACE self-density transport contrast,bucky,20260616,0.21802877040906865
+NequIP-minus-MACE self-density transport contrast,bucky,20260617,0.2867774237616785
+NequIP-minus-MACE self-density transport contrast,bucky,20260618,0.18303100200334624
+NequIP-minus-MACE self-density transport contrast,bucky,20260619,0.17110152154344532
+NequIP-minus-MACE self-density transport contrast,bucky,20260620,0.2230504016089977
+NequIP-minus-MACE self-density transport contrast,3bpa,20260616,0.2009516753757557
+NequIP-minus-MACE self-density transport contrast,3bpa,20260617,0.1691647600127234
+NequIP-minus-MACE self-density transport contrast,3bpa,20260618,0.1354710847777722
+NequIP-minus-MACE self-density transport contrast,3bpa,20260619,0.1593827873763511
+NequIP-minus-MACE self-density transport contrast,3bpa,20260620,0.1544741323658128
+NequIP-minus-MACE self-density transport contrast,zro,20260616,0.12760674939806915
+NequIP-minus-MACE self-density transport contrast,zro,20260617,0.10060950376155936
+NequIP-minus-MACE self-density transport contrast,zro,20260618,0.10760097994552015
+NequIP-minus-MACE self-density transport contrast,zro,20260619,0.13017300480975474
+NequIP-minus-MACE self-density transport contrast,zro,20260620,0.09240718541782358
+NequIP-minus-MACE cross-neighbour transport contrast,mal,20260616,0.20785555412459383
+NequIP-minus-MACE cross-neighbour transport contrast,mal,20260617,0.2892652789126804
+NequIP-minus-MACE cross-neighbour transport contrast,mal,20260618,0.2014034260802043
+NequIP-minus-MACE cross-neighbour transport contrast,mal,20260619,0.3441596618842549
+NequIP-minus-MACE cross-neighbour transport contrast,mal,20260620,0.25209776364468844
+NequIP-minus-MACE cross-neighbour transport contrast,bucky,20260616,0.339623375240231
+NequIP-minus-MACE cross-neighbour transport contrast,bucky,20260617,0.2406603688480978
+NequIP-minus-MACE cross-neighbour transport contrast,bucky,20260618,0.343611020187036
+NequIP-minus-MACE cross-neighbour transport contrast,bucky,20260619,0.36341489377348296
+NequIP-minus-MACE cross-neighbour transport contrast,bucky,20260620,0.3572761377188537
+NequIP-minus-MACE cross-neighbour transport contrast,3bpa,20260616,0.2805806588519281
+NequIP-minus-MACE cross-neighbour transport contrast,3bpa,20260617,0.30136803477284674
+NequIP-minus-MACE cross-neighbour transport contrast,3bpa,20260618,0.29469886532518913
+NequIP-minus-MACE cross-neighbour transport contrast,3bpa,20260619,0.2555171288926115
+NequIP-minus-MACE cross-neighbour transport contrast,3bpa,20260620,0.29747426644158964
+NequIP-minus-MACE cross-neighbour transport contrast,zro,20260616,-0.07397519664591191
+NequIP-minus-MACE cross-neighbour transport contrast,zro,20260617,0.03453088020251862
+NequIP-minus-MACE cross-neighbour transport contrast,zro,20260618,0.004253013913302156
+NequIP-minus-MACE cross-neighbour transport contrast,zro,20260619,-0.055900822642861774
+NequIP-minus-MACE cross-neighbour transport contrast,zro,20260620,-0.023162588286503156
+NequIP-minus-MACE complete-CHORUS transport contrast,mal,20260616,0.10868749443458905
+NequIP-minus-MACE complete-CHORUS transport contrast,mal,20260617,0.22718778315804977
+NequIP-minus-MACE complete-CHORUS transport contrast,mal,20260618,0.1887004835720367
+NequIP-minus-MACE complete-CHORUS transport contrast,mal,20260619,0.29877241225850343
+NequIP-minus-MACE complete-CHORUS transport contrast,mal,20260620,0.1961657971043958
+NequIP-minus-MACE complete-CHORUS transport contrast,bucky,20260616,0.5524137824037847
+NequIP-minus-MACE complete-CHORUS transport contrast,bucky,20260617,0.5167152100494873
+NequIP-minus-MACE complete-CHORUS transport contrast,bucky,20260618,0.4980583751919643
+NequIP-minus-MACE complete-CHORUS transport contrast,bucky,20260619,0.5325307208813054
+NequIP-minus-MACE complete-CHORUS transport contrast,bucky,20260620,0.5708717847121
+NequIP-minus-MACE complete-CHORUS transport contrast,3bpa,20260616,0.4696558725935348
+NequIP-minus-MACE complete-CHORUS transport contrast,3bpa,20260617,0.47723273642507
+NequIP-minus-MACE complete-CHORUS transport contrast,3bpa,20260618,0.4174417044076978
+NequIP-minus-MACE complete-CHORUS transport contrast,3bpa,20260619,0.4036187707434002
+NequIP-minus-MACE complete-CHORUS transport contrast,3bpa,20260620,0.47409504897762744
+NequIP-minus-MACE complete-CHORUS transport contrast,zro,20260616,0.09483197132182328
+NequIP-minus-MACE complete-CHORUS transport contrast,zro,20260617,0.11126664779132904
+NequIP-minus-MACE complete-CHORUS transport contrast,zro,20260618,0.09746039479256939
+NequIP-minus-MACE complete-CHORUS transport contrast,zro,20260619,0.06338394012483563
+NequIP-minus-MACE complete-CHORUS transport contrast,zro,20260620,0.06563345618655617
+MACE Persistent-minus-Final phase interaction,mal,20260616,-0.011493017855969161
+MACE Persistent-minus-Final phase interaction,mal,20260617,0.02072737289844633
+MACE Persistent-minus-Final phase interaction,mal,20260618,0.00615663832230273
+MACE Persistent-minus-Final phase interaction,mal,20260619,0.019729634204772382
+MACE Persistent-minus-Final phase interaction,mal,20260620,0.019386633656952715
+MACE Persistent-minus-Final phase interaction,bucky,20260616,0.0041253634246053005
+MACE Persistent-minus-Final phase interaction,bucky,20260617,-0.010177641233181925
+MACE Persistent-minus-Final phase interaction,bucky,20260618,-0.01803058301843181
+MACE Persistent-minus-Final phase interaction,bucky,20260619,0.010816131454999024
+MACE Persistent-minus-Final phase interaction,bucky,20260620,0.03525181275236183
+MACE Persistent-minus-Final phase interaction,3bpa,20260616,-0.014292927088657984
+MACE Persistent-minus-Final phase interaction,3bpa,20260617,0.009694084020794165
+MACE Persistent-minus-Final phase interaction,3bpa,20260618,0.03244885121418943
+MACE Persistent-minus-Final phase interaction,3bpa,20260619,-0.02222097665899858
+MACE Persistent-minus-Final phase interaction,3bpa,20260620,0.03682439140809562
+MACE Persistent-minus-Final phase interaction,zro,20260616,-0.009415322335641496
+MACE Persistent-minus-Final phase interaction,zro,20260617,-0.004773149066780835
+MACE Persistent-minus-Final phase interaction,zro,20260618,-0.010288419036493895
+MACE Persistent-minus-Final phase interaction,zro,20260619,-0.008501164706975766
+MACE Persistent-minus-Final phase interaction,zro,20260620,-0.02555215433369979
+NequIP Persistent-minus-Final phase interaction,mal,20260616,0.010379534656815197
+NequIP Persistent-minus-Final phase interaction,mal,20260617,0.05851043831731292
+NequIP Persistent-minus-Final phase interaction,mal,20260618,-0.030605987012100412
+NequIP Persistent-minus-Final phase interaction,mal,20260619,-0.0016921135772793778
+NequIP Persistent-minus-Final phase interaction,mal,20260620,0.006994820596216259
+NequIP Persistent-minus-Final phase interaction,bucky,20260616,0.006836138687363909
+NequIP Persistent-minus-Final phase interaction,bucky,20260617,0.057991160412922
+NequIP Persistent-minus-Final phase interaction,bucky,20260618,0.0404172686052377
+NequIP Persistent-minus-Final phase interaction,bucky,20260619,0.03186652534396134
+NequIP Persistent-minus-Final phase interaction,bucky,20260620,0.036137914579180766
+NequIP Persistent-minus-Final phase interaction,3bpa,20260616,0.022429162827763985
+NequIP Persistent-minus-Final phase interaction,3bpa,20260617,0.013697520221107528
+NequIP Persistent-minus-Final phase interaction,3bpa,20260618,0.006217610132885005
+NequIP Persistent-minus-Final phase interaction,3bpa,20260619,0.023546962691002704
+NequIP Persistent-minus-Final phase interaction,3bpa,20260620,-0.020727427710361686
+NequIP Persistent-minus-Final phase interaction,zro,20260616,-0.014134565662206167
+NequIP Persistent-minus-Final phase interaction,zro,20260617,0.02253847606776148
+NequIP Persistent-minus-Final phase interaction,zro,20260618,0.10286694549209786
+NequIP Persistent-minus-Final phase interaction,zro,20260619,0.040250005200995816
+NequIP Persistent-minus-Final phase interaction,zro,20260620,-0.0054913400540968285
+NequIP-minus-MACE Final phase transport contrast,mal,20260616,-0.0018575096726591803
+NequIP-minus-MACE Final phase transport contrast,mal,20260617,-0.014178055061564948
+NequIP-minus-MACE Final phase transport contrast,mal,20260618,0.0035470720715029564
+NequIP-minus-MACE Final phase transport contrast,mal,20260619,0.03260147919378381
+NequIP-minus-MACE Final phase transport contrast,mal,20260620,0.01592753301402683
+NequIP-minus-MACE Final phase transport contrast,bucky,20260616,-0.005238363245514846
+NequIP-minus-MACE Final phase transport contrast,bucky,20260617,-0.010722582560288836
+NequIP-minus-MACE Final phase transport contrast,bucky,20260618,-0.028583646998418
+NequIP-minus-MACE Final phase transport contrast,bucky,20260619,-0.0019856944356229974
+NequIP-minus-MACE Final phase transport contrast,bucky,20260620,-0.00945475461575139
+NequIP-minus-MACE Final phase transport contrast,3bpa,20260616,-0.011876461634149047
+NequIP-minus-MACE Final phase transport contrast,3bpa,20260617,0.0066999416394997735
+NequIP-minus-MACE Final phase transport contrast,3bpa,20260618,-0.012728245695263653
+NequIP-minus-MACE Final phase transport contrast,3bpa,20260619,-0.011281145525562399
+NequIP-minus-MACE Final phase transport contrast,3bpa,20260620,0.022146650170225258
+NequIP-minus-MACE Final phase transport contrast,zro,20260616,0.04120041856966593
+NequIP-minus-MACE Final phase transport contrast,zro,20260617,-0.02387373617274882
+NequIP-minus-MACE Final phase transport contrast,zro,20260618,-0.01439359906625289
+NequIP-minus-MACE Final phase transport contrast,zro,20260619,-0.010888242042057307
+NequIP-minus-MACE Final phase transport contrast,zro,20260620,-0.0036111409447641372
+NequIP-minus-MACE Persistent phase transport contrast,mal,20260616,0.020015042840125178
+NequIP-minus-MACE Persistent phase transport contrast,mal,20260617,0.023605010357301642
+NequIP-minus-MACE Persistent phase transport contrast,mal,20260618,-0.03321555326290018
+NequIP-minus-MACE Persistent phase transport contrast,mal,20260619,0.011179731411732046
+NequIP-minus-MACE Persistent phase transport contrast,mal,20260620,0.0035357199532903734
+NequIP-minus-MACE Persistent phase transport contrast,bucky,20260616,-0.002527587982756237
+NequIP-minus-MACE Persistent phase transport contrast,bucky,20260617,0.057446219085815084
+NequIP-minus-MACE Persistent phase transport contrast,bucky,20260618,0.029864204625251516
+NequIP-minus-MACE Persistent phase transport contrast,bucky,20260619,0.019064699453339315
+NequIP-minus-MACE Persistent phase transport contrast,bucky,20260620,-0.008568652788932457
+NequIP-minus-MACE Persistent phase transport contrast,3bpa,20260616,0.024845628282272922
+NequIP-minus-MACE Persistent phase transport contrast,3bpa,20260617,0.010703377839813136
+NequIP-minus-MACE Persistent phase transport contrast,3bpa,20260618,-0.038959486776568075
+NequIP-minus-MACE Persistent phase transport contrast,3bpa,20260619,0.03448679382443889
+NequIP-minus-MACE Persistent phase transport contrast,3bpa,20260620,-0.03540516894823205
+NequIP-minus-MACE Persistent phase transport contrast,zro,20260616,0.03648117524310125
+NequIP-minus-MACE Persistent phase transport contrast,zro,20260617,0.0034378889617934956
+NequIP-minus-MACE Persistent phase transport contrast,zro,20260618,0.09876176546233886
+NequIP-minus-MACE Persistent phase transport contrast,zro,20260619,0.037862927865914275
+NequIP-minus-MACE Persistent phase transport contrast,zro,20260620,0.01644967333483882
+MACE-ICTC Persistent-minus-Final frozen alignment interaction,mal,20260616,0.18981447715375183
+MACE-ICTC Persistent-minus-Final frozen alignment interaction,mal,20260617,0.13044052437460563
+MACE-ICTC Persistent-minus-Final frozen alignment interaction,mal,20260618,-0.05382319314696585
+MACE-ICTC Persistent-minus-Final frozen alignment interaction,mal,20260619,0.05031487562382948
+MACE-ICTC Persistent-minus-Final frozen alignment interaction,mal,20260620,0.03690047821936983
+MACE-ICTC Persistent-minus-Final frozen alignment interaction,bucky,20260616,0.7005675439137113
+MACE-ICTC Persistent-minus-Final frozen alignment interaction,bucky,20260617,0.7272259916968019
+MACE-ICTC Persistent-minus-Final frozen alignment interaction,bucky,20260618,0.6862098795128521
+MACE-ICTC Persistent-minus-Final frozen alignment interaction,bucky,20260619,2.1633496158860113
+MACE-ICTC Persistent-minus-Final frozen alignment interaction,bucky,20260620,0.44994509208649835
+MACE-ICTC Persistent-minus-Final frozen alignment interaction,3bpa,20260616,0.3659035960837367
+MACE-ICTC Persistent-minus-Final frozen alignment interaction,3bpa,20260617,0.13698943966784527
+MACE-ICTC Persistent-minus-Final frozen alignment interaction,3bpa,20260618,4.766284419939283
+MACE-ICTC Persistent-minus-Final frozen alignment interaction,3bpa,20260619,0.6761181100250704
+MACE-ICTC Persistent-minus-Final frozen alignment interaction,3bpa,20260620,1.197121619582368
+MACE-ICTC Persistent-minus-Final frozen alignment interaction,zro,20260616,0.2737482944997259
+MACE-ICTC Persistent-minus-Final frozen alignment interaction,zro,20260617,-0.5235831334900338
+MACE-ICTC Persistent-minus-Final frozen alignment interaction,zro,20260618,0.10300851710501482
+MACE-ICTC Persistent-minus-Final frozen alignment interaction,zro,20260619,0.5052955333777249
+MACE-ICTC Persistent-minus-Final frozen alignment interaction,zro,20260620,0.16159654960504444
+NequIP-SH Persistent-minus-Final frozen alignment interaction,mal,20260616,0.1209048307607054
+NequIP-SH Persistent-minus-Final frozen alignment interaction,mal,20260617,0.3023646329052914
+NequIP-SH Persistent-minus-Final frozen alignment interaction,mal,20260618,0.1476231693211679
+NequIP-SH Persistent-minus-Final frozen alignment interaction,mal,20260619,0.17326830436407525
+NequIP-SH Persistent-minus-Final frozen alignment interaction,mal,20260620,0.25221191698605905
+NequIP-SH Persistent-minus-Final frozen alignment interaction,bucky,20260616,1.9874838401802808
+NequIP-SH Persistent-minus-Final frozen alignment interaction,bucky,20260617,-0.3445906717949451
+NequIP-SH Persistent-minus-Final frozen alignment interaction,bucky,20260618,0.46087176092968074
+NequIP-SH Persistent-minus-Final frozen alignment interaction,bucky,20260619,1.1422078619655969
+NequIP-SH Persistent-minus-Final frozen alignment interaction,bucky,20260620,0.7793892797220316
+NequIP-SH Persistent-minus-Final frozen alignment interaction,3bpa,20260616,1.0363761588023377
+NequIP-SH Persistent-minus-Final frozen alignment interaction,3bpa,20260617,1.5737234373164934
+NequIP-SH Persistent-minus-Final frozen alignment interaction,3bpa,20260618,2.1849312302986026
+NequIP-SH Persistent-minus-Final frozen alignment interaction,3bpa,20260619,1.4083472769548993
+NequIP-SH Persistent-minus-Final frozen alignment interaction,3bpa,20260620,2.4920913634084387
+NequIP-SH Persistent-minus-Final frozen alignment interaction,zro,20260616,0.09845123423106444
+NequIP-SH Persistent-minus-Final frozen alignment interaction,zro,20260617,0.14971084010811841
+NequIP-SH Persistent-minus-Final frozen alignment interaction,zro,20260618,0.07222627047665603
+NequIP-SH Persistent-minus-Final frozen alignment interaction,zro,20260619,0.11835452164736807
+NequIP-SH Persistent-minus-Final frozen alignment interaction,zro,20260620,0.016569621983745574

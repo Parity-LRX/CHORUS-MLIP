@@ -1,0 +1,50 @@
+{
+  "assessment": "Ready to share with explicit inferential scope",
+  "checks": {
+    "all_key_metrics_finite": true,
+    "all_test_selection_flags_false": true,
+    "atomic_outcomes_total": 9929350,
+    "common_shift_force_mae_replay_max_abs_mev_per_angstrom": 2.346025050670164e-06,
+    "common_shift_force_mae_replay_within_0p01_mev": true,
+    "counterfactual_model_rows_40": true,
+    "counterfactual_rows_not_used_as_replicates": true,
+    "counterfactual_summaries_finite": true,
+    "final_full_aligned_parameter_match": true,
+    "final_macro_dose_monotonic": true,
+    "frame_outcomes_total": 224910,
+    "persistent_full_aligned_parameter_match": true,
+    "persistent_macro_dose_monotonic": true,
+    "probe_rows_40": true,
+    "probe_unique_cells_40": true,
+    "recompute_final_cross_neighbour": true,
+    "recompute_final_frozen_alignment": true,
+    "recompute_final_frozen_permutation": true,
+    "recompute_final_learned_phase": true,
+    "recompute_final_self_density": true,
+    "recompute_persistent_frozen_alignment": true,
+    "recompute_persistent_frozen_permutation": true,
+    "recompute_persistent_learned_phase": true,
+    "reported_common_shift_max_within_0p01_mev": true,
+    "trained_rows_120": true,
+    "trained_unique_cells_120": true
+  },
+  "inference_sensitivity": {
+    "binomial_sign_p": 0.8238029479980469,
+    "exact_sign_flip_p": 0.03052520751953125,
+    "hierarchical_bootstrap_ci_excludes_zero": true,
+    "interpretation": "The Persistent trained-phase mean is positive, but inference is sensitive to the statistic: magnitude-weighted hierarchical bootstrap and exact sign flip support a positive mean, while Wilcoxon and the win count do not.",
+    "wilcoxon_p": 0.06372261047363281
+  },
+  "passed": true,
+  "recomputed_macro_effects_percent": {
+    "final_cross_neighbour": 1.574807340878015,
+    "final_frozen_alignment": 46.41382789714571,
+    "final_frozen_permutation": 69.40328133006264,
+    "final_learned_phase": 0.6109258682378105,
+    "final_self_density": 9.073288027239846,
+    "persistent_frozen_alignment": 71.66438086129384,
+    "persistent_frozen_permutation": 84.6573821832294,
+    "persistent_learned_phase": 0.9107051756760631
+  },
+  "schema_version": 1
+}

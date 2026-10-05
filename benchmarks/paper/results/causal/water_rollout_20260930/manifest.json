@@ -1,0 +1,58 @@
+{
+  "analysis": "paired potential-outcome analysis of CHORUS water rollouts",
+  "root": "/home/ylzhang/lrx/chorus_water_1ns_20260926",
+  "output": "/home/ylzhang/lrx/chorus_water_1ns_20260926/analysis/causal_rollout_20260930",
+  "models": [
+    "mace_phaseoff",
+    "mace_final",
+    "mace_persistent"
+  ],
+  "velocity_seeds": [
+    20260616,
+    20260617,
+    20260618,
+    20260619,
+    20260620
+  ],
+  "window_300ps": "100-300 ps",
+  "window_1ns": "200-1000 ps",
+  "time_blocks_300ps": "four 50 ps blocks",
+  "time_blocks_1ns": "four 200 ps blocks",
+  "bootstrap_replicates": 100000,
+  "bootstrap_seed": 20260930,
+  "force_mae_mev_per_a": {
+    "mace_phaseoff": 21.891,
+    "mace_final": 20.906,
+    "mace_persistent": 20.454
+  },
+  "trainable_parameters": {
+    "mace_phaseoff": 577728,
+    "mace_final": 672134,
+    "mace_persistent": 864847
+  },
+  "checkpoint_metric_sources": {
+    "off": "/public/home/sps-xia/rxlin/chorus_transport_lips_water_20260922/runs/mace_family/water/phaseoff/validation_force_selected_eval/metrics.json",
+    "final": "/public/home/sps-xia/rxlin/chorus_transport_lips_water_20260922/runs/mace_family/water/final/validation_force_selected_eval/metrics.json",
+    "persistent": "/public/home/sps-xia/rxlin/chorus_transport_lips_water_20260922/runs/mace_family/water/persistent/validation_force_selected_eval/metrics.json"
+  },
+  "outputs": [
+    "REPORT.md",
+    "analysis_input_300ps.csv",
+    "causal_effect_forest.pdf",
+    "causal_effect_forest.png",
+    "causal_effect_summary.csv",
+    "causal_rollout_main.pdf",
+    "causal_rollout_main.png",
+    "functional_effect_summary.csv",
+    "functional_rollout_contrasts.pdf",
+    "functional_rollout_contrasts.png",
+    "long_1ns_blocks.csv",
+    "manifest.json",
+    "msd_effect_curve.csv",
+    "ordered_scope_effects.csv",
+    "paired_seed_differences.csv",
+    "rdf_oo_effect_curve.csv",
+    "time_resolved_block_values.csv",
+    "time_resolved_effects.csv"
+  ]
+}

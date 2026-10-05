@@ -1,0 +1,138 @@
+{
+  "aligned_rows_expected_20": true,
+  "all_aligned_metrics_finite": true,
+  "all_primary_metrics_finite": true,
+  "all_probe_force_metrics_finite": true,
+  "all_test_selection_flags_false": true,
+  "common_shift_within_0.05_mev_per_angstrom": true,
+  "dataset_seed_coverage": {
+    "aligned": {
+      "3bpa": [
+        20260616,
+        20260617,
+        20260618,
+        20260619,
+        20260620
+      ],
+      "bucky": [
+        20260616,
+        20260617,
+        20260618,
+        20260619,
+        20260620
+      ],
+      "mal": [
+        20260616,
+        20260617,
+        20260618,
+        20260619,
+        20260620
+      ],
+      "zro": [
+        20260616,
+        20260617,
+        20260618,
+        20260619,
+        20260620
+      ]
+    },
+    "observational": {
+      "3bpa": [
+        20260616,
+        20260617,
+        20260618,
+        20260619,
+        20260620
+      ],
+      "bucky": [
+        20260616,
+        20260617,
+        20260618,
+        20260619,
+        20260620
+      ],
+      "mal": [
+        20260616,
+        20260617,
+        20260618,
+        20260619,
+        20260620
+      ],
+      "zro": [
+        20260616,
+        20260617,
+        20260618,
+        20260619,
+        20260620
+      ]
+    },
+    "primary": {
+      "3bpa": [
+        20260616,
+        20260617,
+        20260618,
+        20260619,
+        20260620
+      ],
+      "bucky": [
+        20260616,
+        20260617,
+        20260618,
+        20260619,
+        20260620
+      ],
+      "mal": [
+        20260616,
+        20260617,
+        20260618,
+        20260619,
+        20260620
+      ],
+      "zro": [
+        20260616,
+        20260617,
+        20260618,
+        20260619,
+        20260620
+      ]
+    },
+    "probes": {
+      "3bpa": [
+        20260616,
+        20260617,
+        20260618,
+        20260619,
+        20260620
+      ],
+      "bucky": [
+        20260616,
+        20260617,
+        20260618,
+        20260619,
+        20260620
+      ],
+      "mal": [
+        20260616,
+        20260617,
+        20260618,
+        20260619,
+        20260620
+      ],
+      "zro": [
+        20260616,
+        20260617,
+        20260618,
+        20260619,
+        20260620
+      ]
+    }
+  },
+  "full_aligned_nominal_parameter_counts_equal": true,
+  "maximum_common_shift_force_change_mev_per_angstrom": 0.004291534423828125,
+  "maximum_native_replay_force_mae_difference_mev_per_angstrom": 0.0004408348512576765,
+  "native_replay_within_0.1_mev_per_angstrom": true,
+  "observational_rows_expected_20": true,
+  "passed": true,
+  "primary_rows_expected_80": true,
+  "probe_rows_expected_20": true
+}

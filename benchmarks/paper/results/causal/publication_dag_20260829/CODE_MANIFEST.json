@@ -1,0 +1,38 @@
+{
+  "schema_version": 1,
+  "files": [
+    {
+      "path": "/Users/sara/Desktop/code/CHORUS-MLIP/benchmarks/causal/phase_specific_20260825/analyse_publication_dag.py",
+      "bytes": 61745,
+      "sha256": "d7e1c3f67025bbadeb62fcf54d4c6ed321290cbaf9b3eda881521ea05d215fc2"
+    },
+    {
+      "path": "/Users/sara/Desktop/code/CHORUS-MLIP/benchmarks/causal/phase_specific_20260825/validate_publication_dag.py",
+      "bytes": 10488,
+      "sha256": "806694b024bce9a36d60e2b1a809d7b695f863b441ec2239df22cc3a8076742a"
+    },
+    {
+      "path": "/Users/sara/Desktop/code/CHORUS-MLIP/integrations/nequip/overlay/scripts/evaluate_phase_interventions.py",
+      "bytes": 16313,
+      "sha256": "c709e00bb7ad9a2d005c71c6d46e23aedcab8475a93a7366b41a316cf3c3a758"
+    },
+    {
+      "path": "/Users/sara/Desktop/code/CHORUS-MLIP/benchmarks/causal/phase_specific_20260825/run_nequip_frozen_interventions.sbatch",
+      "bytes": 3006,
+      "sha256": "0cd8c41753b8a67a3301277dc6120ca7a90755b7b3806ba9dcd614491cef6979"
+    }
+  ],
+  "git_head": "4066158beca5de13ffa474f2e4814dfd797e9d7d",
+  "git_dirty": true,
+  "runtime": {
+    "python": "3.12.4",
+    "numpy": "1.26.4",
+    "pandas": "2.2.3",
+    "scipy": "1.14.0",
+    "matplotlib": "3.9.1"
+  },
+  "analysis": {
+    "bootstrap_replicates": 100000,
+    "rng_seed": 20260829
+  }
+}

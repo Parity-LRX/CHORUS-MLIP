@@ -1,0 +1,38 @@
+{
+  "all_complete": true,
+  "schema_version": 1,
+  "sections": [
+    {
+      "complete": true,
+      "expected": 40,
+      "extra": [],
+      "found": 40,
+      "missing": [],
+      "name": "MACE-Final"
+    },
+    {
+      "complete": true,
+      "expected": 40,
+      "extra": [],
+      "found": 40,
+      "missing": [],
+      "name": "MACE-Persistent"
+    },
+    {
+      "complete": true,
+      "expected": 80,
+      "extra": [],
+      "found": 80,
+      "missing": [],
+      "name": "NequIP-Final"
+    },
+    {
+      "complete": true,
+      "expected": 40,
+      "extra": [],
+      "found": 40,
+      "missing": [],
+      "name": "NequIP-Persistent"
+    }
+  ]
+}
