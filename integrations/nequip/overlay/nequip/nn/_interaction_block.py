@@ -20,6 +20,7 @@ from ._chorus import (
     PersistentChargedUpdate,
 )
 from ._openequivariance import OpenEquivarianceTensorProduct
+from . import _native_dataflow
 
 
 class InteractionBlock(GraphModuleMixin, torch.nn.Module):
@@ -83,6 +84,7 @@ class InteractionBlock(GraphModuleMixin, torch.nn.Module):
 
         self.avg_num_neighbors = avg_num_neighbors
         self.use_sc = use_sc
+        self.native_dataflow = bool(openequivariance_enabled) and _native_dataflow.enabled()
 
         feature_irreps_in = self.irreps_in[AtomicDataDict.NODE_FEATURES_KEY]
         feature_irreps_out = self.irreps_out[AtomicDataDict.NODE_FEATURES_KEY]
@@ -146,6 +148,9 @@ class InteractionBlock(GraphModuleMixin, torch.nn.Module):
                 irreps_edge_attr=irreps_edge_attr,
                 irreps_mid=irreps_mid,
                 instructions=instructions,
+                # The scalar-only first layer is inexpensive and the fused
+                # convolution workspace increases its peak reserved memory.
+                fused_convolution=(not bool(chorus_enabled) and feature_irreps_in.lmax>0),
             )
         self.chorus = None
         self.chorus_update = None
@@ -166,6 +171,7 @@ class InteractionBlock(GraphModuleMixin, torch.nn.Module):
                 avg_num_neighbors=avg_num_neighbors,
                 scale_init=chorus_scale_init,
                 density_pairs=chorus_density_pairs,
+                openequivariance_enabled=openequivariance_enabled,
             )
             if self.chorus_persistent and bool(chorus_update_enabled):
                 self.chorus_update = PersistentChargedUpdate(
@@ -215,7 +221,23 @@ class InteractionBlock(GraphModuleMixin, torch.nn.Module):
         if self.sc is not None:
             sc = self.sc(x, data[AtomicDataDict.NODE_ATTRS_KEY])
 
-        x = self.linear_1(x)
+        x = (_native_dataflow.linear(self.linear_1,x) if self.native_dataflow and not torch.jit.is_scripting() else self.linear_1(x))
+        # Final CHORUS leaves earlier layers neutral. OEQ can gather, contract
+        # and reduce those layers directly without materializing wide edge
+        # messages. Charged layers retain the explicit per-edge messages.
+        if self.chorus is None and self.openequivariance_tp is not None:
+            if self.openequivariance_tp.use_fused_convolution:
+                x = self.openequivariance_tp.aggregate(
+                    x,data[AtomicDataDict.EDGE_ATTRS_KEY],weight,edge_dst,edge_src
+                )
+                conv_normalizer: Optional[float] = self.avg_num_neighbors
+                if conv_normalizer is not None:
+                    x = x.div(conv_normalizer**0.5)
+                x = (_native_dataflow.linear(self.linear_2,x) if self.native_dataflow and not torch.jit.is_scripting() else self.linear_2(x))
+                if self.sc is not None:
+                    x = x + sc
+                data[AtomicDataDict.NODE_FEATURES_KEY] = x
+                return data
         if self.openequivariance_tp is None:
             edge_features = self.tp(
                 x[edge_src], data[AtomicDataDict.EDGE_ATTRS_KEY], weight
@@ -270,14 +292,17 @@ class InteractionBlock(GraphModuleMixin, torch.nn.Module):
         # divide first for numerics, scatter is linear
         # Necessary to get TorchScript to be able to type infer when its not None
         avg_num_neigh: Optional[float] = self.avg_num_neighbors
-        if avg_num_neigh is not None:
+        if avg_num_neigh is not None and not self.native_dataflow:
             edge_features = edge_features.div(avg_num_neigh**0.5)
         # now scatter down
         x = scatter(edge_features, edge_dst, dim=0, dim_size=len(x))
+        if avg_num_neigh is not None and self.native_dataflow:
+            # Reduction is linear: scale N node rows, not E wide edge rows.
+            x = x.div(avg_num_neigh**0.5)
         if chorus_residual is not None:
             x = x + chorus_residual
 
-        x = self.linear_2(x)
+        x = (_native_dataflow.linear(self.linear_2,x) if self.native_dataflow and not torch.jit.is_scripting() else self.linear_2(x))
 
         if self.sc is not None:
             x = x + sc

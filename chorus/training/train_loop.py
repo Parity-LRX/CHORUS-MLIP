@@ -1365,7 +1365,11 @@ class ForceTrainer:
                     self.phase_rank_orthogonal_weight
                     * self._phase_rank_orthogonal_penalty()
                 ) / self.gradient_accumulation_steps
-            loss.backward()
+            if getattr(self, "parameter_gradients_only", False):
+                from chorus.hp import backward_parameters
+                backward_parameters(loss, self.model)
+            else:
+                loss.backward()
             accumulation_count += 1
             optimizer_step = accumulation_count == self.gradient_accumulation_steps
             if optimizer_step:

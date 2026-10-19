@@ -418,6 +418,11 @@ class ElementConditionedLinearSO3(nn.Module):
         out_blocks: Dict[int, torch.Tensor] = {}
         for l in range(self.lmax + 1):
             weight = self.weights[str(l)].to(dtype=x.dtype, device=x.device)
+            hp_species_linear = getattr(self, "_hp_species_linear", None)
+            if hp_species_linear is not None:
+                bias = None if self.bias is None else self.bias[str(l)].to(x)
+                out_blocks[l] = hp_species_linear(blocks[l], weight, idx, bias)
+                continue
             mixed_weight = weight.index_select(0, idx)
             out_block = torch.einsum("noi,nid->nod", mixed_weight, blocks[l])
             if self.bias is not None:
@@ -456,6 +461,11 @@ class ElementConditionedScalarLinear(nn.Module):
     ) -> torch.Tensor:
         if node_type_idx is not None:
             idx = node_type_idx.to(device=x.device, dtype=torch.long)
+            hp_species_linear = getattr(self, "_hp_species_linear", None)
+            if hp_species_linear is not None:
+                bank = self.weight.to(dtype=x.dtype, device=x.device)
+                bias = None if self.bias is None else self.bias.to(x)
+                return hp_species_linear(x.unsqueeze(-1), bank, idx, bias).squeeze(-1)
             weight = self.weight.to(dtype=x.dtype, device=x.device).index_select(0, idx)
             out = torch.bmm(weight, x.unsqueeze(-1)).squeeze(-1)
             if self.bias is not None:
@@ -588,9 +598,12 @@ class PersistentChargedUpdate(nn.Module):
             fused_weight = torch.cat(
                 (gate * previous_weight, (1.0 - gate) * incoming_weight), dim=-1
             )
-            out_blocks[l] = F.linear(
-                source.movedim(-2, -1), fused_weight
-            ).movedim(-1, -2)
+            if getattr(self, "_hp_channel_linear", None) is not None:
+                out_blocks[l] = self._hp_channel_linear(source, fused_weight)
+            else:
+                out_blocks[l] = F.linear(
+                    source.movedim(-2, -1), fused_weight
+                ).movedim(-1, -2)
         return _merge_irreps(out_blocks, self.channels, self.lmax)
 
 
@@ -1081,13 +1094,15 @@ class PhaseHermitianFullLResidual(nn.Module):
         doublet_in = _split_irreps(doublet, self.channels, self.lmax)
         # One projection kernel per l instead of separate real/imag kernels.
         # Shape: (..., U(1)=2, density_rank, 2l+1).
+        hp_channel_linear = getattr(self, "_hp_channel_linear", None)
         rank_doublet = {
-            l: self._project_block(
-                doublet_in[l],
-                self.rank_projections[str(l)],
-            )
+            l: (hp_channel_linear(doublet_in[l], self.rank_projections[str(l)].weight)
+                if hp_channel_linear is not None else
+                self._project_block(doublet_in[l], self.rank_projections[str(l)]))
             for l in range(self.lmax + 1)
         }
+        if getattr(self, "_hp_density", None) is not None:
+            return self._hp_density(rank_doublet)
         coupled_values: Dict[tuple[str, str], torch.Tensor] = {}
         for l1, l2, fused_name, slices in self.coupling_groups:
             left = rank_doublet[l1]
@@ -1188,6 +1203,8 @@ class PhaseHermitianFullLResidual(nn.Module):
                 raise RuntimeError("onehot-full Hermitian output weights are missing")
             weight = self.output_weights[str(out_l)].to(density)
             if type_idx is not None:
+                if getattr(self, "_hp_species_linear", None) is not None:
+                    return self._hp_species_linear(density, weight, type_idx)
                 mixed_weight = weight.index_select(0, type_idx)
             else:
                 if node_attrs is None:
@@ -1684,6 +1701,8 @@ class _Normalize2MomSiLU(nn.Module):
     _scale = 1.6791767923989418
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
+        if getattr(self, "_hp_activation", None) is not None:
+            return self._hp_activation(x, self._scale)
         return F.silu(x) * self._scale
 
 
@@ -1721,7 +1740,10 @@ class PathPreservingLinearSO3(nn.Module):
                     *x_l.shape[:-2], self.out_channels, 2 * l + 1, dtype=x_l.dtype, device=x_l.device
                 )
             else:
-                out_blocks[l] = torch.einsum("oc,...cm->...om", weight, x_l)
+                if getattr(self, "_hp_channel_linear", None) is not None:
+                    out_blocks[l] = self._hp_channel_linear(x_l, weight)
+                else:
+                    out_blocks[l] = torch.einsum("oc,...cm->...om", weight, x_l)
         return _merge_irreps(out_blocks, self.out_channels, self.lmax)
 
 
@@ -2540,6 +2562,7 @@ class ICTDBridgeUSymmetricContractionSO3(nn.Module):
         target_lmax: int,
         correlation: int = 3,
         use_reduced_cg: bool = False,
+        ictc_u_tensor_state: Dict[str, torch.Tensor] | None = None,
     ):
         super().__init__()
         self.channels = int(channels)
@@ -2555,8 +2578,10 @@ class ICTDBridgeUSymmetricContractionSO3(nn.Module):
             correlation=int(correlation),
             num_elements=int(num_elements),
             use_reduced_cg=self.use_reduced_cg,
+            u_tensor_state=ictc_u_tensor_state,
         )
-        self._fold_basis_change_into_u_tensors()
+        if ictc_u_tensor_state is None:
+            self._fold_basis_change_into_u_tensors()
 
     def _input_q(self, *, dtype: torch.dtype, device: torch.device) -> torch.Tensor:
         blocks = [self.basis_bridge._q(l, dtype=dtype, device=device) for l in range(self.lmax + 1)]
@@ -2598,7 +2623,11 @@ class ICTDBridgeUSymmetricContractionSO3(nn.Module):
                 ):
                     contraction.refresh_scalar_corr3_fast_buffers()
 
-    def forward(self, node_feats: torch.Tensor, node_attrs: torch.Tensor) -> torch.Tensor:
+    def forward(self, node_feats: torch.Tensor, node_attrs: torch.Tensor,
+                node_type_idx: torch.Tensor | None = None) -> torch.Tensor:
+        if (getattr(self, "_hp_contraction", None) is not None
+                and node_type_idx is not None and not node_attrs.requires_grad):
+            return self._hp_contraction(node_feats, node_attrs, node_type_idx)
         x = _so3_flat_to_mace_features(node_feats, self.channels, self.lmax)
         return self.symmetric_contractions(x, node_attrs)
 
@@ -2613,6 +2642,7 @@ class ICTDBridgeUProductBasisBlockSO3(nn.Module):
         target_lmax: int,
         correlation: int = 3,
         use_reduced_cg: bool = False,
+        ictc_u_tensor_state: Dict[str, torch.Tensor] | None = None,
     ):
         super().__init__()
         self.channels = int(channels)
@@ -2627,11 +2657,13 @@ class ICTDBridgeUProductBasisBlockSO3(nn.Module):
             target_lmax=target_lmax,
             correlation=correlation,
             use_reduced_cg=self.use_reduced_cg,
+            ictc_u_tensor_state=ictc_u_tensor_state,
         )
         self.linear = o3.Linear(self.target_irreps, self.target_irreps)
 
-    def forward(self, node_feats: torch.Tensor, sc: torch.Tensor | None, node_attrs: torch.Tensor) -> torch.Tensor:
-        out = self.linear(self.symmetric_contractions(node_feats, node_attrs))
+    def forward(self, node_feats: torch.Tensor, sc: torch.Tensor | None,
+                node_attrs: torch.Tensor, node_type_idx: torch.Tensor | None = None) -> torch.Tensor:
+        out = self.linear(self.symmetric_contractions(node_feats, node_attrs, node_type_idx))
         if sc is not None:
             out = _add_product_self_connection(
                 out,
@@ -3986,6 +4018,7 @@ class ICTDResidualInteractionBlock(nn.Module):
         edge_index: torch.Tensor,
         edge_mask: torch.Tensor | None = None,
         edge_env: torch.Tensor | None = None,
+        edge_length: torch.Tensor | None = None,
         node_type_idx: torch.Tensor | None = None,
         sync_after_scatter: callable | None = None,
         return_phase_doublet: bool = False,
@@ -4007,16 +4040,25 @@ class ICTDResidualInteractionBlock(nn.Module):
 
         node_feats_for_sc = node_feats
         node_feats = self.linear_up(node_feats)
-        gates = self.fc(edge_feats)
+        hp_message = getattr(self, "_hp_message", None)
+        hp_graph = hp_message is not None and not return_phase_edges
+        gates = (hp_message.radial_inputs(edge_feats, self.fc, edge_length) if hp_graph
+                 else self.fc(edge_feats))
         x1 = _split_irreps(node_feats, self.channels, self.input_lmax)
-        if self.tp_cueq is not None and node_feats.is_cuda:
+        if hp_graph:
+            # Phase coefficients are built below from the same live context.
+            # Delay TP until they can be folded into the three stream gates.
+            edge_blocks = None
+        elif hp_message is not None:
+            edge_blocks = hp_message.edges(x1, edge_attrs, gates, edge_src)
+        elif self.tp_cueq is not None and node_feats.is_cuda:
             # cueq fused kernel gathers node feats internally and emits the same
             # path-preserving ICTC edge blocks; CPU falls back to the reference TP.
             edge_blocks = self.tp_cueq(x1, edge_src, edge_attrs, gates, self.tp.weight)
         else:
             x1e = {l: x1[l][edge_src] for l in range(self.input_lmax + 1)}
             edge_blocks = self.tp(x1e, edge_attrs, gates)
-        if edge_mask is not None:
+        if edge_mask is not None and not hp_graph:
             mask = edge_mask.to(dtype=node_feats.dtype)
             edge_blocks = {l: block * mask.unsqueeze(-1) for l, block in edge_blocks.items()}
         phase_cos: torch.Tensor | None = None
@@ -4041,25 +4083,34 @@ class ICTDResidualInteractionBlock(nn.Module):
                 # Preserve the exact trunk shape and nominal parameter budget while
                 # removing all chemical-content information from the coefficient.
                 normalized_node_context = torch.zeros_like(normalized_node_context)
-            phase_context = torch.cat(
-                (
-                    normalized_node_context[edge_dst],
-                    normalized_node_context[edge_src],
-                    edge_feats,
-                ),
-                dim=-1,
-            )
-            phase_hidden = self.phase_trunk(phase_context)
-            theta = self.phase_head(phase_hidden)
+            if getattr(self, "_hp_phase_trunk", None) is not None:
+                phase_hidden = self._hp_phase_trunk(
+                    normalized_node_context, edge_feats, edge_src, edge_dst)
+            else:
+                phase_context = torch.cat(
+                    (
+                        normalized_node_context[edge_dst],
+                        normalized_node_context[edge_src],
+                        edge_feats,
+                    ),
+                    dim=-1,
+                )
+                phase_hidden = self.phase_trunk(phase_context)
+            theta = (phase_hidden.theta if getattr(phase_hidden, '_hp_phase_heads', False)
+                     else self.phase_head(phase_hidden))
             if self.phase_intervention not in ("none", "native"):
                 theta = self._apply_phase_intervention(theta, edge_dst, x1[0])
+            hp_phase_coefficients = getattr(self, "_hp_phase_coefficients", None)
             if self.phase_amplitude_head is None:
-                amplitude = torch.ones_like(theta)
+                amplitude = torch.ones_like(theta) if hp_phase_coefficients is None else None
                 amplitude_raw = None
             else:
-                amplitude_raw = self.phase_amplitude_head(phase_hidden)
-                amplitude = F.softplus(amplitude_raw)
-            if self.phase_coefficient == "polar":
+                amplitude_raw = (phase_hidden.raw if getattr(phase_hidden, '_hp_phase_heads', False)
+                                 else self.phase_amplitude_head(phase_hidden))
+                amplitude = F.softplus(amplitude_raw) if hp_phase_coefficients is None else None
+            if hp_phase_coefficients is not None:
+                phase_cos, phase_sin = hp_phase_coefficients(theta, amplitude_raw, self.phase_coefficient)
+            elif self.phase_coefficient == "polar":
                 phase_cos = amplitude.mul(torch.cos(theta)).unsqueeze(-1)
                 phase_sin = amplitude.mul(torch.sin(theta)).unsqueeze(-1)
             elif self.phase_coefficient == "aligned":
@@ -4098,6 +4149,15 @@ class ICTDResidualInteractionBlock(nn.Module):
         phase_doublet_blocks: Dict[int, torch.Tensor] | None = None
         message_phase_blocks: Dict[int, torch.Tensor] | None = None
         phase_node_normalizer = None
+        if hp_graph:
+            aggregated = hp_message(x1, edge_attrs, gates, edge_src, edge_dst,
+                                    edge_mask, phase_cos, phase_sin)
+            if self.phase_enabled:
+                message_phase_blocks = aggregated
+                message_blocks = {l: block[:, 0] for l, block in aggregated.items()}
+                phase_doublet_blocks = {l: block[:, 1:] for l, block in aggregated.items()}
+            else:
+                message_blocks = aggregated
         if self.interaction_attn_heads > 0 and self.phase_enabled:
             if edge_env is None:
                 raise ValueError(
@@ -4165,21 +4225,22 @@ class ICTDResidualInteractionBlock(nn.Module):
                 # dimension also lets the shared SO(3) channel map below use
                 # one batched linear operation instead of separate neutral and
                 # charged calls.
-                message_phase_blocks = {
-                    l: scatter(
-                        self._phase_stream_block(
-                            edge_blocks[l],
-                            phase_cos,
-                            phase_sin,
-                            l,
-                        ),
-                        edge_dst,
-                        dim=0,
-                        dim_size=num_nodes,
-                        reduce="sum",
-                    )
-                    for l in range(self.target_lmax + 1)
-                }
+                if message_phase_blocks is None:
+                    message_phase_blocks = {
+                        l: scatter(
+                            self._phase_stream_block(
+                                edge_blocks[l],
+                                phase_cos,
+                                phase_sin,
+                                l,
+                            ),
+                            edge_dst,
+                            dim=0,
+                            dim_size=num_nodes,
+                            reduce="sum",
+                        )
+                        for l in range(self.target_lmax + 1)
+                    }
                 message_blocks = {
                     l: block[:, 0] for l, block in message_phase_blocks.items()
                 }
@@ -4187,12 +4248,13 @@ class ICTDResidualInteractionBlock(nn.Module):
                     l: block[:, 1:] for l, block in message_phase_blocks.items()
                 }
             else:
-                message_blocks = {
-                    l: scatter(
-                        edge_blocks[l], edge_dst, dim=0, dim_size=num_nodes, reduce="sum"
-                    )
-                    for l in range(self.target_lmax + 1)
-                }
+                if not hp_graph:
+                    message_blocks = {
+                        l: scatter(
+                            edge_blocks[l], edge_dst, dim=0, dim_size=num_nodes, reduce="sum"
+                        )
+                        for l in range(self.target_lmax + 1)
+                    }
             if getattr(self, "_fused_selector_message_enabled", False) and sync_after_scatter is None:
                 type_idx = (
                     node_type_idx.to(device=node_feats.device, dtype=torch.long)
@@ -4247,15 +4309,21 @@ class ICTDResidualInteractionBlock(nn.Module):
                         avg_num_neighbors, 1e-8
                     )
                 else:
-                    if self.phase_normalization == "avg-neighbors":
+                    terminal_rank_message = getattr(self, '_hp_terminal_rank_message', None)
+                    if (terminal_rank_message is not None and return_phase_doublet
+                            and not return_phase_edges and sync_after_scatter is None):
+                        message, phase_doublet = terminal_rank_message(
+                            message_phase_blocks, max(avg_num_neighbors, 1e-8))
+                    elif self.phase_normalization == "avg-neighbors":
                         message_phase = self.message_linear(
                             message_phase_blocks
                         ) / max(avg_num_neighbors, 1e-8)
-                        message = message_phase[:, 0]
-                        phase_doublet = message_phase[:, 1:]
+                        neutral, phase_doublet = message_phase.split((1, 2), dim=-2)
+                        message = neutral.squeeze(-2)
                     else:
                         message_phase = self.message_linear(message_phase_blocks)
-                        message = message_phase[:, 0] / max(
+                        neutral, phase_doublet = message_phase.split((1, 2), dim=-2)
+                        message = neutral.squeeze(-2) / max(
                             avg_num_neighbors, 1e-8
                         )
                         phase_node_normalizer = self._phase_local_normalizer(
@@ -4268,7 +4336,7 @@ class ICTDResidualInteractionBlock(nn.Module):
                             sync_after_scatter=sync_after_scatter,
                         )
                         phase_doublet = (
-                            message_phase[:, 1:]
+                            phase_doublet
                             * phase_node_normalizer[:, None, None]
                         )
         phase_real = None
@@ -4386,15 +4454,13 @@ class ICTDResidualInteractionBlock(nn.Module):
         if not selector_message_fused:
             message = self.message_norm(message)
             message = self.message_output_scale(message)
-        if phase_doublet is not None:
-            phase_real = phase_doublet[..., 0, :]
-            phase_imag = phase_doublet[..., 1, :]
+        if phase_doublet is not None and not getattr(phase_doublet, '_hp_rank_doublet', False):
+            phase_real, phase_imag = phase_doublet.unbind(dim=-2)
             if self.phase_norm is not None:
                 phase_real, phase_imag = self.phase_norm(phase_real, phase_imag)
                 phase_doublet = torch.stack((phase_real, phase_imag), dim=-2)
             phase_doublet = self.message_output_scale(phase_doublet)
-            phase_real = phase_doublet[..., 0, :]
-            phase_imag = phase_doublet[..., 1, :]
+            phase_real, phase_imag = phase_doublet.unbind(dim=-2)
         if phase_edge_orbital is not None:
             phase_edge_orbital = self.message_output_scale(phase_edge_orbital)
         sc = None
@@ -4409,7 +4475,9 @@ class ICTDResidualInteractionBlock(nn.Module):
                 raise ValueError(
                     f"Unsupported ICTC self-connection projection input_lmax={self.input_lmax}, sc_lmax={self.sc_lmax}"
                 )
-            if (not self.training) and node_type_idx is not None:
+            indexed_training = (getattr(self.self_connection, "_hp_species_linear", None) is not None
+                                and node_attrs is not None and not node_attrs.requires_grad)
+            if node_type_idx is not None and ((not self.training) or indexed_training):
                 sc = self.self_connection.forward_type_idx(sc_input, node_type_idx)
             else:
                 if node_attrs is None:
@@ -4545,6 +4613,7 @@ class PureCartesianICTDFix(nn.Module):
         ictd_fix_contraction_combine: str = "softmax",
         ictd_fix_product_backend: str = "ictd-bridge-u",
         ictd_fix_use_reduced_cg: bool = False,
+        ictd_fix_u_tensor_state: List[Dict[str, torch.Tensor]] | None = None,
         ictd_fix_first_layer_self_connection: bool = False,
         ictd_fix_conv_tp_scale_init: str = "none",
         ictd_fix_freeze_conv_tp_weight: bool = False,
@@ -5171,6 +5240,8 @@ class PureCartesianICTDFix(nn.Module):
                         target_lmax=target_lmax,
                         correlation=save_contraction_order,
                         use_reduced_cg=self.ictd_fix_use_reduced_cg,
+                        ictc_u_tensor_state=(None if ictd_fix_u_tensor_state is None else
+                                             ictd_fix_u_tensor_state[layer_idx]),
                     )
                 )
             elif effective_product_backend == "cueq":
@@ -5766,7 +5837,10 @@ class PureCartesianICTDFix(nn.Module):
             if getattr(self, "assume_edges_within_radius", False)
             else (edge_length <= self.max_radius).to(dtype=pos.dtype).unsqueeze(-1)
         )
-        Y_list = direction_harmonics_all(n.to(dtype=dtype), self.ictd_fix_edge_lmax)
+        hp_harmonics = getattr(self, "_hp_harmonics", None)
+        Y_list = (hp_harmonics(n.to(dtype=dtype), self.ictd_fix_edge_lmax)
+                  if hp_harmonics is not None else
+                  direction_harmonics_all(n.to(dtype=dtype), self.ictd_fix_edge_lmax))
         if self.angular_basis == "e3nn":
             # fold the angular embedding into the e3nn/MACE spherical basis (Y_ictd @ Q_l = Y_e3nn)
             Y_list = [Y_list[l] @ self._e3nn_q_blocks[l].to(dtype=Y_list[l].dtype, device=Y_list[l].device)
@@ -5854,6 +5928,7 @@ class PureCartesianICTDFix(nn.Module):
                 edge_index=edge_index,
                 edge_mask=edge_mask,
                 edge_env=edge_env,
+                edge_length=edge_length,
                 node_type_idx=compact_idx,
                 sync_after_scatter=sync_after_scatter,
                 return_phase_doublet=interaction.phase_enabled,
@@ -5899,7 +5974,14 @@ class PureCartesianICTDFix(nn.Module):
                     raise RuntimeError(
                         f"phase adapter exists for layer {layer_idx}, but the interaction returned no doublet"
                     )
+                if getattr(phase_doublet, '_hp_rank_doublet', False):
+                    phase_delta = phase_doublet.owner.finish(phase_doublet,
+                        node_attrs=node_attrs, node_type_idx=compact_idx,
+                        gate_features=h[:, :self.channels],
+                        species_embedding=phase_density_species_embedding)
                 if (
+                    phase_delta is None
+                    and
                     self.ictd_fix_phase_scope == "persistent"
                     and self.ictd_fix_phase_density_pairs != "diagonal"
                 ):
@@ -5914,14 +5996,25 @@ class PureCartesianICTDFix(nn.Module):
                             raise RuntimeError(
                                 f"persistent charged update is missing for layer {layer_idx}"
                             )
-                        charged_doublet = self.charged_updates[
-                            phase_key
-                        ].forward_doublet(
-                            charged_doublet,
-                            phase_doublet,
-                        )
-                    phase_doublet = charged_doublet
-                if self.ictd_fix_phase_density_pairs == "diagonal":
+                        update = self.charged_updates[phase_key]
+                        terminal_phase = getattr(update, "_hp_terminal_phase", None)
+                        if terminal_phase is not None and layer_idx == len(self.interactions)-1:
+                            phase_delta = terminal_phase(
+                                charged_doublet, phase_doublet,
+                                node_attrs=node_attrs, node_type_idx=compact_idx,
+                                gate_features=h[:, : self.channels],
+                                species_embedding=phase_density_species_embedding,
+                            )
+                        if phase_delta is None:
+                            charged_doublet = update.forward_doublet(
+                                charged_doublet, phase_doublet)
+                    if phase_delta is None:
+                        phase_doublet = charged_doublet
+                if phase_delta is not None:
+                    # A terminal inference fold has already consumed both
+                    # charged sources; no full-width state is needed afterwards.
+                    pass
+                elif self.ictd_fix_phase_density_pairs == "diagonal":
                     if phase_edge_orbital is None or phase_edge_norm_sq is None:
                         raise RuntimeError(
                             "diagonal phase density is missing its factorized edge "
@@ -6066,7 +6159,8 @@ class PureCartesianICTDFix(nn.Module):
                             f"message={tuple(message.shape)}"
                         )
                     message = message + phase_delta
-            if type(product).__name__.startswith("Cueq"):
+            if (type(product).__name__.startswith("Cueq")
+                    or isinstance(product, ICTDBridgeUProductBasisBlockSO3)):
                 h = product(node_feats=message, sc=sc, node_attrs=node_attrs, node_type_idx=compact_idx)
             else:
                 h = product(node_feats=message, sc=sc, node_attrs=node_attrs)

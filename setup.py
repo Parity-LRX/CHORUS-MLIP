@@ -88,6 +88,8 @@ setup(
         "opt-einsum-fx>=0.1.4",
     ],
     extras_require={
+        # Pin the operator implementation without renumbering the paper release.
+        "hp": ["ictc-o3-hp[hp] @ git+https://github.com/Parity-LRX/ICTC-O3-HP.git@9fdea47eef620013e9ea591f7d90534bb27671c8"],
         # Faster scatter / radius-graph (pure-PyTorch fallbacks exist for both).
         "pyg": [
             "torch-scatter>=2.0.9",

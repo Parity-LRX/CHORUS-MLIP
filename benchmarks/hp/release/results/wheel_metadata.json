@@ -1,0 +1,61 @@
+{
+  "status": "PASS",
+  "exact_hp_extra": "ictc-o3-hp[hp] @ git+https://github.com/Parity-LRX/ICTC-O3-HP.git@9fdea47eef620013e9ea591f7d90534bb27671c8 ; extra == \"hp\"",
+  "base_dependencies_unchanged": true,
+  "existing_extras_unchanged": true,
+  "console_scripts_disjoint": true,
+  "wheels": {
+    "chorus": {
+      "name": "chorus-mlip",
+      "version": "0.1.0",
+      "requires": [
+        "torch>=2.4.0",
+        "numpy>=1.20.0",
+        "e3nn<0.6.0,>=0.4.4",
+        "ase>=3.22.0",
+        "opt-einsum-fx>=0.1.4",
+        "ictc-o3-hp[hp] @ git+https://github.com/Parity-LRX/ICTC-O3-HP.git@9fdea47eef620013e9ea591f7d90534bb27671c8 ; extra == \"hp\"",
+        "torch-scatter>=2.0.9; extra == \"pyg\"",
+        "torch-cluster>=1.6.0; extra == \"pyg\"",
+        "cuequivariance-torch>=0.8.1; extra == \"cue\"",
+        "pandas>=1.3.0; extra == \"e0\"",
+        "torch-scatter>=2.0.9; extra == \"full\"",
+        "torch-cluster>=1.6.0; extra == \"full\"",
+        "cuequivariance-torch>=0.8.1; extra == \"full\"",
+        "pandas>=1.3.0; extra == \"full\""
+      ],
+      "scripts": {
+        "chorus-train": "chorus.cli.train:main",
+        "mff-convert-mace": "chorus.cli.convert_mace:main",
+        "mff-export-aoti": "chorus.cli.export_aoti_core:main",
+        "mff-export-core": "chorus.cli.export_libtorch_core:main",
+        "mff-lammps": "chorus.cli.lammps_interface:main",
+        "mff-preprocess": "chorus.cli.preprocess:main"
+      }
+    },
+    "hp": {
+      "name": "ictc-o3-hp",
+      "version": "0.2.12",
+      "requires": [
+        "torch>=2.7",
+        "numpy>=1.20",
+        "e3nn<0.6,>=0.4.4",
+        "ase>=3.22",
+        "opt-einsum-fx>=0.1.4",
+        "triton>=3.3; platform_system == \"Linux\" and extra == \"hp\"",
+        "ninja; extra == \"hp\"",
+        "h5py; extra == \"train\"",
+        "pandas; extra == \"train\"",
+        "scipy; extra == \"train\"",
+        "mace-torch>=0.3.16; extra == \"conversion\""
+      ],
+      "scripts": {
+        "ictc-hp-convert-mace": "mace_ictc.cli.convert_mace:main",
+        "ictc-hp-export-aoti": "mace_ictc.cli.export_aoti_core:main",
+        "ictc-hp-export-core": "mace_ictc.cli.export_libtorch_core:main",
+        "ictc-hp-preprocess": "mace_ictc.cli.preprocess:main",
+        "ictc-hp-train": "mace_ictc.cli.train:main"
+      }
+    }
+  }
+}

@@ -61,6 +61,7 @@ def build_model(
     device: torch.device,
     correlation: int = 2,
     attn_heads: int = 0,
+    avg_num_neighbors: float = 24.0,
     **extra,
 ) -> PureCartesianICTDFix:
     cfg = ModelConfig(dtype=dtype)
@@ -91,7 +92,7 @@ def build_model(
         ictd_fix_fusion_heads=1,
         ictd_fix_interaction_attn_heads=attn_heads,
         save_contraction_order=correlation,
-        avg_num_neighbors=float(24),
+        avg_num_neighbors=float(avg_num_neighbors),
         internal_compute_dtype=dtype,
         device=device,
         **extra,

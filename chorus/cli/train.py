@@ -586,6 +586,53 @@ def build_arg_parser() -> argparse.ArgumentParser:
                          "checkpoint-compatible). Saved as ictd_tp_backend in model_hyperparameters.")
     ap.add_argument("--freeze-conv-tp-weight", action="store_true",
                     help="Freeze ICTC convolution TP base path weights, matching MACE's external-weight parameterization more closely.")
+    ap.add_argument("--hp-operators", choices=("reference", "auto", "generated"), default="reference",
+                    help="Optional ICTC-O3-HP eager operators. Does not freeze/cast existing weights; generated requires coverage.")
+    ap.add_argument("--hp-layout", choices=("packed", "fused_pack"), default="fused_pack")
+    ap.add_argument("--hp-stream-fusion", action=argparse.BooleanOptionalAction, default=True)
+    ap.add_argument("--hp-density-fusion", action=argparse.BooleanOptionalAction, default=True)
+    ap.add_argument("--hp-symmetric-contraction", action=argparse.BooleanOptionalAction, default=True,
+                    help="Use --no-hp-symmetric-contraction to retain an existing reduced-CG SC unchanged.")
+    ap.add_argument("--hp-checkpoint-contraction", action="store_true",
+                    help="Factorize actual checkpoint U, including reduced-CG, using only native ICTC circuits.")
+    ap.add_argument("--hp-species-fusion", action=argparse.BooleanOptionalAction, default=True)
+    ap.add_argument("--hp-phase-fusion", action=argparse.BooleanOptionalAction, default=True)
+    ap.add_argument("--hp-coherent-fusion", action=argparse.BooleanOptionalAction, default=True)
+    ap.add_argument("--hp-training-species-fusion", action="store_true",
+                    help="Use ICTC-O3-HP native live-species GEMMs and mixed weight adjoints in training.")
+    ap.add_argument("--hp-radial-coefficient-fusion", action="store_true",
+                    help="Fold live TP path coefficients into the radial output weight bank before its GEMM.")
+    ap.add_argument("--hp-phase-coefficient-mixed-fusion", action="store_true",
+                    help="Fuse the live polar phase-coefficient mixed adjoint for force-loss training.")
+    ap.add_argument("--hp-training-destination-jvp", action="store_true",
+                    help="Use ICTC destination-owned JVP reduction in the force-loss mixed adjoint.")
+    ap.add_argument("--hp-training-destination-first", type=int, choices=(0, 1, 2, 4), default=0,
+                    help="Explicit destination-cached first adjoint with 1/2/4 neighbor owners; 0 retains the existing schedule.")
+    ap.add_argument("--hp-training-mixed-compact", action="store_true",
+                    help="Consume high-l CG columns immediately in the original live mixed TP adjoint.")
+    ap.add_argument("--hp-training-mixed-threads", type=int, choices=(0, 32, 64, 128), default=0)
+    ap.add_argument("--hp-training-mixed-grouped", action="store_true")
+    ap.add_argument("--hp-training-mixed-cache", type=int, choices=(0, 8, 16, 32, 64), default=0,
+                    help="Cache destination cotangents across neighbors in native mixed TP adjoints.")
+    ap.add_argument("--hp-training-first-cache", action="store_true",
+                    help="Use component-wise cached native first TP adjoints with all live targets.")
+    ap.add_argument("--hp-training-first-schedule", default="legacy",
+                    choices=("legacy", "pruned", "grouped", "compact", "compact_grouped"),
+                    help="Select live-target pruning and native first-TP register scheduling.")
+    ap.add_argument("--hp-training-mixed-fuse-jvp", action="store_true",
+                    help="Reuse the mixed TP traversal for the live output-cotangent JVP.")
+    ap.add_argument("--hp-training-radial-tp-fusion", action="store_true",
+                    help="Experimental live radial-bank/TP VJP fusion; requires radial coefficient fusion.")
+    ap.add_argument("--hp-training-radial-cached", action="store_true",
+                    help="Use bounded GEMM gate tangents with cached TP cotangents rather than inline radial projection.")
+    ap.add_argument("--hp-training-radial-first-bounded", action="store_true",
+                    help="Consume first-TP gate VJP tiles immediately in the live radial projection.")
+    ap.add_argument("--hp-training-radial-tile-edges", type=int, default=8192,
+                    help="Bound live radial/TP mixed-adjoint buffers by this many edges.")
+    ap.add_argument("--hp-parameter-gradients-only", action="store_true",
+                    help="Compute full E/F parameter gradients without unused input-leaf gradients; single device only.")
+    ap.add_argument("--hp-training-terminal-fusion", action="store_true",
+                    help="Fold the live terminal channel maps into the original rank projection; no frozen products.")
     ap.add_argument("--interaction-init", default="identity", choices=["identity", "mace-random"],
                     help="Initialize ICTC interaction linear/skip maps as identity or MACE-like random maps.")
     ap.add_argument("--mace-compatible-random-init", action="store_true",
@@ -1649,6 +1696,36 @@ def main(argv=None):
             training_state=bool(args.resume_training_state),
             strict=not args.finetune,
         )
+    if args.hp_operators != "reference":
+        from chorus.hp import configure_model
+        hp_info = configure_model(
+            trainer.model, training=not args.eval_only, policy=args.hp_operators,
+            layout=args.hp_layout, stream_fusion=args.hp_stream_fusion,
+            density_fusion=args.hp_density_fusion, capture=trainer.train_makefx_compile,
+            symmetric_contraction=args.hp_symmetric_contraction,
+            checkpoint_contraction=args.hp_checkpoint_contraction,
+            training_species_fusion=args.hp_training_species_fusion,
+            radial_coefficient_fusion=args.hp_radial_coefficient_fusion,
+            phase_coefficient_mixed_fusion=args.hp_phase_coefficient_mixed_fusion,
+            training_mixed_destination=args.hp_training_destination_jvp,
+            training_destination_first=args.hp_training_destination_first,
+            training_mixed_compact=args.hp_training_mixed_compact,
+            training_mixed_threads=args.hp_training_mixed_threads,
+            training_mixed_grouped=args.hp_training_mixed_grouped,
+            training_mixed_cache=args.hp_training_mixed_cache,
+            training_mixed_fuse_jvp=args.hp_training_mixed_fuse_jvp,
+            training_first_cache=args.hp_training_first_cache,
+            training_first_schedule=args.hp_training_first_schedule,
+            training_radial_tp_fusion=args.hp_training_radial_tp_fusion,
+            training_radial_cached=args.hp_training_radial_cached,
+            training_radial_first_bounded=args.hp_training_radial_first_bounded,
+            radial_tile_edges=args.hp_training_radial_tile_edges,
+            training_terminal_fusion=args.hp_training_terminal_fusion,
+            species_fusion=args.hp_species_fusion, phase_fusion=args.hp_phase_fusion,
+            coherent_fusion=args.hp_coherent_fusion,
+        )
+        logging.info("CHORUS ICTC-O3-HP execution: %s", hp_info)
+        trainer.parameter_gradients_only = args.hp_parameter_gradients_only
     if args.eval_only:
         va = trainer._val_pass()
         print(f"[EVAL-ONLY] ckpt={args.resume_checkpoint}\n"

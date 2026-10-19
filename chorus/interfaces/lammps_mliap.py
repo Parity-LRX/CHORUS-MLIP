@@ -1161,6 +1161,7 @@ class LAMMPS_MLIAP_MFF(MLIAPUnified):
         avg_num_neighbors: Optional[float] = None,
         torchscript: bool = False,
         force_naive: bool = False,
+        reuse_checkpoint_u: bool = False,
     ) -> "LAMMPS_MLIAP_MFF":
         """Create LAMMPS_MLIAP_MFF from a checkpoint file.
 
@@ -1682,6 +1683,22 @@ class LAMMPS_MLIAP_MFF(MLIAPUnified):
                 ckpt.get("angular_basis")
                 or arch_meta.get("angular_basis", "ictd")
             )
+            checkpoint_u_state = None
+            if reuse_checkpoint_u:
+                saved_backend = str(ckpt.get("ictd_fix_product_backend") or
+                                    arch_meta.get("ictd_fix_product_backend", "ictd-pure-u"))
+                selected_backend = str(ictd_fix_product_backend or saved_backend)
+                if saved_backend != "ictd-bridge-u" or selected_backend != "ictd-bridge-u":
+                    raise ValueError("reuse_checkpoint_u requires an original native ICTC bridge-U checkpoint")
+                checkpoint_u_state = []
+                for index in range(num_interaction):
+                    prefix = f"products.{index}.symmetric_contractions.symmetric_contractions.contractions."
+                    state = {key.removeprefix(prefix): value for key, value in selected_state_dict.items()
+                             if key.startswith(prefix) and key.rsplit(".", 1)[-1] in
+                             {"U_matrix_1", "U_matrix_2", "U_matrix_3"}}
+                    if not state:
+                        raise ValueError(f"Checkpoint is missing original ICTC U buffers for product {index}")
+                    checkpoint_u_state.append(state)
             atomic_numbers = aek.detach().cpu().to(dtype=torch.long).tolist() if aek is not None else None
             model = PureCartesianICTDFix(
                 max_embed_radius=config.max_radius,
@@ -1747,6 +1764,7 @@ class LAMMPS_MLIAP_MFF(MLIAPUnified):
                         arch_meta.get("ictd_fix_use_reduced_cg", False),
                     )
                 ),
+                ictd_fix_u_tensor_state=checkpoint_u_state,
                 ictd_fix_first_layer_self_connection=bool(
                     ckpt.get(
                         "ictd_fix_first_layer_self_connection",

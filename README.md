@@ -195,14 +195,40 @@ Optional dependencies:
 pip install -e ".[pyg]"    # torch-scatter and torch-cluster
 pip install -e ".[cue]"    # optional cuEquivariance products
 pip install -e ".[e0]"     # fitted atomic-energy CSV support
-pip install -e ".[full]"   # all optional Python dependencies
+pip install -e ".[full]"   # existing PyG/cuEquivariance/CSV convenience bundle
+pip install -e ".[hp]"     # matching ICTC-O3-HP Git revision + HP tools
 ```
 
 The distribution is `chorus-mlip`; the canonical Python namespace is
 `chorus`. The runtime requires Python >= 3.9, PyTorch >= 2.4, and
 `e3nn >= 0.4.4, < 0.6`.
 
+The paper versions remain CHORUS 0.1.0 and ICTC-O3-HP 0.2.12. Only the `hp`
+extra pins the matching HP Git revision (`9fdea47`), with HP API contract 1;
+the shared package version alone is not used to distinguish old/new operators.
+The ordinary installation and the existing `full` extra do not install HP or
+change the default reference execution. HP requires Python >= 3.10 and a
+qualified Linux/CUDA environment; selecting the extra does not enable it.
+Installing `[hp]` fetches that immutable source revision automatically and
+requires Git/HTTPS access; see [installation and compatibility](docs/ICTC_O3_HP.md#installation-and-compatibility).
+This extra targets the Cartesian backbone; the NequIP overlay retains its
+separate NequIP/OpenEquivariance installation workflow.
+
 ## Quick start: MACE-ICTC backbone
+
+Optional native GPU acceleration is available through
+[`chorus.hp.configure_model`](docs/ICTC_O3_HP.md), using the optional
+ICTC-O3-HP library selected by `[hp]`. It preserves CHORUS parameters and Final/Persistent equations;
+the reference path remains the default. See the guide for eager force-training
+coverage, fusion controls, remote qualification, and deployment boundaries.
+Same-checkpoint energy/force timings and numerical checks are recorded in the
+[remote qualification report](benchmarks/hp/RESULTS_20261017.md).
+
+The subsequent native checkpoint-U, phase/coherent kernels, CUDA Graph and
+Persistent throughput work is tracked in the
+[throughput audit](benchmarks/hp/THROUGHPUT_20261017.md). Its DPA4 comparison
+explicitly enables inference compile and Triton; early under-enabled DPA4
+diagnostics are not accepted as optimized-baseline speedups.
 
 The representative final-layer configuration is:
 

@@ -197,6 +197,8 @@ def apply_channel_adapter_per_l(x_l: torch.Tensor, adapter: nn.Module) -> torch.
     """
     if isinstance(adapter, nn.Identity):
         return x_l
+    if getattr(adapter, "_hp_channel_linear", None) is not None:
+        return adapter._hp_channel_linear(x_l, adapter.weight, adapter.bias)
     y = adapter(x_l.movedim(-2, -1))
     return y.movedim(-1, -2)
 

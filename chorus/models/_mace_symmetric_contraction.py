@@ -40,6 +40,7 @@ class MaceSymmetricContraction(CodeGenMixin, torch.nn.Module):
         internal_weights: Optional[bool] = None,
         shared_weights: Optional[bool] = None,
         num_elements: Optional[int] = None,
+        u_tensor_state: Optional[Dict[str, torch.Tensor]] = None,
     ) -> None:
         super().__init__()
         del path_normalization
@@ -65,7 +66,12 @@ class MaceSymmetricContraction(CodeGenMixin, torch.nn.Module):
         self.internal_weights = bool(internal_weights)
         self.shared_weights = bool(shared_weights)
         self.contractions = torch.nn.ModuleList()
-        for irrep_out in self.irreps_out:
+        for index, irrep_out in enumerate(self.irreps_out):
+            order = int(correlation[irrep_out])
+            saved_u = None if u_tensor_state is None else {
+                nu: u_tensor_state[f"{index}.U_matrix_{nu}"]
+                for nu in range(1, order + 1)
+            }
             self.contractions.append(
                 _Contraction(
                     irreps_in=self.irreps_in,
@@ -75,6 +81,7 @@ class MaceSymmetricContraction(CodeGenMixin, torch.nn.Module):
                     num_elements=int(num_elements),
                     weights=self.shared_weights,
                     use_reduced_cg=use_reduced_cg,
+                    u_tensors=saved_u,
                 )
             )
 
@@ -94,6 +101,7 @@ class _Contraction(torch.nn.Module):
         use_reduced_cg: bool = False,
         num_elements: Optional[int] = None,
         weights: Optional[torch.Tensor] = None,
+        u_tensors: Optional[Dict[int, torch.Tensor]] = None,
     ) -> None:
         super().__init__()
         if num_elements is None:
@@ -109,13 +117,25 @@ class _Contraction(torch.nn.Module):
 
         path_weight = []
         for nu in range(1, self.correlation + 1):
-            u_matrix = U_matrix_real(
-                irreps_in=self.coupling_irreps,
-                irreps_out=irrep_out,
-                correlation=nu,
-                use_cueq_cg=use_reduced_cg,
-                dtype=dtype,
-            )[-1]
+            if u_tensors is None:
+                u_matrix = U_matrix_real(
+                    irreps_in=self.coupling_irreps,
+                    irreps_out=irrep_out,
+                    correlation=nu,
+                    use_cueq_cg=use_reduced_cg,
+                    dtype=dtype,
+                )[-1]
+            else:
+                # Already-folded ICTC constants from the original checkpoint.
+                # Do not regenerate a reduced basis with an external TP library.
+                u_matrix = u_tensors[nu]
+                shape = ((2*self.output_lmax+1,) if self.output_lmax else ())
+                shape += (self.coupling_irreps.dim,)*nu
+                if (not isinstance(u_matrix, torch.Tensor) or u_matrix.requires_grad
+                        or tuple(u_matrix.shape[:-1]) != shape
+                        or not u_matrix.is_floating_point()):
+                    raise ValueError(f"Invalid checkpoint U tensor for order {nu}")
+                u_matrix = u_matrix.detach().to(dtype=dtype).clone()
             path_weight.append(not torch.equal(u_matrix, torch.zeros_like(u_matrix)))
             self.register_buffer(f"U_matrix_{nu}", u_matrix)
 

@@ -1,0 +1,80 @@
+# 高 L 候选：速度与显存筛选
+
+本表为 1024 原子、50 邻居、12 步短筛选，不能代替 50 步正反配对结论。
+每个候选均要求三批 128 原子的输出、全参数梯度和 AdamW 更新核验通过。
+FP32、AMP/TF32 off；新建 autograd、完整 E/F 损失，无 CUDA Graph。
+
+| 配置 | scope | 候选 | ms | reserved GB | Pareto |
+| --- | --- | --- | ---: | ---: | --- |
+| l3 | persistent | cache16jvp | 76.785 | 4.079 | 是 |
+| l3 | persistent | cache8jvp | 76.973 | 4.079 | — |
+| l3 | persistent | cache32jvp | 77.351 | 4.079 | — |
+| l3 | persistent | cache32term | 77.419 | 4.079 | — |
+| l3 | persistent | cache16term | 77.698 | 4.079 | — |
+| l3 | persistent | cache64term | 79.246 | 4.079 | — |
+| l3 | persistent | radial64k | 79.729 | 4.708 | — |
+| l3 | persistent | radial32k | 79.934 | 4.268 | — |
+| l3 | persistent | radial8k | 81.975 | 3.429 | 是 |
+| l3 | persistent | jointfirst | 83.932 | 4.079 | — |
+| l3 | persistent | radialfirst | 87.649 | 3.429 | — |
+| l3 | final | cache16jvp | 65.473 | 3.951 | 是 |
+| l3 | final | cache32jvp | 66.040 | 3.930 | 是 |
+| l3 | final | cache32term | 66.342 | 3.930 | — |
+| l3 | final | cache64term | 66.680 | 3.930 | — |
+| l3 | final | cache16term | 67.772 | 3.951 | — |
+| l3 | final | cache8jvp | 68.242 | 4.014 | — |
+| l3 | final | radial64k | 69.108 | 4.559 | — |
+| l3 | final | radial32k | 69.141 | 4.098 | — |
+| l3 | final | radial8k | 70.344 | 3.091 | 是 |
+| l3 | final | jointfirst | 74.260 | 3.951 | — |
+| l3 | final | radialfirst | 76.023 | 3.091 | — |
+| l3c192d3 | persistent | cache32jvp | 191.414 | 9.370 | 是 |
+| l3c192d3 | persistent | cache64term | 194.540 | 9.370 | — |
+| l3c192d3 | persistent | cache32term | 195.390 | 9.370 | — |
+| l3c192d3 | persistent | cache16jvp | 195.770 | 9.370 | — |
+| l3c192d3 | persistent | cache8jvp | 201.126 | 9.370 | — |
+| l3c192d3 | persistent | cache16term | 202.420 | 9.370 | — |
+| l3c192d3 | persistent | radial64k | 206.934 | 9.328 | 是 |
+| l3c192d3 | persistent | radial32k | 206.943 | 8.678 | 是 |
+| l3c192d3 | persistent | radial8k | 211.231 | 7.525 | 是 |
+| l3c192d3 | persistent | jointfirst | 222.935 | 9.370 | — |
+| l3c192d3 | persistent | radialfirst | 232.424 | 7.525 | — |
+| l3c192d3 | final | cache32jvp | 152.460 | 8.298 | 是 |
+| l3c192d3 | final | cache32term | 153.069 | 8.298 | — |
+| l3c192d3 | final | cache64term | 153.075 | 8.298 | — |
+| l3c192d3 | final | cache16jvp | 153.556 | 8.382 | — |
+| l3c192d3 | final | cache8jvp | 157.211 | 8.466 | — |
+| l3c192d3 | final | cache16term | 157.504 | 8.382 | — |
+| l3c192d3 | final | radial64k | 159.021 | 9.263 | — |
+| l3c192d3 | final | radial32k | 159.090 | 8.571 | — |
+| l3c192d3 | final | radial8k | 161.111 | 7.292 | 是 |
+| l3c192d3 | final | jointfirst | 167.986 | 8.382 | — |
+| l3c192d3 | final | radialfirst | 171.479 | 7.292 | — |
+| l3c256d4 | persistent | cache16splitjvp | 348.337 | 16.656 | 是 |
+| l3c256d4 | persistent | cache16jvp | 353.349 | 16.656 | — |
+| l3c256d4 | persistent | cache32jvp | 353.885 | 16.656 | — |
+| l3c256d4 | persistent | cache32term | 358.698 | 16.656 | — |
+| l3c256d4 | persistent | cache8jvp | 358.756 | 16.781 | — |
+| l3c256d4 | persistent | cache64term | 360.646 | 16.656 | — |
+| l3c256d4 | persistent | cache32split | 361.488 | 16.656 | — |
+| l3c256d4 | persistent | cache32splitall | 364.561 | 16.656 | — |
+| l3c256d4 | persistent | cache16term | 370.053 | 16.656 | — |
+| l3c256d4 | persistent | radial32k | 377.042 | 14.642 | 是 |
+| l3c256d4 | persistent | radial64k | 377.161 | 15.523 | — |
+| l3c256d4 | persistent | radial8k | 379.618 | 12.986 | 是 |
+| l3c256d4 | persistent | jointfirst | 401.709 | 16.739 | — |
+| l3c256d4 | persistent | radialfirst | 417.847 | 12.986 | — |
+| l3c256d4 | final | cache16splitjvp | 284.025 | 14.680 | 是 |
+| l3c256d4 | final | cache16jvp | 285.277 | 14.680 | — |
+| l3c256d4 | final | cache32term | 286.389 | 14.680 | — |
+| l3c256d4 | final | cache32jvp | 286.839 | 14.680 | — |
+| l3c256d4 | final | cache64term | 287.127 | 14.680 | — |
+| l3c256d4 | final | cache8jvp | 288.035 | 14.680 | — |
+| l3c256d4 | final | cache32split | 289.235 | 14.680 | — |
+| l3c256d4 | final | cache32splitall | 290.731 | 14.680 | — |
+| l3c256d4 | final | cache16term | 290.812 | 14.680 | — |
+| l3c256d4 | final | radial64k | 292.816 | 15.750 | — |
+| l3c256d4 | final | radial32k | 293.332 | 14.890 | — |
+| l3c256d4 | final | radial8k | 293.877 | 13.338 | 是 |
+| l3c256d4 | final | jointfirst | 302.635 | 14.680 | — |
+| l3c256d4 | final | radialfirst | 307.470 | 14.177 | — |

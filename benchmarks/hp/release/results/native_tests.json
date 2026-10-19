@@ -1,0 +1,18 @@
+{
+  "status": "PASS",
+  "pytest_exit_code": 0,
+  "torch": "2.7.1+cu128",
+  "gpu": "NVIDIA A100-SXM4-40GB",
+  "graph_policy": {
+    "capture": false,
+    "replay": false,
+    "inductor_cudagraphs": false,
+    "prohibition": "runtime API guard plus Inductor configuration"
+  },
+  "selected_tests": 59,
+  "deselected_tuning_variants": 259,
+  "installed_modules": {
+    "chorus": "/public/home/sps-xia/rxlin/chorus_hp_release_20261019/env_hp_source_v3/lib/python3.11/site-packages/chorus/__init__.py",
+    "ictc_o3_hp": "/public/home/sps-xia/rxlin/chorus_hp_release_20261019/env_hp_source_v3/lib/python3.11/site-packages/mace_ictc/__init__.py"
+  }
+}

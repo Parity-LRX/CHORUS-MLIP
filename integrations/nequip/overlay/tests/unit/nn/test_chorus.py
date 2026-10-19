@@ -1,4 +1,5 @@
 import math
+import copy
 
 import pytest
 import torch
@@ -11,6 +12,136 @@ from nequip.nn import (
     InteractionBlock,
     PersistentChargedUpdate,
 )
+
+
+@pytest.mark.skipif(not torch.cuda.is_available(),reason='native dataflow requires CUDA')
+@pytest.mark.parametrize("dtype",(torch.float32,torch.float64))
+def test_native_irrep_linear_preserves_full_mixed_gradients(dtype):
+    from nequip.nn._native_dataflow import linear,_plan
+    torch.manual_seed(106)
+    reference=o3.Linear('5x0e + 3x1o + 2x2e','4x0e + 7x1o + 3x2e').cuda().to(dtype)
+    accelerated=copy.deepcopy(reference)
+    assert _plan(accelerated) is not None
+    value=torch.randn(2,5,reference.irreps_in.dim*2,device='cuda',dtype=dtype)[...,::2]
+    value=value.detach().requires_grad_()
+    expected=reference(value);actual=linear(accelerated,value)
+    tol=3e-6 if dtype==torch.float32 else 2e-12
+    torch.testing.assert_close(actual,expected,atol=tol,rtol=tol)
+    probe=torch.randn_like(expected)
+    a=torch.autograd.grad((actual*probe).sum(),(value,accelerated.weight),create_graph=True)
+    b=torch.autograd.grad((expected*probe).sum(),(value,reference.weight),create_graph=True)
+    for x,y in zip(a,b):torch.testing.assert_close(x,y,atol=tol*4,rtol=tol*4)
+    ah=torch.autograd.grad(sum(x.square().sum() for x in a),(value,accelerated.weight))
+    bh=torch.autograd.grad(sum(x.square().sum() for x in b),(value,reference.weight))
+    for x,y in zip(ah,bh):torch.testing.assert_close(x,y,atol=tol*30,rtol=tol*30)
+    assert tuple(reference.state_dict())==tuple(accelerated.state_dict())
+
+
+@pytest.mark.skipif(not torch.cuda.is_available(),reason='native dataflow requires CUDA')
+def test_native_irrep_linear_preserves_intervention_hooks():
+    from nequip.nn._native_dataflow import linear
+    module=o3.Linear('3x0e + 3x1o','4x0e + 2x1o').cuda()
+    seen=[]
+    handle=module.register_forward_hook(lambda m,inputs,out:(seen.append(True) or out*1.7))
+    value=torch.randn(7,module.irreps_in.dim,device='cuda')
+    expected=module(value);actual=linear(module,value)
+    torch.testing.assert_close(actual,expected)
+    assert len(seen)==2
+    handle.remove()
+
+
+def test_factorized_phase_and_density_preserve_soft_attribute_mixed_gradients():
+    torch.manual_seed(97)
+    reference=HermitianDensityResidual(
+        irreps_message='3x0e + 2x1o',irreps_node='4x0e + 3x1o',
+        edge_invariant_dim=3,num_elements=2,rank=2,hidden_channels=8,
+        avg_num_neighbors=4.,scale_init=0.2).double()
+    accelerated=copy.deepcopy(reference)
+    accelerated.factorized_phase=accelerated.factorized_density=True
+    inputs=[torch.randn(9,reference.irreps_message.dim,dtype=torch.float64,requires_grad=True),
+        torch.randn(5,reference.irreps_node.dim,dtype=torch.float64,requires_grad=True),
+        torch.randn(5,2,dtype=torch.float64,requires_grad=True),
+        torch.randn(9,3,dtype=torch.float64,requires_grad=True)]
+    src=torch.arange(9)%5;dst=(src+2)%5
+    def run(module):return module(inputs[0],inputs[1],inputs[2],inputs[3],src,dst,5)
+    expected=run(reference);actual=run(accelerated)
+    torch.testing.assert_close(actual,expected,atol=2e-11,rtol=2e-11)
+    a=torch.autograd.grad(actual.square().sum(),(*inputs,*accelerated.parameters()),create_graph=True)
+    b=torch.autograd.grad(expected.square().sum(),(*inputs,*reference.parameters()),create_graph=True)
+    for x,y in zip(a,b):torch.testing.assert_close(x,y,atol=2e-10,rtol=2e-10)
+    ah=torch.autograd.grad(sum(x.square().sum() for x in a),inputs)
+    bh=torch.autograd.grad(sum(x.square().sum() for x in b),inputs)
+    for x,y in zip(ah,bh):torch.testing.assert_close(x,y,atol=2e-9,rtol=2e-9)
+
+
+@pytest.mark.skipif(not torch.cuda.is_available(),reason='native OEQ requires CUDA')
+def test_openequivariance_hermitian_uses_scalar_rank_batch_weights():
+    pytest.importorskip('openequivariance')
+    torch.manual_seed(98)
+    kwargs=dict(irreps_message='3x0e + 3x1o + 3x2e',irreps_node='3x0e',
+                edge_invariant_dim=3,num_elements=2,rank=3,scale_init=0.2)
+    reference=HermitianDensityResidual(**kwargs).cuda()
+    accelerated=HermitianDensityResidual(**kwargs,openequivariance_enabled=True).cuda()
+    accelerated.load_state_dict(reference.state_dict(),strict=True)
+    assert tuple(reference.state_dict())==tuple(accelerated.state_dict())
+    assert accelerated.openequivariance_density.constant_weights.numel()==2*len(reference.paths)
+    real=torch.randn(5,reference.irreps_charged.dim,device='cuda')
+    imag=torch.randn_like(real)
+    expected=reference.density_blocks(real,imag)
+    actual=accelerated.density_blocks(real,imag)
+    for l in expected:torch.testing.assert_close(actual[l],expected[l],atol=2e-5,rtol=5e-4)
+
+
+def test_factorized_phase_preserves_diagnostic_and_intervention_hooks():
+    torch.manual_seed(99)
+    reference=HermitianDensityResidual(
+        irreps_message='2x0e + 2x1o',irreps_node='2x0e + 2x1o',
+        edge_invariant_dim=3,num_elements=1,rank=2,scale_init=0.2).double()
+    accelerated=copy.deepcopy(reference)
+    accelerated.factorized_phase=True
+    counts=[0,0]
+    def hook(index):
+        def intervene(module,inputs,output):
+            counts[index]+=1
+            return torch.stack((output[:,0],output[:,1]*0.0),-1)
+        return intervene
+    handles=[reference.phase_network.register_forward_hook(hook(0)),
+             accelerated.phase_network.register_forward_hook(hook(1))]
+    messages=torch.randn(8,reference.irreps_message.dim,dtype=torch.float64)
+    nodes=torch.randn(5,reference.irreps_node.dim,dtype=torch.float64)
+    invariants=torch.randn(8,3,dtype=torch.float64)
+    src=torch.arange(8)%5;dst=(src+2)%5
+    a=accelerated.charged_edge_messages(messages,nodes,invariants,src,dst)
+    b=reference.charged_edge_messages(messages,nodes,invariants,src,dst)
+    for x,y in zip(a,b):torch.testing.assert_close(x,y,atol=2e-12,rtol=2e-12)
+    assert counts==[1,1]
+    for handle in handles:handle.remove()
+
+
+@pytest.mark.skipif(not torch.cuda.is_available(),reason='native OEQ requires CUDA')
+def test_openequivariance_neutral_conv_live_graph_and_mixed_gradients():
+    pytest.importorskip('openequivariance')
+    from nequip.nn._openequivariance import OpenEquivarianceTensorProduct
+    torch.manual_seed(100)
+    ir=o3.Irreps('3x0e + 3x1o');sh=o3.Irreps('0e + 1o')
+    module=OpenEquivarianceTensorProduct(ir,sh,ir,
+        [(0,0,0,'uvu',True),(0,1,1,'uvu',True),
+         (1,0,1,'uvu',True),(1,1,0,'uvu',True)],fused_convolution=True).cuda()
+    for n,pairs in ((5,[(0,1),(1,2),(0,3)]),(7,[(0,2),(1,4),(2,4),(4,5)])):
+        dst=torch.tensor([a for a,b in pairs]+[b for a,b in pairs],device='cuda')
+        src=torch.tensor([b for a,b in pairs]+[a for a,b in pairs],device='cuda')
+        x=torch.randn(n,ir.dim,device='cuda',requires_grad=True)
+        y=torch.randn(src.numel(),sh.dim,device='cuda',requires_grad=True)
+        w=torch.randn(src.numel(),module.tensor_product.weight_numel,device='cuda',requires_grad=True)
+        ref=x.new_zeros(n,ir.dim).index_add(0,dst,module(x[src],y,w))
+        actual=module.aggregate(x,y,w,dst,src)
+        torch.testing.assert_close(actual,ref,atol=2e-5,rtol=5e-4)
+        a=torch.autograd.grad(actual.square().sum(),(x,y,w),create_graph=True)
+        b=torch.autograd.grad(ref.square().sum(),(x,y,w),create_graph=True)
+        for u,v in zip(a,b):torch.testing.assert_close(u,v,atol=5e-4,rtol=5e-4)
+        ah=torch.autograd.grad(sum(t.square().sum() for t in a),(x,y,w))
+        bh=torch.autograd.grad(sum(t.square().sum() for t in b),(x,y,w))
+        for u,v in zip(ah,bh):torch.testing.assert_close(u,v,atol=5e-3,rtol=1e-3)
 
 
 NATURAL_CONFIG = {

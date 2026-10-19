@@ -1,0 +1,21 @@
+{
+  "status": "PASS",
+  "version": "0.1.0",
+  "module": "/public/home/sps-xia/rxlin/chorus_hp_release_20261019/env_reference_source_v3/lib/python3.11/site-packages/chorus/__init__.py",
+  "hp_imported": false,
+  "reference_comparison": "pre-HP committed CHORUS implementation",
+  "scopes": {
+    "final": {
+      "energy_force_and_parameter_gradients": "PASS",
+      "missing_hp_reference_auto_generated": "PASS",
+      "checkpoint_unchanged": true,
+      "force_max_abs_error": 0.0
+    },
+    "persistent": {
+      "energy_force_and_parameter_gradients": "PASS",
+      "missing_hp_reference_auto_generated": "PASS",
+      "checkpoint_unchanged": true,
+      "force_max_abs_error": 0.0
+    }
+  }
+}

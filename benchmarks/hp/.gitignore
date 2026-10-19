@@ -1,0 +1,4 @@
+# Large run artifacts remain on the compute host; curated reports are added explicitly.
+/results/
+/logs/
+/release/results/

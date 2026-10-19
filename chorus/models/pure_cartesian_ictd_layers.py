@@ -62,13 +62,16 @@ def resolve_save_multiple_mix_channels(
 
 
 def _split_irreps(x: torch.Tensor, channels: int, lmax: int) -> dict[int, torch.Tensor]:
+    # Match the mother's single multi-output split: its adjoint joins once,
+    # rather than zero-padding and adding one full-width buffer per degree.
+    widths = [channels * (2 * l + 1) for l in range(lmax + 1)]
+    used_width = sum(widths)
+    if x.shape[-1] > used_width:
+        widths.append(x.shape[-1] - used_width)
+    parts = torch.split(x, widths, dim=-1)
     out: dict[int, torch.Tensor] = {}
-    idx = 0
     for l in range(lmax + 1):
-        d = channels * (2 * l + 1)
-        blk = x[..., idx: idx + d]
-        idx += d
-        out[l] = blk.view(*x.shape[:-1], channels, 2 * l + 1)
+        out[l] = parts[l].view(*x.shape[:-1], channels, 2 * l + 1)
     return out
 
 

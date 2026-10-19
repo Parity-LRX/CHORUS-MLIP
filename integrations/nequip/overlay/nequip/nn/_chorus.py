@@ -6,6 +6,7 @@ import math
 import torch
 from e3nn import o3
 from torch_runstats.scatter import scatter
+from . import _native_dataflow
 
 
 CHORUS_CHARGED_REAL_KEY = "chorus_charged_real"
@@ -44,8 +45,11 @@ def _validate_natural_layout(irreps: o3.Irreps) -> Dict[int, int]:
 
 def _split_by_l(tensor: torch.Tensor, irreps: o3.Irreps) -> Dict[int, torch.Tensor]:
     blocks: Dict[int, torch.Tensor] = {}
-    for (mul, ir), component_slice in zip(irreps, irreps.slices()):
-        blocks[int(ir.l)] = tensor[..., component_slice].reshape(
+    # One split concatenates adjoints instead of zero-filling a full input
+    # for each irrep slice before gradient accumulation.
+    sections=torch.split(tensor,[int(mul)*int(ir.dim) for mul,ir in irreps],dim=-1)
+    for (mul, ir), section in zip(irreps, sections):
+        blocks[int(ir.l)] = section.reshape(
             *tensor.shape[:-1], int(mul), int(ir.dim)
         )
     return blocks
@@ -89,6 +93,7 @@ class HermitianDensityResidual(torch.nn.Module):
         avg_num_neighbors: Optional[float] = None,
         scale_init: float = 0.0,
         density_pairs: str = "full",
+        openequivariance_enabled: bool = False,
     ) -> None:
         super().__init__()
         self.irreps_message = o3.Irreps(irreps_message).simplify()
@@ -212,6 +217,14 @@ class HermitianDensityResidual(torch.nn.Module):
                 dtype=torch.get_default_dtype(),
             )
         )
+        self.openequivariance_density = None
+        self.factorized_phase = bool(openequivariance_enabled)
+        self.factorized_density = bool(openequivariance_enabled)
+        self.native_dataflow = bool(openequivariance_enabled) and _native_dataflow.enabled()
+        if openequivariance_enabled:
+            from ._openequivariance import OpenEquivarianceHermitianTensorProduct
+            self.openequivariance_density = OpenEquivarianceHermitianTensorProduct(
+                self.irreps_charged,self.paths)
 
     def charged_edge_messages(
         self,
@@ -222,15 +235,34 @@ class HermitianDensityResidual(torch.nn.Module):
         edge_dst: torch.Tensor,
     ) -> tuple[torch.Tensor, torch.Tensor]:
         node_invariants = self.node_norm(node_features)
-        context = torch.cat(
-            (
-                edge_invariants,
-                node_invariants[edge_src],
-                node_invariants[edge_dst],
-            ),
-            dim=-1,
-        )
-        amplitude_raw, phase_raw = self.phase_network(context).unbind(-1)
+        use_factorized_phase = self.factorized_phase
+        if use_factorized_phase and not torch.jit.is_scripting():
+            # Phase diagnostics and same-checkpoint interventions attach hooks
+            # to this Sequential (or its first Linear). Keep their original
+            # inputs/outputs and intervention semantics when instrumented.
+            for module in (self.phase_network,self.phase_network[0]):
+                if (module._forward_hooks or module._forward_pre_hooks or
+                        module._backward_hooks or module._backward_pre_hooks):
+                    use_factorized_phase = False
+        if use_factorized_phase:
+            # Distribute the existing first affine map over its three input
+            # blocks. Node projections are evaluated once per node, not once
+            # per edge. All original Parameter objects remain live.
+            first=self.phase_network[0]
+            width=edge_invariants.shape[-1]
+            node_width=node_invariants.shape[-1]
+            node_weight=torch.cat((first.weight[:,width:width+node_width],
+                                   first.weight[:,width+node_width:]),dim=0)
+            projected=torch.nn.functional.linear(node_invariants,node_weight)
+            hidden=torch.nn.functional.linear(edge_invariants,first.weight[:,:width],first.bias)
+            h=first.weight.shape[0]
+            hidden=hidden+projected[:,:h][edge_src]+projected[:,h:][edge_dst]
+            raw=self.phase_network[2](self.phase_network[1](hidden))
+        else:
+            context = torch.cat((edge_invariants,node_invariants[edge_src],
+                                 node_invariants[edge_dst]),dim=-1)
+            raw=self.phase_network(context)
+        amplitude_raw, phase_raw = raw.unbind(-1)
         amplitude = torch.nn.functional.softplus(amplitude_raw) / math.log(2.0)
         phase = math.pi * torch.tanh(phase_raw)
         if self.density_pairs == "aligned":
@@ -239,7 +271,8 @@ class HermitianDensityResidual(torch.nn.Module):
             # training.  Multiplication by zero keeps the inactive head in the
             # graph and makes the causal contrast auditable from checkpoints.
             phase = phase * 0.0
-        charged = self.edge_projection(edge_messages)
+        charged = (_native_dataflow.linear(self.edge_projection,edge_messages)
+                   if self.native_dataflow and not torch.jit.is_scripting() else self.edge_projection(edge_messages))
         return (
             charged * (amplitude * torch.cos(phase)).unsqueeze(-1),
             charged * (amplitude * torch.sin(phase)).unsqueeze(-1),
@@ -254,6 +287,8 @@ class HermitianDensityResidual(torch.nn.Module):
     def density_blocks(
         self, charged_real: torch.Tensor, charged_imag: torch.Tensor
     ) -> Dict[int, torch.Tensor]:
+        if self.openequivariance_density is not None:
+            return self.openequivariance_density(charged_real,charged_imag)
         real_blocks = _split_by_l(charged_real, self.irreps_charged)
         imag_blocks = _split_by_l(charged_imag, self.irreps_charged)
         outputs = {l_value: [] for l_value in range(self.lmax + 1)}
@@ -296,7 +331,21 @@ class HermitianDensityResidual(torch.nn.Module):
         output_blocks: Dict[int, torch.Tensor] = {}
         for out_l, block in density.items():
             weight = self.output_weights[str(out_l)]
-            if node_attrs is None:
+            if self.factorized_density:
+                # Shared bank GEMM before species mixing avoids a separate
+                # [N,Cout,Cin] weight tensor. It also preserves arbitrary soft
+                # node attributes and all their gradients, not only one-hot.
+                n,_,m=block.shape
+                # An explicit 2-D GEMM is important: Linear on the strided
+                # [N,m,Cin] view may dispatch N small broadcasted BMMs.
+                angular=block.transpose(1,2).reshape(n*m,block.shape[1])
+                if node_attrs is None:
+                    value=torch.nn.functional.linear(angular,weight[0]).reshape(n,m,weight.shape[1]).transpose(1,2)
+                else:
+                    mapped=torch.nn.functional.linear(angular,weight.flatten(0,1))
+                    mapped=mapped.reshape(n,m,weight.shape[0],weight.shape[1])
+                    value=torch.einsum('ne,nmeo->nom',node_attrs.to(dtype=weight.dtype),mapped)
+            elif node_attrs is None:
                 effective_weight = weight[0].expand(
                     block.shape[0], -1, -1
                 )
@@ -306,7 +355,8 @@ class HermitianDensityResidual(torch.nn.Module):
                     node_attrs.to(dtype=weight.dtype),
                     weight,
                 )
-            value = torch.einsum("noi,nim->nom", effective_weight, block)
+            if not self.factorized_density:
+                value = torch.einsum("noi,nim->nom", effective_weight, block)
             scale = self.residual_scale[out_l].to(
                 dtype=value.dtype, device=value.device
             )
@@ -411,17 +461,20 @@ class HermitianDensityResidual(torch.nn.Module):
         if self.avg_num_neighbors is not None:
             normalizer = float(self.avg_num_neighbors) ** 0.5
         charged_real = scatter(
-            charged_real / normalizer,
+            charged_real if self.native_dataflow else charged_real / normalizer,
             edge_dst,
             dim=0,
             dim_size=num_nodes,
         )
         charged_imag = scatter(
-            charged_imag / normalizer,
+            charged_imag if self.native_dataflow else charged_imag / normalizer,
             edge_dst,
             dim=0,
             dim_size=num_nodes,
         )
+        if self.native_dataflow:
+            charged_real=charged_real/normalizer
+            charged_imag=charged_imag/normalizer
         return charged_real, charged_imag
 
     def neutral_from_charged(

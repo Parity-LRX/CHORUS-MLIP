@@ -38,9 +38,15 @@ def sync() -> None:
 
 
 def make_atoms(natoms: int, cutoff: float, degree: float, seed: int) -> Atoms:
-    """Deterministic periodic mixed-element structure with 32 lattice neighbors."""
-    if int(degree) != 32:
-        raise ValueError("The geometry benchmark currently supports degree=32 only")
+    """Periodic mixed-element structure with exactly 32 or 50 cutoff neighbors.
+
+    Degree 50 uses an orthorhombic lattice, not a truncated 56-neighbor cubic
+    shell. The 50th/51st squared radii are 7.40/7.72 for axes (1,1.2,1.4).
+    The cutoff is midway between them; the small fixed jitter breaks symmetry
+    without changing membership. Callers must still audit the actual graph.
+    """
+    if degree not in (32, 50):
+        raise ValueError("The geometry benchmark supports degree=32 or degree=50")
 
     # A simple-cubic lattice contains 6 + 12 + 8 + 6 = 32 sites through
     # the |r|=2a shell.  Placing the cutoff between 2a and sqrt(5)a makes
@@ -54,7 +60,8 @@ def make_atoms(natoms: int, cutoff: float, degree: float, seed: int) -> Atoms:
         dims[dims.index(min(dims))] *= factor
         remaining //= factor
     nx, ny, nz = dims
-    spacing = float(cutoff) / 2.05
+    spacing = (np.full(3, float(cutoff) / 2.05) if degree == 32 else
+               float(cutoff) / np.sqrt(7.56) * np.asarray([1., 1.2, 1.4]))
     rng = np.random.default_rng(int(seed) + int(natoms))
     grid = np.stack(
         np.meshgrid(
